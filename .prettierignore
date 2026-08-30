@@ -5,4 +5,5 @@ dist/
 coverage/
 artifacts/
 docs/verification/adapters/*.json
+docs/reverb-overview.html
 pnpm-lock.yaml
