@@ -7,6 +7,7 @@ explicit and package breaking changes may occur in minor releases.
 
 ## Unreleased
 
+- Added the primary Reverb logo and brand-asset usage/provenance guidance.
 - Established the standalone Apache-2.0 project constitution.
 - Added the Node 24 and pnpm monorepo foundation.
 - Added opaque domain values, canonical JSON/SHA-256 hashing, closed vocabularies, runtime JSON

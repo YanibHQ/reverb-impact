@@ -1,5 +1,7 @@
 # Cross-Repository Pull-Request Impact
 
+<img src="../../docs/assets/reverb-logo.png" alt="Reverb logo" width="112" align="right" />
+
 **Type:** standalone public product owned by `YanibHQ`  
 **Status:** Standalone release candidate—Phases 000–006 implemented locally  
 **Working product name:** Reverb

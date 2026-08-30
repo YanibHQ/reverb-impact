@@ -1,4 +1,8 @@
-# Reverb
+<p align="center">
+  <img src="docs/assets/reverb-logo.png" alt="Reverb logo: an R-shaped evidence graph emitting traceable impact signals" width="180" />
+</p>
+
+<h1 align="center">Reverb</h1>
 
 Reverb is an evidence-first engine that answers one question before a pull request merges:
 
