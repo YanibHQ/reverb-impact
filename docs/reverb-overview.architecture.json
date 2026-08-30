@@ -1,0 +1,283 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Reverb Architecture Overview",
+    "locale": "en",
+    "output": "reverb-overview.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/YanibHQ/reverb-impact",
+      "revision": "5836dbff9d5b248bddd05020eb2e20fa9c063c85"
+    },
+    "views": [
+      {
+        "id": "analysis-path",
+        "label": "Analysis path",
+        "focus": ["repositories", "hosts", "application", "adapters", "domain", "results"],
+        "note": "Follow exact repository snapshots through extraction, evidence resolution, and canonical output."
+      },
+      {
+        "id": "reliability-controls",
+        "label": "Reliability controls",
+        "focus": ["application", "schema", "domain", "storage", "results"],
+        "note": "Inspect the validation, immutable storage, coverage, and abstention controls around analysis."
+      }
+    ]
+  },
+  "layout": {
+    "mode": "grid",
+    "origin": [42, 78],
+    "cols": 5,
+    "gapX": 50,
+    "gapY": 62,
+    "cellW": 132,
+    "cellH": 68
+  },
+  "components": [
+    {
+      "id": "repositories",
+      "type": "external",
+      "label": "Repositories",
+      "sublabel": "producer + consumers",
+      "tag": "exact Git SHAs",
+      "sources": [
+        {
+          "path": "packages/host-local/src/git-reader.ts",
+          "label": "Exact Git reader"
+        },
+        {
+          "path": "packages/host-github/src/source.ts",
+          "label": "GitHub source boundary"
+        }
+      ],
+      "row": 1,
+      "col": 0
+    },
+    {
+      "id": "hosts",
+      "type": "backend",
+      "label": "Host Profiles",
+      "sublabel": "Local CLI · GitHub App",
+      "tag": "authorization + I/O",
+      "sources": [
+        {
+          "path": "packages/host-local/src/index.ts",
+          "line": 1,
+          "end_line": 4,
+          "label": "Local host"
+        },
+        {
+          "path": "packages/host-github/src/index.ts",
+          "line": 3,
+          "end_line": 10,
+          "label": "GitHub host"
+        },
+        {
+          "path": "packages/cli/src/cli.ts",
+          "line": 273,
+          "label": "CLI"
+        }
+      ],
+      "row": 1,
+      "col": 1
+    },
+    {
+      "id": "application",
+      "type": "backend",
+      "label": "Application Layer",
+      "sublabel": "index · analyze · review",
+      "tag": "ports + use cases",
+      "sources": [
+        {
+          "path": "packages/application/src/index.ts",
+          "line": 1,
+          "end_line": 6,
+          "label": "Application API"
+        }
+      ],
+      "row": 1,
+      "col": 2
+    },
+    {
+      "id": "adapters",
+      "type": "backend",
+      "label": "Contract Adapters",
+      "sublabel": "TypeScript · OpenAPI · Protobuf",
+      "tag": "extract + diff",
+      "sources": [
+        {
+          "path": "packages/adapter-sdk/src/index.ts",
+          "line": 1,
+          "end_line": 7,
+          "label": "Adapter SDK"
+        },
+        {
+          "path": "packages/cli/src/contracts.ts",
+          "label": "Adapter orchestration"
+        }
+      ],
+      "row": 0,
+      "col": 3
+    },
+    {
+      "id": "domain",
+      "type": "backend",
+      "label": "Evidence Domain",
+      "sublabel": "identity · graph · policy",
+      "tag": "pure deterministic core",
+      "sources": [
+        {
+          "path": "packages/domain/src/index.ts",
+          "line": 1,
+          "end_line": 17,
+          "label": "Domain API"
+        }
+      ],
+      "row": 1,
+      "col": 3
+    },
+    {
+      "id": "schema",
+      "type": "security",
+      "label": "Schema Validation",
+      "sublabel": "canonical JSON + compatibility",
+      "tag": "fail closed",
+      "sources": [
+        {
+          "path": "packages/schema/src/index.ts",
+          "line": 1,
+          "end_line": 3,
+          "label": "Schema API"
+        }
+      ],
+      "row": 2,
+      "col": 3
+    },
+    {
+      "id": "storage",
+      "type": "database",
+      "label": "Storage Adapters",
+      "sublabel": "SQLite · PostgreSQL",
+      "tag": "immutable generations",
+      "sources": [
+        {
+          "path": "packages/storage-sqlite/src/index.ts",
+          "line": 1,
+          "label": "SQLite"
+        },
+        {
+          "path": "packages/storage-postgres/src/index.ts",
+          "line": 3,
+          "end_line": 4,
+          "label": "PostgreSQL"
+        }
+      ],
+      "row": 2,
+      "col": 2
+    },
+    {
+      "id": "results",
+      "type": "frontend",
+      "label": "Canonical Results",
+      "sublabel": "findings · coverage · unknowns",
+      "tag": "advisory output",
+      "sources": [
+        {
+          "path": "schemas/reverb-analysis-result.schema.json",
+          "label": "Analysis result"
+        },
+        {
+          "path": "packages/domain/src/delivery.ts",
+          "label": "Delivery policy"
+        }
+      ],
+      "row": 1,
+      "col": 4
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "Host-neutral Reverb core",
+      "wraps": ["application", "adapters", "domain", "schema"],
+      "pad": 18
+    }
+  ],
+  "connections": [
+    {
+      "id": "repositories-hosts",
+      "from": "repositories",
+      "to": "hosts",
+      "label": "exact source",
+      "labelAt": [193, 282],
+      "variant": "security"
+    },
+    {
+      "id": "hosts-application",
+      "from": "hosts",
+      "to": "application",
+      "label": "authorized ports",
+      "labelAt": [375, 282]
+    },
+    {
+      "id": "application-adapters",
+      "from": "application",
+      "to": "adapters",
+      "label": "extract + diff"
+    },
+    {
+      "id": "adapters-domain",
+      "from": "adapters",
+      "to": "domain",
+      "label": "contract evidence",
+      "labelAt": [648, 152]
+    },
+    {
+      "id": "application-domain",
+      "from": "application",
+      "to": "domain",
+      "variant": "emphasis"
+    },
+    {
+      "id": "schema-domain",
+      "from": "schema",
+      "to": "domain",
+      "label": "validated data",
+      "variant": "security"
+    },
+    {
+      "id": "application-storage",
+      "from": "application",
+      "to": "storage",
+      "label": "immutable state",
+      "labelAt": [466, 282]
+    },
+    {
+      "id": "domain-results",
+      "from": "domain",
+      "to": "results",
+      "label": "evidence + coverage",
+      "labelAt": [739, 282],
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Reproducible evidence",
+      "items": [
+        "Hosts resolve immutable base, head, and consumer commit SHAs.",
+        "Definitions, references, coverage, and findings retain their source generations."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Selective reliability",
+      "items": [
+        "Incomplete source or authorization becomes an explicit unknown result.",
+        "Delivery is advisory and remains separate from indexing and disclosure decisions."
+      ]
+    }
+  ]
+}

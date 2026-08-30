@@ -34,6 +34,20 @@ a clean result.
 - **Deterministic output:** use canonical identities and versioned schemas for repeatable analysis
   and machine consumption.
 
+## Architecture
+
+[![Reverb system architecture showing repositories flowing through host profiles into the application, contract adapters, evidence domain, storage, schema validation, and canonical results](docs/reverb-architecture-overview-share-card.png)](docs/reverb-overview.html)
+
+Repository hosts provide authorized access to exact Git revisions while the host-neutral Reverb
+core performs contract extraction, evidence resolution, validation, storage, and analysis. The
+result keeps findings, coverage, and unknowns explicit so consumers can distinguish evidence from
+uncertainty.
+
+Open the [self-contained interactive diagram](docs/reverb-overview.html) for guided views and source
+links, or inspect its [typed diagram source](docs/reverb-overview.architecture.json). Both artifacts
+were generated locally with [Archify](https://github.com/tt-a1i/archify) from repository-backed
+references.
+
 ## Supported contracts
 
 | Adapter | Detects |
