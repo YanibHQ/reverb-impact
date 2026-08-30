@@ -1,0 +1,25 @@
+{
+  "name": "@yanibhq/reverb-domain",
+  "version": "0.0.0",
+  "description": "Pure domain values and deterministic algorithms for Reverb",
+  "type": "module",
+  "license": "Apache-2.0",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

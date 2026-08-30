@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.yanibhq.dev/reverb/finding-disclosure-projection/v1.json",
+  "title": "Reverb field-level disclosure decision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "workspace_id",
+    "destination_repository_id",
+    "audience",
+    "registry_revision",
+    "allowed",
+    "omitted",
+    "decision_hash"
+  ],
+  "properties": {
+    "schema": { "const": "reverb.finding-disclosure-projection" },
+    "schema_version": { "const": "1.0" },
+    "workspace_id": {
+      "type": "string",
+      "pattern": "^wsp_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "destination_repository_id": {
+      "type": "string",
+      "pattern": "^(?:github:[1-9][0-9]*|local:sha256:[0-9a-f]{64})$"
+    },
+    "audience": { "enum": ["static", "personalized"] },
+    "registry_revision": { "type": "string", "pattern": "^reg_sha256:[0-9a-f]{64}$" },
+    "allowed": { "type": "object", "additionalProperties": { "type": "string" } },
+    "omitted": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["field", "name", "reason"],
+        "properties": {
+          "field": { "enum": ["repository_identity", "contract_identity", "location", "snippet"] },
+          "name": { "type": "string", "minLength": 1 },
+          "reason": {
+            "enum": [
+              "no_explicit_grant",
+              "app_access_denied",
+              "whole_audience_safety_unproven",
+              "viewer_access_denied"
+            ]
+          }
+        }
+      }
+    },
+    "decision_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

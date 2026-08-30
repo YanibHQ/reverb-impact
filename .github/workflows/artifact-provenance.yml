@@ -1,0 +1,34 @@
+name: Unpublished artifact provenance
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  artifact:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm release:verify
+      - uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: |
+            artifacts/packages/*.tgz
+            artifacts/sbom.cdx.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reverb-unpublished-packages
+          path: artifacts/

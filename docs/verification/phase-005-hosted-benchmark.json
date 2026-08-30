@@ -1,0 +1,22 @@
+{
+  "schema": "reverb.hosted-target-benchmark",
+  "schema_version": "1.0",
+  "profile": "hosted-target",
+  "iterations": 2000,
+  "disclosure_defects": 0,
+  "projection_latency_ms": {
+    "p50": 0.0033,
+    "p95": 0.007,
+    "p99": 0.0131,
+    "maximum": 0.543
+  },
+  "environment": {
+    "node": "v25.2.1",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "limitations": [
+    "This local target profile measures disclosure projection mechanics, not provider or database network latency.",
+    "It is not a production SLO observation and contains no customer source or repository identity."
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "schema": "reverb.adapter-admission",
+  "schemaVersion": "1.0",
+  "adapterId": "reverb.protobuf",
+  "adapterVersion": "0.1.0",
+  "identityVersion": 1,
+  "demand": "Cross-repository Protobuf message and gRPC service contract changes.",
+  "designPartner": "none",
+  "identitySummary": "Qualified service/method identities and qualified message/wire-number identities.",
+  "compatibilitySummary": "A digest-pinned, network-denied Buf comparison with an explicit rule category.",
+  "evidenceRendering": "Descriptor identity, rule category, activation timing, coverage dependencies, and remedy.",
+  "latencyResourceSummary": "timeout=30000ms memory=512MiB output=8388608B",
+  "dependenciesAndLicenses": [
+    "buf@1.72.0: Apache-2.0"
+  ],
+  "limitations": [
+    "Raw .proto text is not parsed; extraction consumes descriptor-set JSON.",
+    "Compatibility is unknown when the pinned Buf invocation is unavailable or fails.",
+    "The configured Buf FILE, PACKAGE, WIRE_JSON, or WIRE category is recorded per comparison."
+  ],
+  "maintainer": "YanibHQ/reverb-impact maintainers",
+  "checks": [
+    {
+      "id": "adversarial_fixtures",
+      "state": "pass",
+      "evidence": "Package adversarial suite"
+    },
+    {
+      "id": "determinism",
+      "state": "pass",
+      "evidence": "Repeated extraction conformance test"
+    },
+    {
+      "id": "identity_round_trip",
+      "state": "pass",
+      "evidence": "Descriptor/stub identity tests"
+    },
+    {
+      "id": "real_labelled_corpus",
+      "state": "not_measured",
+      "evidence": "No approved corpus yet"
+    }
+  ],
+  "realLabelledCorpusState": "absent",
+  "promotionState": "UNMEASURED",
+  "deliveryReady": false,
+  "outputHash": "sha256:9e5b8914dba796dde4bb4ae3c6f10215fc7c28620d800ae2057fd7a0a5885acf"
+}

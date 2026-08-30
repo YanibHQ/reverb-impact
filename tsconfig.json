@@ -1,0 +1,19 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/domain" },
+    { "path": "packages/schema" },
+    { "path": "packages/application" },
+    { "path": "packages/adapter-sdk" },
+    { "path": "packages/adapter-typescript" },
+    { "path": "packages/adapter-openapi" },
+    { "path": "packages/adapter-protobuf" },
+    { "path": "packages/storage-sqlite" },
+    { "path": "packages/storage-postgres" },
+    { "path": "packages/host-local" },
+    { "path": "packages/host-github" },
+    { "path": "packages/testkit" },
+    { "path": "packages/cli" },
+    { "path": "examples/minimal-host" }
+  ]
+}

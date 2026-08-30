@@ -1,0 +1,111 @@
+{
+  "schema": "reverb.external-comparison",
+  "schema_version": "1.0",
+  "observed_at": "2026-08-28T18:40:45-06:00",
+  "target": {
+    "repository": "repowise-dev/repowise",
+    "commit": "0847cbff32c0c113ad46e2699ae87a795238d431",
+    "commit_time": "2026-08-28T23:27:24+05:30",
+    "version": "0.46.0",
+    "license": "AGPL-3.0-or-later",
+    "execution_boundary": "unmodified external checkout under /tmp; no source copied or linked"
+  },
+  "environment": {
+    "python": "3.14.7",
+    "uv": "0.8.13",
+    "platform": "darwin-arm64"
+  },
+  "commands": [
+    "git clone --filter=blob:none --no-checkout https://github.com/repowise-dev/repowise.git <temporary>/repowise",
+    "git -C <temporary>/repowise checkout 0847cbff32c0c113ad46e2699ae87a795238d431",
+    "uv run --project <temporary>/repowise repowise --version",
+    "node tools/setup-comparative-fixture.mjs <temporary>/corpus base",
+    "uv run --project <temporary>/repowise repowise init . --all --mode fast --no-prose --no-editor-setup --no-agents --no-onboarding --no-cost-tracking --progress json",
+    "node tools/setup-comparative-fixture.mjs <temporary>/corpus head",
+    "uv run --project <temporary>/repowise repowise update --workspace --index-only --no-cost-tracking --no-agents --progress json",
+    "uv run --project <temporary>/repowise repowise workspace diagnostics"
+  ],
+  "fixture": {
+    "producer_base_sha": "5507b32e7a38b4f097c08df5ea562ec616b3f03f",
+    "producer_head_sha": "73884454cf44121b862ef0ac72f15864e0c6a858",
+    "consumer_sha": "3873c8fe5ecdf71b2c7b18d62e2ae35a5546ea23",
+    "unrelated_consumer_sha": "29b9002dd96b7161913c585f0445e46e15252f82",
+    "changed_contracts": [
+      "code::@fixture/api::x",
+      "http::GET::/pets/{param}"
+    ],
+    "expected_impacted_consumer": "consumer",
+    "expected_unrelated_consumer": "unrelated-consumer"
+  },
+  "initial_index": {
+    "repositories": 3,
+    "files": 7,
+    "symbols": 6,
+    "elapsed_seconds_reported": 9.4,
+    "contract_links": [
+      {
+        "contract_id": "code::@fixture/api::x",
+        "match_type": "exact",
+        "confidence": 0.9,
+        "provider_repo": "producer",
+        "provider_file": "index.ts",
+        "consumer_repo": "consumer",
+        "consumer_file": "client.ts"
+      },
+      {
+        "contract_id": "code::@fixture/api::y",
+        "match_type": "exact",
+        "confidence": 0.9,
+        "provider_repo": "producer",
+        "provider_file": "index.ts",
+        "consumer_repo": "unrelated-consumer",
+        "consumer_file": "worker.ts"
+      }
+    ]
+  },
+  "update": {
+    "repos_updated": 1,
+    "repos_skipped": 2,
+    "elapsed_seconds_reported": 1.4996063330036122,
+    "changes": [
+      {
+        "kind": "removed_endpoint",
+        "severity": "breaking",
+        "contract_id": "code::@fixture/api::x",
+        "provider_repo": "producer",
+        "provider_file": "index.ts",
+        "impacted_consumers": [
+          {
+            "repo": "consumer",
+            "file": "client.ts",
+            "symbol": "@fixture/api:x",
+            "match_type": "exact",
+            "confidence": 0.9
+          }
+        ]
+      },
+      {
+        "kind": "removed_endpoint",
+        "severity": "breaking",
+        "contract_id": "http::GET::/pets/{param}",
+        "provider_repo": "producer",
+        "provider_file": "server.ts",
+        "impacted_consumers": []
+      }
+    ],
+    "total_impacted_consumers": 1,
+    "impacted_repos": ["consumer"]
+  },
+  "diagnostics_command_resource": {
+    "real_seconds": 0.42,
+    "user_seconds": 0.34,
+    "system_seconds": 0.07,
+    "maximum_resident_set_bytes": 92372992
+  },
+  "observations": [
+    "Repowise correctly identified the exact removed package symbol and only the consumer importing that symbol.",
+    "Repowise also detected the removed HTTP route, but the absolute-host client remained unmatched without service-base configuration.",
+    "The breaking-change artifact records current repository provenance but does not carry an explicit selected PR base SHA, policy revision, consumer freshness, or abstention model.",
+    "This one synthetic fixture is not evidence of general precision, recall, or latency superiority for either system."
+  ]
+}

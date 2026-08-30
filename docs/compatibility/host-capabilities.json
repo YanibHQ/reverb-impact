@@ -1,0 +1,42 @@
+{
+  "document_schema": "reverb.host-capability-declarations",
+  "schema_version": "1.0",
+  "conformance_version": "1.0.0",
+  "hosts": [
+    {
+      "host_id": "reverb.github-postgres",
+      "persistence": "durable",
+      "source": "github_exact_git",
+      "external_delivery": "github_advisory",
+      "reviews": true,
+      "disclosure_projection": true,
+      "deletion_propagation": true,
+      "unsupported_optional_ports": ["model", "vector_search"]
+    },
+    {
+      "host_id": "reverb.local-sqlite",
+      "persistence": "durable",
+      "source": "local_git",
+      "external_delivery": "projection_only",
+      "reviews": true,
+      "disclosure_projection": true,
+      "deletion_propagation": false,
+      "unsupported_optional_ports": ["provider_webhooks", "external_delivery", "purge"]
+    },
+    {
+      "host_id": "reverb.example.memory",
+      "persistence": "ephemeral",
+      "source": "injected",
+      "external_delivery": "projection_only",
+      "reviews": false,
+      "disclosure_projection": true,
+      "deletion_propagation": true,
+      "unsupported_optional_ports": [
+        "provider_webhooks",
+        "durable_jobs",
+        "external_delivery",
+        "artifact_blob_store"
+      ]
+    }
+  ]
+}

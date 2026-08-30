@@ -1,0 +1,29 @@
+{
+  "name": "@yanibhq/reverb-adapter-protobuf",
+  "version": "0.0.0",
+  "description": "Protobuf and gRPC contract adapter for Reverb",
+  "type": "module",
+  "license": "Apache-2.0",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@yanibhq/reverb-adapter-sdk": "workspace:*",
+    "@yanibhq/reverb-domain": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

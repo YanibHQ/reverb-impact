@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.yanibhq.dev/reverb/adapter-extraction/v1.json",
+  "title": "Reverb adapter extraction result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "adapter_id",
+    "adapter_version",
+    "identity_version",
+    "config_revision",
+    "definitions",
+    "references",
+    "coverage",
+    "diagnostics",
+    "source_fingerprint",
+    "output_hash"
+  ],
+  "properties": {
+    "schema": { "const": "reverb.adapter-extraction" },
+    "schema_version": { "const": "1.0" },
+    "adapter_id": { "type": "string", "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)+$" },
+    "adapter_version": { "type": "string", "minLength": 1 },
+    "identity_version": { "type": "integer", "minimum": 1 },
+    "config_revision": { "type": "string", "pattern": "^cfg_sha256:[0-9a-f]{64}$" },
+    "definitions": { "type": "array", "items": { "type": "object" } },
+    "references": { "type": "array", "items": { "type": "object" } },
+    "coverage": { "type": "object" },
+    "diagnostics": { "type": "array", "items": { "type": "object" } },
+    "source_fingerprint": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "output_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

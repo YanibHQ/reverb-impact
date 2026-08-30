@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.yanibhq.dev/reverb/evaluation-report/v1.json",
+  "title": "Reverb evaluation report",
+  "type": "object",
+  "required": ["schema", "schema_version"],
+  "properties": {
+    "schema": { "const": "reverb.evaluation-report" },
+    "schema_version": { "const": "1.0" }
+  }
+}

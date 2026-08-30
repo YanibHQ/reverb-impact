@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.yanibhq.dev/reverb/repository-generation/v1.json",
+  "title": "Reverb repository generation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "id",
+    "workspace_id",
+    "repository_id",
+    "commit_sha",
+    "tree_hash",
+    "indexer_bundle_version",
+    "config_revision",
+    "registry_revision",
+    "state",
+    "started_at",
+    "selectable"
+  ],
+  "properties": {
+    "schema": { "const": "reverb.repository-generation" },
+    "schema_version": { "const": "1.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^gen_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "workspace_id": {
+      "type": "string",
+      "pattern": "^wsp_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "repository_id": {
+      "type": "string",
+      "pattern": "^(?:github:[1-9][0-9]*|local:sha256:[0-9a-f]{64})$"
+    },
+    "commit_sha": { "type": "string", "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$" },
+    "tree_hash": { "type": "string", "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$" },
+    "indexer_bundle_version": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "config_revision": { "type": "string", "pattern": "^cfg_sha256:[0-9a-f]{64}$" },
+    "registry_revision": { "type": "string", "pattern": "^reg_sha256:[0-9a-f]{64}$" },
+    "state": { "enum": ["building", "complete", "partial", "failed", "expired"] },
+    "started_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T.*Z$" },
+    "completed_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T.*Z$" },
+    "coverage_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "artifact_result_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "selectable": { "type": "boolean" }
+  }
+}

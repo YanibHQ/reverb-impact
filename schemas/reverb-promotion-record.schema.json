@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.yanibhq.dev/reverb/promotion-record/v1.json",
+  "title": "Reverb promotion audit record",
+  "type": "object",
+  "required": ["schema", "schema_version"],
+  "properties": {
+    "schema": { "const": "reverb.promotion-record" },
+    "schema_version": { "const": "1.0" }
+  }
+}

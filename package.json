@@ -1,0 +1,66 @@
+{
+  "name": "reverb-impact-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Evidence-first cross-repository pull-request impact analysis",
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@10.27.0",
+  "engines": {
+    "node": ">=24 <26",
+    "pnpm": ">=10.27 <11"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint . && node tools/check-boundaries.mjs",
+    "typecheck": "tsc -b --pretty false",
+    "test": "vitest run --passWithNoTests",
+    "test:integration": "vitest run --config vitest.integration.config.ts --passWithNoTests",
+    "test:conformance": "vitest run --config vitest.conformance.config.ts --passWithNoTests",
+    "test:adversarial": "vitest run --config vitest.adversarial.config.ts --passWithNoTests",
+    "test:migrations": "vitest run --config vitest.migrations.config.ts --passWithNoTests",
+    "test:review": "vitest run packages/domain/test/phase004.test.ts -t 'review ontology|corpus and labels'",
+    "test:suppression": "vitest run packages/domain/test/phase004.test.ts -t 'suppression model'",
+    "test:evaluation": "vitest run packages/domain/test/phase004.test.ts -t 'evaluation and policy'",
+    "test:policy-simulator": "vitest run packages/domain/test/phase004.test.ts -t 'replays frozen policies'",
+    "test:postgres": "vitest run --config vitest.integration.config.ts packages/storage-postgres/test/postgres.integration.test.ts",
+    "test:github-app": "vitest run --config vitest.integration.config.ts packages/host-github/test/github-app.integration.test.ts",
+    "test:security": "vitest run --config vitest.adversarial.config.ts --passWithNoTests",
+    "test:all-hosts": "vitest run --config vitest.integration.config.ts packages/testkit/test/all-hosts.integration.test.ts",
+    "test:compatibility": "vitest run packages/schema/test/schema.test.ts",
+    "api:check": "node tools/check-public-api.mjs",
+    "hosts:check": "node tools/check-host-capabilities.mjs",
+    "compatibility:check": "node tools/check-release-metadata.mjs && pnpm test:compatibility",
+    "benchmark": "pnpm build && node tools/benchmark.mjs",
+    "schema:generate": "tsx tools/generate-schemas.ts --write",
+    "schema:check": "tsx tools/generate-schemas.ts --check",
+    "adapters:admission": "tsx tools/generate-admission-reports.ts --write",
+    "adapters:admission:check": "tsx tools/generate-admission-reports.ts --check",
+    "docs:check": "node tools/check-doc-links.mjs",
+    "licenses:check": "node tools/check-licenses.mjs && tsx tools/check-adapter-licenses.ts",
+    "audit:check": "pnpm audit --prod --audit-level high",
+    "sbom": "node tools/generate-sbom.mjs",
+    "pack:verify": "pnpm build && node tools/pack-verify.mjs",
+    "release:verify": "pnpm run ci && pnpm pack:verify && pnpm sbom",
+    "ci": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm api:check && pnpm hosts:check && pnpm compatibility:check && pnpm test && pnpm test:integration && pnpm test:conformance && pnpm test:adversarial && pnpm test:migrations && pnpm schema:check && pnpm adapters:admission:check && pnpm docs:check && pnpm licenses:check"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.34.0",
+    "@types/node": "24.3.0",
+    "@vitest/coverage-v8": "3.2.4",
+    "eslint": "9.34.0",
+    "fast-check": "4.3.0",
+    "prettier": "3.6.2",
+    "tsx": "4.20.5",
+    "typescript": "5.9.2",
+    "typescript-eslint": "8.41.0",
+    "vitest": "3.2.4"
+  }
+}

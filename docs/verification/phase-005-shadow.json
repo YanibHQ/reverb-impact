@@ -1,0 +1,28 @@
+{
+  "schema": "reverb.phase-005-shadow-decision",
+  "schema_version": "1.0",
+  "generated_at": "2026-08-28T00:00:00.000Z",
+  "mode": "local_shadow_reference",
+  "authorized_github_installation": null,
+  "production_shadow_window": null,
+  "promoted_strata": [],
+  "external_writes_observed": 0,
+  "write_kill_switch": "disabled_by_default",
+  "postgres_target_verification": {
+    "version": "18.3",
+    "integration_tests": 4,
+    "result": "passed"
+  },
+  "local_disclosure_profile": {
+    "iterations": 2000,
+    "known_disclosure_defects": 0,
+    "artifact": "phase-005-hosted-benchmark.json"
+  },
+  "production_metrics": {
+    "alert_volume": "not_observed",
+    "latency": "not_observed",
+    "cost": "not_observed",
+    "supersession_rate": "not_observed"
+  },
+  "decision": "remain_shadow_no_external_delivery"
+}

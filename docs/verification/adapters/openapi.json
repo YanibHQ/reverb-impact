@@ -1,0 +1,49 @@
+{
+  "schema": "reverb.adapter-admission",
+  "schemaVersion": "1.0",
+  "adapterId": "reverb.openapi",
+  "adapterVersion": "0.1.0",
+  "identityVersion": 1,
+  "demand": "Cross-repository HTTP API operation changes represented by OpenAPI 3.0 and 3.1.",
+  "designPartner": "none",
+  "identitySummary": "Registry service ID plus exact operationId; path and method remain a separate preview lane.",
+  "compatibilitySummary": "A digest-pinned, network-denied oasdiff process determines compatibility.",
+  "evidenceRendering": "Operation, source location, activation timing, coverage dependencies, and remedy.",
+  "latencyResourceSummary": "timeout=30000ms memory=512MiB output=8388608B",
+  "dependenciesAndLicenses": [
+    "yaml@2.8.3: ISC",
+    "oasdiff@1.28.0: Apache-2.0"
+  ],
+  "limitations": [
+    "Remote $ref targets are never fetched and force partial coverage.",
+    "Path-and-method identities are preview-only and never merge with operationId identities.",
+    "Compatibility is unknown when the pinned oasdiff invocation is unavailable or fails."
+  ],
+  "maintainer": "YanibHQ/reverb-impact maintainers",
+  "checks": [
+    {
+      "id": "adversarial_fixtures",
+      "state": "pass",
+      "evidence": "Package adversarial suite"
+    },
+    {
+      "id": "determinism",
+      "state": "pass",
+      "evidence": "Repeated extraction conformance test"
+    },
+    {
+      "id": "identity_round_trip",
+      "state": "pass",
+      "evidence": "Producer/consumer identity test"
+    },
+    {
+      "id": "real_labelled_corpus",
+      "state": "not_measured",
+      "evidence": "No approved corpus yet"
+    }
+  ],
+  "realLabelledCorpusState": "absent",
+  "promotionState": "UNMEASURED",
+  "deliveryReady": false,
+  "outputHash": "sha256:0519f3a6f12da626de277991f702f151eb0bef40d825c18d891e6a52994aedd7"
+}

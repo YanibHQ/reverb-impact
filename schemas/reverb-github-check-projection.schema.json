@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.yanibhq.dev/reverb/github-check-projection/v1.json",
+  "title": "Reverb disclosure-safe GitHub Check projection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "check_key",
+    "workspace_id",
+    "repository_id",
+    "pull_request_number",
+    "head_sha",
+    "policy_revision",
+    "conclusion",
+    "advisory",
+    "never_blocking",
+    "title",
+    "summary",
+    "coverage",
+    "findings",
+    "finding_total",
+    "truncated_finding_count",
+    "annotations",
+    "truncated_annotation_count",
+    "limitations",
+    "detail_url",
+    "projection_hash"
+  ],
+  "properties": {
+    "schema": { "const": "reverb.github-check-projection" },
+    "schema_version": { "const": "1.0" },
+    "check_key": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "workspace_id": {
+      "type": "string",
+      "pattern": "^wsp_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "repository_id": {
+      "type": "string",
+      "pattern": "^(?:github:[1-9][0-9]*|local:sha256:[0-9a-f]{64})$"
+    },
+    "pull_request_number": { "type": "integer", "minimum": 1 },
+    "head_sha": { "type": "string", "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$" },
+    "policy_revision": { "type": "string", "pattern": "^pol_sha256:[0-9a-f]{64}$" },
+    "conclusion": { "enum": ["success", "neutral", "skipped"] },
+    "advisory": { "const": true },
+    "never_blocking": { "const": true },
+    "title": { "type": "string", "minLength": 1 },
+    "summary": { "type": "string", "minLength": 1 },
+    "coverage": { "type": "object" },
+    "findings": { "type": "array", "items": { "type": "object" } },
+    "finding_total": { "type": "integer", "minimum": 0 },
+    "truncated_finding_count": { "type": "integer", "minimum": 0 },
+    "annotations": { "type": "array", "items": { "type": "object" }, "maxItems": 50 },
+    "truncated_annotation_count": { "type": "integer", "minimum": 0 },
+    "limitations": { "type": "array", "items": { "type": "string" } },
+    "detail_url": { "type": "string", "minLength": 1 },
+    "projection_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

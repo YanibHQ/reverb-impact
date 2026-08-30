@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "../../.cache/tsbuildinfo/cli.tsbuildinfo"
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    { "path": "../domain" },
+    { "path": "../application" },
+    { "path": "../adapter-sdk" },
+    { "path": "../adapter-typescript" },
+    { "path": "../adapter-openapi" },
+    { "path": "../adapter-protobuf" },
+    { "path": "../host-local" },
+    { "path": "../storage-sqlite" }
+  ]
+}

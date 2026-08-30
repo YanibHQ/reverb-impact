@@ -1,0 +1,33 @@
+{
+  "name": "@yanibhq/reverb-testkit",
+  "version": "0.0.0",
+  "description": "Host conformance fakes and fixtures for Reverb",
+  "type": "module",
+  "license": "Apache-2.0",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@yanibhq/reverb-application": "workspace:*",
+    "@yanibhq/reverb-domain": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1",
+    "pg": "8.23.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "document_schema": "reverb.release-compatibility-metadata",
+  "schema_version": "1.0",
+  "release_status": "pre_v1_unpublished",
+  "package_version": "0.0.0",
+  "schema": {
+    "current_version": "1.0",
+    "supported_majors": [1],
+    "previous_supported_majors": [],
+    "previous_major_disposition": "No previous public schema major exists before the first release; v0 is unsupported."
+  },
+  "storage": {
+    "sqlite_migration": 5,
+    "postgres_migration": 2
+  },
+  "adapters": [
+    {
+      "id": "reverb.typescript",
+      "version": "0.1.0",
+      "identity_version": 1
+    },
+    {
+      "id": "reverb.openapi",
+      "version": "0.1.0",
+      "identity_version": 1
+    },
+    {
+      "id": "reverb.protobuf",
+      "version": "0.1.0",
+      "identity_version": 1
+    }
+  ],
+  "reindex": {
+    "required": false,
+    "reason": "No adapter extraction or identity version changed in this repository state."
+  },
+  "calibration": {
+    "reset_strata": [],
+    "reason": "All evidence strata are already UNMEASURED; no compatibility claim is carried forward."
+  },
+  "publication": {
+    "npm": false,
+    "container": false,
+    "signature": false,
+    "provenance_workflow": true,
+    "reason": "Publisher, signing, container, and public release authorization remain external gates."
+  }
+}

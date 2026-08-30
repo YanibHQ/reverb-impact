@@ -1,0 +1,90 @@
+{
+  "schema": "reverb.comparative-benchmark",
+  "schema_version": "1.0",
+  "scenario": "pr-overlay",
+  "fixture": {
+    "changed_contracts": [
+      "typescript:npm#%40fixture%2Fapi#.#value#x"
+    ],
+    "expected_consumers": [
+      "consumer"
+    ],
+    "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "head_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "consumer_shas": {
+      "consumer": "cccccccccccccccccccccccccccccccccccccccc",
+      "unrelated_consumer": "dddddddddddddddddddddddddddddddddddddddd"
+    }
+  },
+  "results": [
+    {
+      "name": "reverb",
+      "predicted_consumers": [
+        "consumer"
+      ],
+      "true_positives": 1,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "exact_base_head": true,
+      "contract_identity": "canonical_symbol",
+      "consumer_evidence": "stable_reference_and_location",
+      "coverage_semantics": "claim_specific_with_abstention"
+    },
+    {
+      "name": "manifest",
+      "predicted_consumers": [
+        "consumer",
+        "unrelated-consumer"
+      ],
+      "true_positives": 1,
+      "false_positives": 1,
+      "false_negatives": 0,
+      "exact_base_head": false,
+      "contract_identity": "package_only",
+      "consumer_evidence": "manifest_dependency",
+      "coverage_semantics": "none"
+    },
+    {
+      "name": "lexical",
+      "predicted_consumers": [
+        "consumer"
+      ],
+      "true_positives": 1,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "exact_base_head": true,
+      "contract_identity": "changed_name",
+      "consumer_evidence": "text_match",
+      "coverage_semantics": "none"
+    },
+    {
+      "name": "schema_only",
+      "predicted_consumers": [
+        "consumer"
+      ],
+      "true_positives": 1,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "exact_base_head": true,
+      "contract_identity": "canonical_symbol",
+      "consumer_evidence": "canonical_reference",
+      "coverage_semantics": "none"
+    }
+  ],
+  "resource": {
+    "elapsed_ms": 7.809,
+    "user_cpu_micros": 8776,
+    "system_cpu_micros": 329,
+    "max_rss_kib": 118624
+  },
+  "environment": {
+    "node": "v25.2.1",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "limitations": [
+    "Synthetic fixture proves mechanics, not real-world precision or recall.",
+    "Latency is a single local process observation and is not a comparative SLO.",
+    "Reduced baselines intentionally omit product features outside their named evidence source."
+  ]
+}

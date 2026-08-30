@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.yanibhq.dev/reverb/workspace-registry/v1.json",
+  "title": "Reverb workspace registry",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schema", "schema_version", "workspace", "revision", "repositories"],
+  "properties": {
+    "schema": { "const": "reverb.workspace-registry" },
+    "schema_version": { "const": "1.0" },
+    "workspace": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^wsp_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      }
+    },
+    "revision": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["sequence", "id", "created_at", "created_by", "source", "reason"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1 },
+        "id": { "type": "string", "pattern": "^reg_sha256:[0-9a-f]{64}$" },
+        "created_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T.*Z$" },
+        "created_by": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "repositories": { "type": "array", "items": { "type": "object" } },
+    "services": { "type": "array", "items": { "type": "object" } },
+    "aliases": { "type": "array", "items": { "type": "object" } },
+    "consents": { "type": "array", "items": { "type": "object" } }
+  }
+}

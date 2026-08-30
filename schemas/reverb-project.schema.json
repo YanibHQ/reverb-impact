@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.yanibhq.dev/reverb/project/v1.json",
+  "title": "Reverb project metadata",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "schema_version", "product", "repository"],
+  "properties": {
+    "schema": { "const": "reverb.project" },
+    "schema_version": { "const": "1.0" },
+    "product": { "const": "Reverb" },
+    "repository": { "const": "YanibHQ/reverb-impact" }
+  }
+}

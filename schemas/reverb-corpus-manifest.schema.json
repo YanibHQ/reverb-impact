@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.yanibhq.dev/reverb/corpus-manifest/v1.json",
+  "title": "Reverb corpus manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "revision",
+    "created_at",
+    "handbook_version",
+    "frame_source",
+    "population_hash",
+    "eligible_population_count",
+    "case_ids",
+    "subset_counts",
+    "public_case_ids",
+    "output_hash"
+  ],
+  "properties": {
+    "schema": { "const": "reverb.corpus-manifest" },
+    "schema_version": { "const": "1.0" },
+    "revision": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "created_at": { "type": "string" },
+    "handbook_version": { "type": "string", "minLength": 1 },
+    "frame_source": { "enum": ["provider_metadata", "supported_artifact_discovery"] },
+    "population_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "eligible_population_count": { "type": "integer", "minimum": 0 },
+    "case_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^cas_sha256:[0-9a-f]{64}$" }
+    },
+    "subset_counts": { "type": "object" },
+    "public_case_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^cas_sha256:[0-9a-f]{64}$" }
+    },
+    "output_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

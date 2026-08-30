@@ -1,0 +1,29 @@
+{
+  "name": "@yanibhq/reverb-adapter-sdk",
+  "version": "0.0.0",
+  "description": "Contract adapter interfaces and validation for Reverb",
+  "type": "module",
+  "license": "Apache-2.0",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@yanibhq/reverb-domain": "workspace:*",
+    "@yanibhq/reverb-schema": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

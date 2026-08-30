@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.yanibhq.dev/reverb/policy-simulation/v1.json",
+  "title": "Reverb frozen policy simulation",
+  "type": "object",
+  "required": ["schema", "schema_version"],
+  "properties": {
+    "schema": { "const": "reverb.policy-simulation" },
+    "schema_version": { "const": "1.0" }
+  }
+}

@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.cache/
+.reverb/
+.private-research/
+*.log
+.DS_Store
+coverage/
+artifacts/*
+!artifacts/.gitkeep
+*.tsbuildinfo
+.env
+.env.*
+!.env.example

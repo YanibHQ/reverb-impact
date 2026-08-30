@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.yanibhq.dev/reverb/analysis-result/v1.json",
+  "title": "Reverb canonical analysis result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "analysis_id",
+    "workspace_id",
+    "producer_repository_id",
+    "pull_request",
+    "registry_revision",
+    "policy_revision",
+    "policy_major",
+    "state",
+    "current",
+    "consumers",
+    "findings",
+    "abstentions",
+    "started_at",
+    "completed_at",
+    "output_hash"
+  ],
+  "properties": {
+    "schema": { "const": "reverb.analysis-result" },
+    "schema_version": { "const": "1.0" },
+    "analysis_id": {
+      "type": "string",
+      "pattern": "^ana_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "workspace_id": {
+      "type": "string",
+      "pattern": "^wsp_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "producer_repository_id": {
+      "type": "string",
+      "pattern": "^(?:github:[1-9][0-9]*|local:sha256:[0-9a-f]{64})$"
+    },
+    "pull_request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "base_sha", "head_sha"],
+      "properties": {
+        "provider": { "enum": ["local", "github"] },
+        "number": { "type": "integer", "minimum": 1 },
+        "base_sha": { "type": "string", "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$" },
+        "head_sha": { "type": "string", "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$" }
+      }
+    },
+    "registry_revision": { "type": "string", "pattern": "^reg_sha256:[0-9a-f]{64}$" },
+    "policy_revision": { "type": "string", "pattern": "^pol_sha256:[0-9a-f]{64}$" },
+    "policy_major": { "type": "integer", "minimum": 1 },
+    "state": { "enum": ["complete", "partial", "superseded", "not_analysed"] },
+    "current": { "type": "boolean" },
+    "consumers": { "type": "array", "items": { "type": "object" } },
+    "findings": { "type": "array", "items": { "type": "object" } },
+    "abstentions": { "type": "array", "items": { "type": "object" } },
+    "started_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T.*Z$" },
+    "completed_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T.*Z$" },
+    "output_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

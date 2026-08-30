@@ -1,0 +1,40 @@
+{
+  "name": "reverb-impact",
+  "version": "0.0.0",
+  "description": "Local CLI for evidence-first cross-repository impact analysis",
+  "type": "module",
+  "license": "Apache-2.0",
+  "files": [
+    "dist"
+  ],
+  "bin": {
+    "reverb": "./dist/bin.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@yanibhq/reverb-adapter-openapi": "workspace:*",
+    "@yanibhq/reverb-adapter-protobuf": "workspace:*",
+    "@yanibhq/reverb-adapter-sdk": "workspace:*",
+    "@yanibhq/reverb-adapter-typescript": "workspace:*",
+    "@yanibhq/reverb-application": "workspace:*",
+    "@yanibhq/reverb-domain": "workspace:*",
+    "@yanibhq/reverb-host-local": "workspace:*",
+    "@yanibhq/reverb-schema": "workspace:*",
+    "@yanibhq/reverb-storage-sqlite": "workspace:*",
+    "commander": "14.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

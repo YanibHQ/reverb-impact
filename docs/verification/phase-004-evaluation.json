@@ -1,0 +1,44 @@
+{
+  "schema": "reverb.phase-004-evaluation-decision",
+  "schema_version": "1.0",
+  "generated_at": "2026-08-28T00:00:00.000Z",
+  "label_handbook_version": "1.0.0",
+  "corpus_revision": null,
+  "evaluation_report_hash": null,
+  "real_world_corpus": {
+    "eligible_prs": 0,
+    "independently_labeled_findings": 0,
+    "sampled_no_finding_prs": 0,
+    "agreement_status": "not_executed_no_authorized_real_world_panel",
+    "precision_status": "not_estimable"
+  },
+  "mutation_and_fixture_evaluation": {
+    "classification": "mechanics_and_regression_only",
+    "included_in_real_world_precision": false
+  },
+  "strata": [
+    {
+      "adapter": "reverb.typescript",
+      "state": "UNMEASURED",
+      "decision": "remain_preview"
+    },
+    {
+      "adapter": "reverb.openapi",
+      "state": "UNMEASURED",
+      "decision": "remain_preview"
+    },
+    {
+      "adapter": "reverb.protobuf",
+      "state": "UNMEASURED",
+      "decision": "remain_preview"
+    }
+  ],
+  "gate_failures": [
+    "insufficient_independent_labels",
+    "insufficient_false_omission_audit",
+    "no_forward_shadow_window",
+    "no_target_profile_latency_window"
+  ],
+  "external_delivery": false,
+  "decision": "all_strata_remain_preview_only"
+}

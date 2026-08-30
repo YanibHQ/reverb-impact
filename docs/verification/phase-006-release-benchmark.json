@@ -1,0 +1,134 @@
+{
+  "schema": "reverb.release-benchmark",
+  "schema_version": "1.0",
+  "profile": "release",
+  "artifact_manifest": [
+    {
+      "path": "features/cross-repo-impact/research/artifacts/phase-003/reduced-baselines.json",
+      "sha256": "sha256:559c7add964070c5d18081e3bc07e2ce65a3c26730c5609e793afb2ec45ffaf9",
+      "bytes": 2492
+    },
+    {
+      "path": "docs/verification/phase-004-evaluation.json",
+      "sha256": "sha256:658fee59095dc997033d9c721cc021a291f689aa0ef8cf3e3951b1ce3af0e113",
+      "bytes": 1222
+    },
+    {
+      "path": "docs/verification/phase-005-hosted-benchmark.json",
+      "sha256": "sha256:d173214c8275e3b12a6ff34522431118d806702e2454132b5db0342147f6dc4b",
+      "bytes": 601
+    },
+    {
+      "path": "docs/compatibility/release-metadata.json",
+      "sha256": "sha256:3067beb9acd62d08ba032f517883c1f6d75113e99ddd93d85f30906b205571cd",
+      "bytes": 1301
+    },
+    {
+      "path": "docs/compatibility/host-capabilities.json",
+      "sha256": "sha256:927388aae999d5e5d398dd15d88504303b40a6f6a27871d74b3730781da32459",
+      "bytes": 1233
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "sha256": "sha256:9258ddf17af60ed49a98e6deac0f5e9e875eaf0c0caf2d9beedd790724ca256d",
+      "bytes": 96854
+    }
+  ],
+  "mechanics": {
+    "comparative_results": [
+      {
+        "name": "reverb",
+        "predicted_consumers": ["consumer"],
+        "true_positives": 1,
+        "false_positives": 0,
+        "false_negatives": 0,
+        "exact_base_head": true,
+        "contract_identity": "canonical_symbol",
+        "consumer_evidence": "stable_reference_and_location",
+        "coverage_semantics": "claim_specific_with_abstention"
+      },
+      {
+        "name": "manifest",
+        "predicted_consumers": ["consumer", "unrelated-consumer"],
+        "true_positives": 1,
+        "false_positives": 1,
+        "false_negatives": 0,
+        "exact_base_head": false,
+        "contract_identity": "package_only",
+        "consumer_evidence": "manifest_dependency",
+        "coverage_semantics": "none"
+      },
+      {
+        "name": "lexical",
+        "predicted_consumers": ["consumer"],
+        "true_positives": 1,
+        "false_positives": 0,
+        "false_negatives": 0,
+        "exact_base_head": true,
+        "contract_identity": "changed_name",
+        "consumer_evidence": "text_match",
+        "coverage_semantics": "none"
+      },
+      {
+        "name": "schema_only",
+        "predicted_consumers": ["consumer"],
+        "true_positives": 1,
+        "false_positives": 0,
+        "false_negatives": 0,
+        "exact_base_head": true,
+        "contract_identity": "canonical_symbol",
+        "consumer_evidence": "canonical_reference",
+        "coverage_semantics": "none"
+      }
+    ],
+    "evaluation_decision": "all_strata_remain_preview_only",
+    "evaluation_strata": [
+      {
+        "adapter": "reverb.typescript",
+        "state": "UNMEASURED",
+        "decision": "remain_preview"
+      },
+      {
+        "adapter": "reverb.openapi",
+        "state": "UNMEASURED",
+        "decision": "remain_preview"
+      },
+      {
+        "adapter": "reverb.protobuf",
+        "state": "UNMEASURED",
+        "decision": "remain_preview"
+      }
+    ],
+    "hosted_disclosure_projection": {
+      "iterations": 2000,
+      "disclosure_defects": 0,
+      "projection_latency_ms": {
+        "p50": 0.0033,
+        "p95": 0.007,
+        "p99": 0.0131,
+        "maximum": 0.543
+      }
+    }
+  },
+  "environment": {
+    "node": "v25.2.1",
+    "platform": "darwin",
+    "arch": "arm64",
+    "package_manager": "pnpm@10.27.0",
+    "lockfile_sha256": "sha256:9258ddf17af60ed49a98e6deac0f5e9e875eaf0c0caf2d9beedd790724ca256d"
+  },
+  "reproducibility": {
+    "generator": "node tools/benchmark.mjs --profile release --write",
+    "verification": [
+      "pnpm benchmark --profile release",
+      "pnpm test:all-hosts",
+      "pnpm release:verify"
+    ]
+  },
+  "limitations": [
+    "This manifest assembles public synthetic mechanics artifacts; it is not an independently labelled real-world corpus.",
+    "Stored latency values are local reference observations and are not a production SLO.",
+    "All evaluation strata remain UNMEASURED, so this report makes no precision, recall, or promotion claim.",
+    "No customer source, repository identity, review, or provider payload is included."
+  ]
+}

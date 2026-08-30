@@ -1,0 +1,456 @@
+import {
+  analysisSupersessionKey,
+  createFindingOccurrences,
+  finalizeAnalysisResult,
+  joinChangedContracts,
+  matchSuppression,
+  type AnalysisId,
+  type AnalysisResult,
+  type ConsumerGenerationSelection,
+  type FindingAbstention,
+  type FindingOccurrence,
+  type IndexedContractChange,
+  type IndexedContractDefinition,
+  type OverlayId,
+  type PolicyRevision,
+  type RegistryRevision,
+  type RepositoryMembership,
+  type RepositoryStableId,
+  type WorkspaceId,
+  type SuppressionVersionContext,
+} from '@yanibhq/reverb-domain';
+
+import { portFailure, portSuccess } from './ports.js';
+import type {
+  AuthorizationPort,
+  CancellationPort,
+  Clock,
+  ConsumerRefreshPort,
+  EvidenceGraphStore,
+  GenerationStore,
+  PortFailure,
+  PortResult,
+  Subject,
+  WorkspaceRegistry,
+  ReviewEvaluationStore,
+} from './ports.js';
+
+export interface AnalyzePullRequestInput {
+  readonly analysisId: AnalysisId;
+  readonly workspaceId: WorkspaceId;
+  readonly registryRevision: RegistryRevision;
+  readonly policyRevision: PolicyRevision;
+  readonly policyMajor: number;
+  readonly producerRepositoryId: RepositoryStableId;
+  readonly baseGenerationId: IndexedContractChange['baseGenerationId'];
+  readonly overlayId: OverlayId;
+  readonly pullRequest: {
+    readonly provider: 'local' | 'github';
+    readonly number?: number;
+    readonly baseSha: IndexedContractChange['baseSha'];
+    readonly headSha: IndexedContractChange['headSha'];
+  };
+  readonly changes: readonly IndexedContractChange[];
+  readonly producerDefinitions: readonly IndexedContractDefinition[];
+  readonly subject?: Subject;
+  readonly freshnessTtlMs?: number;
+  readonly refreshBudgetMs?: number;
+  readonly analysisBudgetMs?: number;
+  readonly suppressionVersions?: SuppressionVersionContext;
+  readonly adapterRuleIds?: readonly string[];
+}
+
+export interface AnalyzePullRequestDependencies {
+  readonly generations: GenerationStore;
+  readonly evidence: EvidenceGraphStore;
+  readonly registry: WorkspaceRegistry;
+  readonly clock: Clock;
+  readonly cancellation?: CancellationPort;
+  readonly authorization?: AuthorizationPort;
+  readonly refresh?: ConsumerRefreshPort;
+  readonly reviews?: ReviewEvaluationStore;
+}
+
+function propagated<Value>(failure: PortFailure): PortResult<Value> {
+  return portFailure(failure);
+}
+
+function invalid(code: string, safeMessage: string): PortResult<never> {
+  return portFailure({ kind: 'domain', code, safeMessage, retryable: false });
+}
+
+function elapsed(started: string, current: string): number {
+  return Math.max(0, new Date(current).valueOf() - new Date(started).valueOf());
+}
+
+function unavailableSelection(
+  repositoryId: RepositoryStableId,
+  state: Extract<ConsumerGenerationSelection['state'], 'unauthorized' | 'failed' | 'not_indexed'>,
+  reason: string,
+): ConsumerGenerationSelection {
+  return { repositoryId, state, reason };
+}
+
+async function boundedRefresh(
+  refresh: ConsumerRefreshPort,
+  request: Parameters<ConsumerRefreshPort['refresh']>[0],
+): Promise<Awaited<ReturnType<ConsumerRefreshPort['refresh']>> | null> {
+  if (request.maximumDurationMs <= 0) return null;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<null>((resolve) => {
+    timer = setTimeout(() => resolve(null), request.maximumDurationMs);
+  });
+  try {
+    return await Promise.race([refresh.refresh(request), timeout]);
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
+
+function selectionAbstention(
+  selection: ConsumerGenerationSelection,
+): FindingAbstention | undefined {
+  const reason =
+    selection.state === 'stale'
+      ? 'stale_consumer_generation'
+      : selection.state === 'unauthorized'
+        ? 'privacy_restricted'
+        : selection.state === 'unsupported'
+          ? 'unsupported_language'
+          : selection.state === 'failed' || selection.state === 'not_indexed'
+            ? 'incomplete_index'
+            : undefined;
+  return reason === undefined
+    ? undefined
+    : {
+        consumerRepositoryId: selection.repositoryId,
+        reason,
+        safeMessage: 'Consumer repository was not available as current complete evidence.',
+      };
+}
+
+export class AnalyzePullRequest {
+  public constructor(private readonly dependencies: AnalyzePullRequestDependencies) {}
+
+  async #selectConsumer(
+    input: AnalyzePullRequestInput,
+    repository: RepositoryMembership,
+    startedAt: ReturnType<Clock['now']>,
+  ): Promise<PortResult<ConsumerGenerationSelection>> {
+    if (this.dependencies.authorization !== undefined) {
+      const authorization = await this.dependencies.authorization.authorizeRepositoryUse(
+        input.subject ?? { kind: 'workspace', id: input.workspaceId },
+        'evidence.consume',
+        repository.repositoryId,
+      );
+      if (!authorization.ok || !authorization.value.allowed) {
+        return portSuccess(
+          unavailableSelection(
+            repository.repositoryId,
+            'unauthorized',
+            authorization.ok ? authorization.value.reason : authorization.failure.code,
+          ),
+        );
+      }
+    }
+    const selected = await this.dependencies.generations.selectGeneration({
+      workspaceId: input.workspaceId,
+      repositoryId: repository.repositoryId,
+      allowPartial: true,
+    });
+    if (!selected.ok) return propagated(selected.failure);
+    if (selected.value.state === 'failed') {
+      return portSuccess(
+        unavailableSelection(repository.repositoryId, 'failed', 'selected_generation_failed'),
+      );
+    }
+    let initial: ConsumerGenerationSelection;
+    if (selected.value.state === 'not_indexed') {
+      initial = unavailableSelection(
+        repository.repositoryId,
+        'not_indexed',
+        'repository_not_indexed',
+      );
+    } else {
+      const generation = selected.value.generation;
+      const observation = await this.dependencies.evidence.getContractObservation(generation.id);
+      if (!observation.ok) return propagated(observation.failure);
+      if (observation.value === null) {
+        initial = unavailableSelection(
+          repository.repositoryId,
+          'not_indexed',
+          'contracts_not_indexed',
+        );
+      } else if (observation.value.coverageState === 'failed') {
+        initial = unavailableSelection(
+          repository.repositoryId,
+          'failed',
+          'contract_extraction_failed',
+        );
+      } else if (observation.value.coverageState === 'unsupported') {
+        initial = {
+          repositoryId: repository.repositoryId,
+          state: 'unsupported',
+          generationId: generation.id,
+          commitSha: generation.commitSha,
+          ...(generation.completedAt === undefined ? {} : { selectedAt: generation.completedAt }),
+          reason: 'contract_inputs_unsupported',
+        };
+      } else {
+        const selectedAt = generation.completedAt ?? startedAt;
+        const freshnessAgeMs = elapsed(selectedAt, startedAt);
+        const state =
+          freshnessAgeMs > (input.freshnessTtlMs ?? 24 * 60 * 60_000) ? 'stale' : 'current';
+        initial = {
+          repositoryId: repository.repositoryId,
+          state,
+          generationId: generation.id,
+          commitSha: generation.commitSha,
+          selectedAt,
+          freshnessAgeMs,
+          coverageState: observation.value.coverageState,
+        };
+      }
+    }
+    if (
+      (initial.state === 'stale' || initial.state === 'not_indexed') &&
+      this.dependencies.refresh !== undefined
+    ) {
+      const totalBudget = input.refreshBudgetMs ?? 0;
+      const remaining = Math.max(
+        0,
+        totalBudget - elapsed(startedAt, this.dependencies.clock.now()),
+      );
+      const refreshed = await boundedRefresh(this.dependencies.refresh, {
+        workspaceId: input.workspaceId,
+        repositoryId: repository.repositoryId,
+        maximumDurationMs: remaining,
+      });
+      if (refreshed?.ok && refreshed.value !== null) return portSuccess(refreshed.value);
+    }
+    return portSuccess(initial);
+  }
+
+  public async execute(input: AnalyzePullRequestInput): Promise<PortResult<AnalysisResult>> {
+    const startedAt = this.dependencies.clock.now();
+    const base = await this.dependencies.generations.getGeneration(input.baseGenerationId);
+    if (!base.ok) return propagated(base.failure);
+    if (
+      base.value.workspaceId !== input.workspaceId ||
+      base.value.repositoryId !== input.producerRepositoryId ||
+      base.value.commitSha !== input.pullRequest.baseSha ||
+      (base.value.state !== 'complete' && base.value.state !== 'partial')
+    ) {
+      return invalid(
+        'base_generation_mismatch',
+        'Analysis requires the exact producer base generation.',
+      );
+    }
+    const overlay = await this.dependencies.generations.getOverlay(input.overlayId);
+    if (!overlay.ok) return propagated(overlay.failure);
+    if (
+      overlay.value.baseGenerationId !== input.baseGenerationId ||
+      overlay.value.baseSha !== input.pullRequest.baseSha ||
+      overlay.value.headSha !== input.pullRequest.headSha ||
+      (overlay.value.state !== 'complete' && overlay.value.state !== 'partial')
+    ) {
+      return invalid('overlay_mismatch', 'Analysis requires the exact producer head overlay.');
+    }
+    const registry = await this.dependencies.registry.getRevision(
+      input.workspaceId,
+      input.registryRevision,
+    );
+    if (!registry.ok) return propagated(registry.failure);
+    if (
+      input.changes.some(
+        (change) =>
+          change.workspaceId !== input.workspaceId ||
+          change.producerRepositoryId !== input.producerRepositoryId ||
+          change.baseSha !== input.pullRequest.baseSha ||
+          change.headSha !== input.pullRequest.headSha,
+      )
+    ) {
+      return invalid(
+        'change_scope_mismatch',
+        'Producer changes do not match the exact analysis input.',
+      );
+    }
+    const consumers: ConsumerGenerationSelection[] = [];
+    for (const repository of registry.value.repositories
+      .filter((value) => value.selected && value.repositoryId !== input.producerRepositoryId)
+      .sort((left, right) => left.repositoryId.localeCompare(right.repositoryId))) {
+      const selected = await this.#selectConsumer(input, repository, startedAt);
+      if (!selected.ok) return propagated(selected.failure);
+      consumers.push(selected.value);
+    }
+    const generationIds = consumers.flatMap((consumer) =>
+      consumer.generationId === undefined ? [] : [consumer.generationId],
+    );
+    const references = await this.dependencies.evidence.readReferences({
+      workspaceId: input.workspaceId,
+      generationIds,
+      canonicalKeys: input.changes.map((change) => change.canonicalKey),
+    });
+    if (!references.ok) return propagated(references.failure);
+    const joined = joinChangedContracts({
+      changes: input.changes,
+      definitions: input.producerDefinitions,
+      references: references.value,
+      selections: consumers,
+      registry: registry.value,
+      observedAt: this.dependencies.clock.now(),
+    });
+    const edgeWrite = await this.dependencies.evidence.observeEdges(joined.edges);
+    if (!edgeWrite.ok) return propagated(edgeWrite.failure);
+    const occurrences = createFindingOccurrences({
+      analysisId: input.analysisId,
+      workspaceId: input.workspaceId,
+      producerRepositoryId: input.producerRepositoryId,
+      baseSha: input.pullRequest.baseSha,
+      headSha: input.pullRequest.headSha,
+      policyMajor: input.policyMajor,
+      changes: input.changes,
+      edges: joined.edges,
+      consumers,
+    });
+    let findings: readonly FindingOccurrence[] = occurrences.findings;
+    if (this.dependencies.reviews !== undefined && findings.length > 0) {
+      const rules = await this.dependencies.reviews.listSuppressions(input.workspaceId);
+      if (!rules.ok) return propagated(rules.failure);
+      const stateEvents = await this.dependencies.reviews.listSuppressionStateEvents(
+        input.workspaceId,
+      );
+      if (!stateEvents.ok) return propagated(stateEvents.failure);
+      const derivedVersions: SuppressionVersionContext = input.suppressionVersions ?? {
+        now: this.dependencies.clock.now(),
+        producerGenerations: Object.fromEntries(
+          input.changes.map((change) => [
+            input.producerRepositoryId,
+            change.headGenerationId ?? change.baseGenerationId,
+          ]),
+        ),
+        consumerGenerations: Object.fromEntries(
+          consumers.flatMap((consumer) =>
+            consumer.generationId === undefined
+              ? []
+              : [[consumer.repositoryId, consumer.generationId]],
+          ),
+        ),
+        referenceHashes: Object.fromEntries(
+          findings.map((finding) => [
+            finding.edge.stableReferenceId,
+            finding.edge.reference.contentHash,
+          ]),
+        ),
+        contractShapeHashes: Object.fromEntries(
+          findings.map((finding) => [
+            `${finding.change.contractKind}\0${finding.change.canonicalKey}`,
+            finding.edge.definition.shapeHash,
+          ]),
+        ),
+        identityVersions: Object.fromEntries(
+          findings.flatMap((finding) => [
+            [finding.edge.definition.adapterId, finding.edge.definition.identityVersion],
+            [finding.edge.reference.adapterId, finding.edge.reference.identityVersion],
+          ]),
+        ),
+        adapterVersions: Object.fromEntries(
+          findings.flatMap((finding) => [
+            [finding.edge.definition.adapterId, finding.edge.definition.adapterVersion],
+            [finding.edge.reference.adapterId, finding.edge.reference.adapterVersion],
+          ]),
+        ),
+        evidenceStrata: [...new Set(findings.map((finding) => finding.edge.stratumKey))],
+        policyRevision: input.policyRevision,
+        registryRevision: input.registryRevision,
+      };
+      findings = findings.map((finding) => {
+        const decision = matchSuppression({
+          candidate: {
+            workspaceId: input.workspaceId,
+            occurrenceId: finding.id,
+            fingerprint: finding.fingerprint,
+            producerRepositoryId: input.producerRepositoryId,
+            consumerRepositoryId: finding.edge.consumerRepositoryId,
+            contractKind: finding.change.contractKind,
+            canonicalContractKey: finding.change.canonicalKey,
+            adapterId: finding.change.adapterId,
+            adapterRuleIds: [finding.change.changeKind, ...(input.adapterRuleIds ?? [])],
+          },
+          versions: derivedVersions,
+          rules: rules.value,
+          stateEvents: stateEvents.value,
+        });
+        return decision.suppressed
+          ? {
+              ...finding,
+              delivery: {
+                decision: 'suppressed' as const,
+                reason: 'matched_active_suppression' as const,
+                suppressionRuleId: decision.ruleId!,
+              },
+            }
+          : finding;
+      });
+    }
+    const selectionAbstentions = consumers
+      .map(selectionAbstention)
+      .filter((value): value is FindingAbstention => value !== undefined);
+    const abstentions = [...occurrences.abstentions];
+    for (const abstention of selectionAbstentions) {
+      if (
+        !abstentions.some(
+          (value) =>
+            value.consumerRepositoryId === abstention.consumerRepositoryId &&
+            value.reason === abstention.reason,
+        )
+      ) {
+        abstentions.push(abstention);
+      }
+    }
+    const supersessionKey = analysisSupersessionKey({
+      workspaceId: input.workspaceId,
+      producerRepositoryId: input.producerRepositoryId,
+      provider: input.pullRequest.provider,
+      ...(input.pullRequest.number === undefined
+        ? {}
+        : { pullRequestNumber: input.pullRequest.number }),
+      policyMajor: input.policyMajor,
+    });
+    const currentCheck = this.dependencies.cancellation
+      ? await this.dependencies.cancellation.isCurrent(supersessionKey)
+      : portSuccess(true);
+    if (!currentCheck.ok) return propagated(currentCheck.failure);
+    const completedAt = this.dependencies.clock.now();
+    const overBudget =
+      elapsed(startedAt, completedAt) > (input.analysisBudgetMs ?? Number.MAX_SAFE_INTEGER);
+    const partial =
+      overlay.value.state === 'partial' ||
+      input.changes.some((change) => change.coverageState !== 'complete') ||
+      consumers.some((consumer) => consumer.state !== 'current') ||
+      joined.diagnostics.length > 0 ||
+      overBudget;
+    const current = currentCheck.value && !overBudget;
+    const result = finalizeAnalysisResult({
+      schema: 'reverb.analysis-result',
+      schemaVersion: '1.0',
+      analysisId: input.analysisId,
+      workspaceId: input.workspaceId,
+      producerRepositoryId: input.producerRepositoryId,
+      pullRequest: input.pullRequest,
+      registryRevision: input.registryRevision,
+      policyRevision: input.policyRevision,
+      policyMajor: input.policyMajor,
+      state: current ? (partial ? 'partial' : 'complete') : 'superseded',
+      current,
+      consumers,
+      findings,
+      abstentions,
+      startedAt,
+      completedAt,
+    });
+    const persisted = await this.dependencies.evidence.persistAnalysis(result, supersessionKey);
+    if (!persisted.ok) return propagated(persisted.failure);
+    return portSuccess(result);
+  }
+}

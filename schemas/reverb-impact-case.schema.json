@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.yanibhq.dev/reverb/impact-case/v1.json",
+  "title": "Reverb independently sampled impact case",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "id",
+    "subset",
+    "organization_id",
+    "repository_family_id",
+    "team_id",
+    "eligible_pull_request_id",
+    "producer_repository_id",
+    "producer_base_sha",
+    "producer_head_sha",
+    "pull_request_opened_at",
+    "consumer_repository_id",
+    "consumer_sha_as_of_pull_request_open",
+    "consumer_snapshot_observed_at",
+    "producer_generation_id",
+    "consumer_generation_id",
+    "stable_consumer_reference_id",
+    "contract_kind",
+    "canonical_contract_key",
+    "change_kind",
+    "stratum",
+    "adapter_versions",
+    "identity_function_version",
+    "registry_revision",
+    "policy_revision",
+    "evidence",
+    "coverage",
+    "detector_output",
+    "analysis_outcome",
+    "detector_claims",
+    "policy_selected",
+    "suppressed",
+    "required_for_evaluation",
+    "sampling",
+    "releaseability",
+    "evaluation_consent",
+    "research_consent",
+    "analysis_latency_ms",
+    "cost_microunits",
+    "confidentiality_defects",
+    "removal_coverage_defect",
+    "remedy_available",
+    "output_hash"
+  ],
+  "properties": {
+    "schema": { "const": "reverb.impact-case" },
+    "schema_version": { "const": "1.0" },
+    "id": { "type": "string", "pattern": "^cas_sha256:[0-9a-f]{64}$" },
+    "subset": { "enum": ["historical", "executable_replay", "mutation", "forward_shadow"] },
+    "organization_id": { "type": "string", "minLength": 1 },
+    "repository_family_id": { "type": "string", "minLength": 1 },
+    "team_id": { "type": "string", "minLength": 1 },
+    "eligible_pull_request_id": { "type": "string", "minLength": 1 },
+    "producer_repository_id": {
+      "type": "string",
+      "pattern": "^(?:github:[1-9][0-9]*|local:sha256:[0-9a-f]{64})$"
+    },
+    "producer_base_sha": { "type": "string", "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$" },
+    "producer_head_sha": { "type": "string", "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$" },
+    "pull_request_opened_at": { "type": "string" },
+    "consumer_repository_id": {
+      "type": "string",
+      "pattern": "^(?:github:[1-9][0-9]*|local:sha256:[0-9a-f]{64})$"
+    },
+    "consumer_sha_as_of_pull_request_open": {
+      "type": "string",
+      "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"
+    },
+    "consumer_snapshot_observed_at": { "type": "string" },
+    "producer_generation_id": {
+      "type": "string",
+      "pattern": "^gen_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "consumer_generation_id": {
+      "type": "string",
+      "pattern": "^gen_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "stable_consumer_reference_id": { "type": "string", "pattern": "^ref_sha256:[0-9a-f]{64}$" },
+    "contract_kind": {
+      "enum": ["typescript_symbol", "openapi_operation", "protobuf_method", "protobuf_field"]
+    },
+    "canonical_contract_key": { "type": "string", "minLength": 1 },
+    "change_kind": { "type": "string", "minLength": 1 },
+    "stratum": { "type": "object" },
+    "adapter_versions": { "type": "object" },
+    "identity_function_version": { "type": "string", "minLength": 1 },
+    "registry_revision": { "type": "string", "pattern": "^reg_sha256:[0-9a-f]{64}$" },
+    "policy_revision": { "type": "string", "pattern": "^pol_sha256:[0-9a-f]{64}$" },
+    "evidence": { "type": "array", "items": { "type": "object" } },
+    "coverage": { "type": "array", "items": { "type": "object" } },
+    "detector_output": { "enum": ["candidate", "abstained", "no_candidate", "not_analysed"] },
+    "analysis_outcome": { "enum": ["completed", "superseded", "timeout", "not_analysed"] },
+    "detector_claims": { "type": "object" },
+    "policy_selected": { "type": "boolean" },
+    "suppressed": { "type": "boolean" },
+    "required_for_evaluation": { "type": "boolean" },
+    "labels": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["edge", "impact", "action"],
+      "properties": {
+        "edge": { "enum": ["confirmed", "absent", "indeterminate"] },
+        "impact": { "enum": ["breaking", "behavior_risk", "compatible", "indeterminate"] },
+        "action": {
+          "enum": [
+            "coordinate",
+            "already_coordinated",
+            "accepted_risk",
+            "dead_or_test_only",
+            "no_action",
+            "indeterminate"
+          ]
+        }
+      }
+    },
+    "labeler_provenance": { "type": "object" },
+    "sampling": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["frame_source", "inclusion_probability", "sampling_weight", "seed"],
+      "properties": {
+        "frame_source": { "enum": ["provider_metadata", "supported_artifact_discovery"] },
+        "inclusion_probability": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "sampling_weight": { "type": "number", "minimum": 1 },
+        "seed": { "type": "string" }
+      }
+    },
+    "releaseability": { "enum": ["public", "private_aggregate_only", "private_not_releasable"] },
+    "evaluation_consent": { "type": "boolean" },
+    "research_consent": { "type": "boolean" },
+    "analysis_latency_ms": { "type": "number", "minimum": 0 },
+    "cost_microunits": { "type": "number", "minimum": 0 },
+    "confidentiality_defects": { "type": "integer", "minimum": 0 },
+    "removal_coverage_defect": { "type": "boolean" },
+    "remedy_available": { "type": "boolean" },
+    "action_observed": { "type": "boolean" },
+    "time_to_action_ms": { "type": "number", "minimum": 0 },
+    "action_censored": { "type": "boolean" },
+    "output_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "schema": "reverb.adapter-admission",
+  "schemaVersion": "1.0",
+  "adapterId": "reverb.typescript",
+  "adapterVersion": "0.1.0",
+  "identityVersion": 1,
+  "demand": "Cross-repository npm package public API and consumer import changes.",
+  "designPartner": "none",
+  "identitySummary": "Registry, package, public subpath, type/value space, and exported symbol.",
+  "compatibilitySummary": "Conservative structural rules for removals, overloads, parameters, and complex shapes.",
+  "evidenceRendering": "Export identity, source location, package activation timing, coverage, and remedy.",
+  "latencyResourceSummary": "timeout=20000ms memory=512MiB output=8388608B",
+  "dependenciesAndLicenses": [
+    "typescript@5.9.2: Apache-2.0"
+  ],
+  "limitations": [
+    "Computed exports, reflective access, and namespace-member selection remain unresolved.",
+    "Complex type-system compatibility is conservative and may be potentially breaking or unknown.",
+    "Package export targets that cannot be mapped to supplied source artifacts force partial coverage."
+  ],
+  "maintainer": "YanibHQ/reverb-impact maintainers",
+  "checks": [
+    {
+      "id": "adversarial_fixtures",
+      "state": "pass",
+      "evidence": "Package adversarial suite"
+    },
+    {
+      "id": "determinism",
+      "state": "pass",
+      "evidence": "Repeated extraction conformance test"
+    },
+    {
+      "id": "identity_round_trip",
+      "state": "pass",
+      "evidence": "Export/import identity tests"
+    },
+    {
+      "id": "real_labelled_corpus",
+      "state": "not_measured",
+      "evidence": "No approved corpus yet"
+    }
+  ],
+  "realLabelledCorpusState": "absent",
+  "promotionState": "UNMEASURED",
+  "deliveryReady": false,
+  "outputHash": "sha256:c7bea5943691fdda5c794b10645c13fc6b2544bf1041c90a76e6ef8a2a5071fe"
+}

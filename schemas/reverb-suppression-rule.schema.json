@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.yanibhq.dev/reverb/suppression-rule/v1.json",
+  "title": "Reverb structurally invalidated suppression rule",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "id",
+    "workspace_id",
+    "matcher",
+    "owner",
+    "justification",
+    "justification_hash",
+    "created_at",
+    "review_at",
+    "expires_at",
+    "invalidation_predicates",
+    "initial_state",
+    "output_hash"
+  ],
+  "properties": {
+    "schema": { "const": "reverb.suppression-rule" },
+    "schema_version": { "const": "1.0" },
+    "id": { "type": "string", "pattern": "^sup_sha256:[0-9a-f]{64}$" },
+    "workspace_id": {
+      "type": "string",
+      "pattern": "^wsp_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "matcher": {
+      "type": "object",
+      "required": ["scope"],
+      "properties": {
+        "scope": {
+          "enum": [
+            "occurrence",
+            "stable_finding",
+            "contract_consumer",
+            "repository_pair_kind",
+            "adapter_rule",
+            "workspace_rule"
+          ]
+        }
+      }
+    },
+    "owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actor_id", "role", "authorization_revision"],
+      "properties": {
+        "actor_id": { "type": "string", "minLength": 1 },
+        "role": { "enum": ["reviewer", "repository_owner", "workspace_admin"] },
+        "authorization_revision": { "type": "string", "pattern": "^reg_sha256:[0-9a-f]{64}$" }
+      }
+    },
+    "justification": { "type": "string", "minLength": 8, "maxLength": 2000 },
+    "justification_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "created_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T.*Z$" },
+    "review_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T.*Z$" },
+    "expires_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T.*Z$" },
+    "invalidation_predicates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["kind"],
+        "properties": {
+          "kind": {
+            "enum": [
+              "producer_code",
+              "consumer_code",
+              "consumer_reference",
+              "contract_shape",
+              "identity_version",
+              "adapter_version",
+              "evidence_stratum",
+              "policy_revision",
+              "registry_revision"
+            ]
+          }
+        }
+      }
+    },
+    "initial_state": { "const": "active" },
+    "output_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}
