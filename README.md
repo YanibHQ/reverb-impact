@@ -45,8 +45,7 @@ uncertainty.
 
 Open the [self-contained interactive diagram](docs/reverb-overview.html) for guided views and source
 links, or inspect its [typed diagram source](docs/reverb-overview.architecture.json). Both artifacts
-were generated locally with [Archify](https://github.com/tt-a1i/archify) from repository-backed
-references.
+were generated locally from repository-backed references.
 
 ## Supported contracts
 
