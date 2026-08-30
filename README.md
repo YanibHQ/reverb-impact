@@ -4,99 +4,182 @@
 
 <h1 align="center">Reverb</h1>
 
-Reverb is an evidence-first engine that answers one question before a pull request merges:
+<p align="center">
+  Evidence-backed impact analysis for contract changes across repositories.
+</p>
 
-> Which code in this repository—or another repository in the same engineering workspace—can this change affect, and what evidence supports that claim?
+<p align="center">
+  <a href="https://github.com/YanibHQ/reverb-impact/actions/workflows/ci.yml"><img src="https://github.com/YanibHQ/reverb-impact/actions/workflows/ci.yml/badge.svg" alt="CI status" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/YanibHQ/reverb-impact" alt="Apache-2.0 license" /></a>
+</p>
 
-Reverb is a standalone public project owned and published by the `YanibHQ` organization. Its core,
-hosts, storage, CLI, schemas, tests, and release process live entirely in this repository and do not
-read or modify Yanib. Any future product integration uses the public host boundary.
+Reverb helps engineering teams understand which consumers may be affected by a pull request. It
+indexes an explicitly configured set of repositories, compares exact base and head commits, and
+connects changed producer contracts to concrete downstream references.
 
-## Status
+Every finding includes inspectable producer and consumer evidence. Coverage, freshness, and
+incomplete inputs are reported separately so uncertainty is visible instead of being presented as
+a clean result.
 
-**Phases 000–006 implemented as a standalone local release candidate.** The project constitution, immutable repository index,
-local Git/SQLite host, versioned adapters, temporal evidence graph, exact PR analyzer, local finding
-preview, append-only reviews, suppressions, corpus/evaluation machinery, and frozen policy simulator
-are implemented, together with the standalone PostgreSQL/GitHub reference-host boundary,
-whole-audience disclosure projection, accessible detail/review surface, advisory check planner, and
-hard-disabled writer. Public root APIs, schema/storage compatibility metadata, host conformance v1,
-an independent minimal host, self-host/extension guides, and a reproducible release benchmark are
-also implemented. Every adapter evidence stratum remains `UNMEASURED`; persisted findings are
-preview-only and no external delivery is authorized or publicly released.
+## Why Reverb?
 
-The Phase 003 comparison executed Repowise 0.46.0 at
-`0847cbff32c0c113ad46e2699ae87a795238d431` on 2026-08-28. Repowise correctly linked the same
-removed package symbol to its consumer, so Reverb records parity on that fixture and does not claim
-to be “Repowise, but cross-repo.” Its intended contribution is a narrower PR-time evidence
-protocol:
+- **Cross-repository analysis:** trace contract changes beyond the repository where they originate.
+- **Exact pull-request semantics:** analyze immutable base and head commits rather than comparing
+  unrelated local scans.
+- **Evidence-first findings:** preserve the definitions, references, paths, and commit identities
+  behind each reported impact.
+- **Selective reliability:** abstain when source, authorization, or parser coverage is incomplete.
+- **Host-neutral design:** embed the domain and application packages in a local tool or an
+  independently operated service.
+- **Deterministic output:** use canonical identities and versioned schemas for repeatable analysis
+  and machine consumption.
 
-- repository membership obtained from a GitHub App installation, without requiring co-located checkouts;
-- immutable base and head index generations, with a pull-request overlay rather than “previous local scan versus current local scan”;
-- contract changes joined to exact downstream uses, with every finding carrying inspectable producer and consumer evidence;
-- coverage, freshness, and abstention represented separately from confidence;
-- a measured promotion path from preview to an advisory check, per contract kind and evidence class;
-- separate permissions for indexing, disclosure, and writing a check;
-- a host-neutral Apache-2.0 core intended to be embedded by products such as Yanib.
+## Supported contracts
 
-## Documentation map
-
-| Document | Purpose |
+| Adapter | Detects |
 | --- | --- |
-| [Feature overview](features/cross-repo-impact/README.md) | Product boundary, users, scenarios, phases, and definition of done |
-| [Shared specification](features/cross-repo-impact/spec.md) | Invariants, functional and non-functional requirements, success criteria |
-| [Architecture](features/cross-repo-impact/architecture.md) | Components, data flow, data model, indexing and PR-overlay algorithms |
-| [Implementation plan](features/cross-repo-impact/plan.md) | Decisions, sequencing, technology choices, risks, and verification strategy |
-| [Implementation tasks](features/cross-repo-impact/tasks.md) | Traceable build checklist and release gates |
-| [API contracts](features/cross-repo-impact/api.md) | Library, CLI, JSON, webhook, and reference-host interfaces |
-| [Security and privacy](features/cross-repo-impact/security.md) | Trust model, consent, isolation, disclosure, retention, and abuse cases |
-| [Packaging and adoption](features/cross-repo-impact/packaging.md) | Public packages, license, compatibility, extension SDK, and Yanib integration |
-| [Research](features/cross-repo-impact/research/) | Repowise teardown, prior art, taxonomy, evaluation protocol, and paper plan |
-| [Phases](features/cross-repo-impact/phases/) | Phase-level specifications, plans, and executable task lists |
-| [Phase 000 verification](docs/verification/phase-000.md) | Local constitution/release evidence and remaining external controls |
-| [Phase 001 verification](docs/verification/phase-001.md) | Indexing, equivalence, conformance, adversarial, and CLI evidence |
-| [Phase 002 verification](docs/verification/phase-002.md) | Adapter identity, compatibility, sandbox, determinism, admission, and license evidence |
-| [Phase 003 verification](docs/verification/phase-003.md) | Temporal graph, exact PR analysis, findings, local CLI, conformance, and safety evidence |
-| [Phase 003 comparison](docs/verification/phase-003-comparison.md) | Current Repowise/reduced baselines and continue/interoperate decision |
-| [Phase 004 verification](docs/verification/phase-004.md) | Reviews, suppressions, corpus/evaluation, policy replay, and remain-preview decision |
-| [Phase 005 verification](docs/verification/phase-005.md) | PostgreSQL/GitHub host, disclosure, check safety, shadow evidence, and external rollout gate |
-| [Phase 006 verification](docs/verification/phase-006.md) | Public APIs, compatibility, three-host conformance, standalone adoption, and release limitations |
-| [Public package API](docs/api/public-packages.md) | Supported root entry points, errors, states, and host responsibilities |
-| [Compatibility](docs/compatibility/versioning.md) | Package/schema/storage/adapter upgrade, re-index, and calibration policy |
-| [Self-hosting](docs/operations/self-host.md) | Local and hosted install, backup, upgrade, incident, and disable guidance |
-| [Label handbook](docs/evaluation/label-handbook.md) | Closed three-axis labels, reasons, adjudication, and corpus rules |
-| [Adapter lifecycle](docs/adapters/lifecycle.md) | Versioning, artifact behavior, pinned tool inventory, and preview admission reports |
+| TypeScript/npm | Exported package symbols and downstream imports |
+| OpenAPI/HTTP | Operations, paths, methods, and service references |
+| Protobuf/gRPC | Services, methods, messages, fields, and generated-code references |
 
-## Intended first release
+Additional contract types can be implemented through the public adapter SDK and its validation,
+compatibility, sandboxing, and admission interfaces.
 
-The first release is deliberately smaller than the full taxonomy:
+## Development status
 
-1. a deterministic repository snapshot format;
-2. an adapter SDK plus TypeScript package, OpenAPI/HTTP, and Protobuf/gRPC adapters;
-3. cross-repository producer-to-consumer joins for an explicitly configured workspace;
-4. local CLI analysis and a GitHub App reference host;
-5. preview-only findings until a human-labelled corpus promotes an evidence class;
-6. advisory checks only—never merge-blocking.
+Reverb is under active development and is available for evaluation from source. Public APIs and
+storage formats may change before the first stable release, so downstream users should pin an
+exact commit. Analysis output is advisory: evidence classes must be calibrated with representative,
+human-reviewed data before they are used for automated delivery or policy decisions.
 
-GraphQL, messaging, shared database schemas, environment/config keys, Terraform, and additional languages enter through the same adapter admission gate after the first vertical slice is measured.
+The project is independently versioned and operated. It does not depend on Yanib source code or
+data; product integrations use Reverb's public package and host boundaries.
 
-## Project identity
+## Requirements
 
-- **Product name:** Reverb
-- **GitHub organization:** `YanibHQ`
-- **Repository:** `YanibHQ/reverb-impact`
-- **CLI binary:** `reverb`
-- **Package scope:** `@yanibhq/reverb-*`
-- **Code license:** Apache-2.0
-- **Planned benchmark/data license:** a separately reviewed permissive data license; private partner data is never published by default
+- Node.js 24 or 25
+- pnpm 10.27.x
+- Git
+- SQLite for the local host, or PostgreSQL 18 for a hosted integration
 
-The repository name is intentionally more specific than the product name. “Reverb” is memorable but not unique enough to be a safe unscoped package name. Publishing and trademark availability remain Phase 000 checks.
+## Build from source
 
-## Non-goals
+```bash
+git clone https://github.com/YanibHQ/reverb-impact.git
+cd reverb-impact
+corepack enable
+pnpm install --frozen-lockfile
+pnpm build
 
-Reverb is not a general code-chat product, service catalog, developer portal, graph visualizer, autonomous fixer, or universal semantic search engine. Embeddings may support operator search later; they are not evidence for an impact finding.
+export REVERB_CLI="$PWD/packages/cli/dist/bin.js"
+node "$REVERB_CLI" --help
+```
 
-Reverb does not execute repository code. It parses source and declaration files, consumes pre-generated indexes where available, and runs any third-party differ in a network-denied, resource-bounded sandbox.
+Run `pnpm run ci` to execute the same formatting, lint, type, API, compatibility, test, schema,
+documentation, and license checks used by the repository's continuous-integration workflow.
 
-## Reading order for implementers
+## Quick start
 
-Read the [shared specification](features/cross-repo-impact/spec.md), then the [architecture](features/cross-repo-impact/architecture.md), then start at [Phase 001](features/cross-repo-impact/phases/001-repository-index/). Do not start with a detector: stable identity, immutable generations, coverage, and the host ports are the foundation every detector relies on.
+Create a workspace, then register existing local Git checkouts with stable aliases:
+
+```bash
+node "$REVERB_CLI" init /path/to/reverb-workspace
+cd /path/to/reverb-workspace
+
+node "$REVERB_CLI" workspace add /path/to/producer-repo --alias producer
+node "$REVERB_CLI" workspace add /path/to/consumer-repo --alias consumer
+node "$REVERB_CLI" registry validate
+node "$REVERB_CLI" doctor
+```
+
+Index the registered repositories and analyze an exact producer change:
+
+```bash
+node "$REVERB_CLI" index --ref HEAD
+node "$REVERB_CLI" analyze \
+  --repo producer \
+  --base main \
+  --head HEAD \
+  --json
+```
+
+Use exact commit SHAs in automated workflows. Service and alias registration is available for
+workspaces that need to resolve HTTP or deployment identities:
+
+```bash
+node "$REVERB_CLI" registry service-add \
+  --id billing-api \
+  --repo producer \
+  --root . \
+  --environment production \
+  --owner payments
+```
+
+Run `node "$REVERB_CLI" <command> --help` for command-specific options. The CLI also provides
+finding inspection, append-only reviews, suppressions, corpus evaluation, frozen-policy simulation,
+promotion decisions, status, and diagnostics.
+
+## Packages
+
+| Package | Purpose |
+| --- | --- |
+| `reverb-impact` | Local `reverb` CLI and embeddable CLI construction |
+| `@yanibhq/reverb-domain` | Immutable values and deterministic analysis policy |
+| `@yanibhq/reverb-schema` | Canonical JSON Schemas and runtime validation |
+| `@yanibhq/reverb-application` | Host-neutral use cases and ports |
+| `@yanibhq/reverb-adapter-sdk` | Contract-adapter interfaces, validation, and admission helpers |
+| `@yanibhq/reverb-adapter-typescript` | TypeScript and npm contract analysis |
+| `@yanibhq/reverb-adapter-openapi` | OpenAPI and HTTP contract analysis |
+| `@yanibhq/reverb-adapter-protobuf` | Protobuf and gRPC contract analysis |
+| `@yanibhq/reverb-storage-sqlite` | Local durable storage |
+| `@yanibhq/reverb-storage-postgres` | Hosted PostgreSQL storage |
+| `@yanibhq/reverb-host-local` | Local Git and filesystem host primitives |
+| `@yanibhq/reverb-host-github` | GitHub reference-host primitives |
+| `@yanibhq/reverb-testkit` | Host conformance tests, fakes, and fixtures |
+
+Package consumers should import documented root entry points only. See the
+[public package API](docs/api/public-packages.md) and
+[compatibility policy](docs/compatibility/versioning.md) before embedding Reverb in another host.
+
+## Safety model
+
+Reverb treats repository contents, diffs, schemas, indexes, and provider payloads as untrusted.
+
+- Repository membership is explicit and revisioned.
+- Source files are parsed; repository code is not executed.
+- External tools run behind a network-denied, resource-bounded boundary.
+- Missing or partial input produces an incomplete or unknown result, never an inferred clean pass.
+- Indexing, disclosure, and external writes are separate permissions.
+- The GitHub reference writer is disabled unless an operator explicitly enables an eligible,
+  calibrated evidence class.
+
+Review the [security and privacy model](features/cross-repo-impact/security.md) before processing
+private repositories or operating a hosted deployment.
+
+## Documentation
+
+| Guide | Description |
+| --- | --- |
+| [Concepts and requirements](features/cross-repo-impact/spec.md) | Product invariants, behavior, and success criteria |
+| [Architecture](features/cross-repo-impact/architecture.md) | Components, data flow, storage, indexing, and analysis |
+| [API contracts](features/cross-repo-impact/api.md) | Library, CLI, JSON, webhook, and host interfaces |
+| [Public packages](docs/api/public-packages.md) | Supported entry points and host responsibilities |
+| [Self-hosting](docs/operations/self-host.md) | Local and hosted operating guidance |
+| [Compatibility](docs/compatibility/versioning.md) | Package, schema, storage, and adapter versioning |
+| [Adapter development](docs/extensions/adapter-contribution.md) | Adding and validating contract adapters |
+| [Security](features/cross-repo-impact/security.md) | Threat model, consent, isolation, retention, and disclosure |
+
+Detailed design decisions, evaluation records, and reproducibility evidence remain available in
+the repository for maintainers and reviewers without being part of the end-user setup path.
+
+## Contributing
+
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md), follow the
+[Code of Conduct](CODE_OF_CONDUCT.md), and sign commits according to the
+[Developer Certificate of Origin](DCO.md). Please report security issues through the process in
+[SECURITY.md](SECURITY.md), not through a public issue.
+
+## License
+
+Reverb is licensed under the [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) for attribution
+information.
