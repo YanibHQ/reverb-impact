@@ -51,17 +51,11 @@ jobs:
       - name: Verify release
         run: pnpm release:verify
 
-      - name: Publish public packages
+      - name: Publish verified package tarballs
         shell: bash
         run: |
           set -euo pipefail
-          while IFS= read -r package_json; do
-            package_dir="$(dirname "$package_json")"
-            package_name="$(node -p "require('./${package_json}').name")"
-            package_private="$(node -p "require('./${package_json}').private === true")"
-            if [[ "$package_private" == "true" ]]; then
-              continue
-            fi
-            echo "Publishing ${package_name}"
-            npm publish "$package_dir" --access public
-          done < <(find packages -mindepth 2 -maxdepth 2 -name package.json | sort)
+          for tarball in artifacts/packages/*.tgz; do
+            echo "Publishing $(basename "$tarball")"
+            npm publish "$tarball" --access public
+          done
