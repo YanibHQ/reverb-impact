@@ -7,7 +7,7 @@ explicit and package breaking changes may occur in minor releases.
 
 ## Unreleased
 
-## 0.1.0 - 2026-08-30
+## 0.1.0 - 2026-08-31
 
 - Published the host-neutral libraries under the personal npm scope `@yanib` and the CLI as
   `reverb-impact`.

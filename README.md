@@ -10,6 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/YanibHQ/reverb-impact/actions/workflows/ci.yml"><img src="https://github.com/YanibHQ/reverb-impact/actions/workflows/ci.yml/badge.svg" alt="CI status" /></a>
+  <a href="https://www.npmjs.com/package/reverb-impact"><img src="https://img.shields.io/npm/v/reverb-impact" alt="npm version" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/YanibHQ/reverb-impact" alt="Apache-2.0 license" /></a>
 </p>
 
