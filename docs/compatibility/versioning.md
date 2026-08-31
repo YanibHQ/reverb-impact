@@ -6,8 +6,8 @@ Reverb versions three independent surfaces:
 2. canonical JSON/storage schema major/minor;
 3. adapter extraction and identity versions.
 
-The current release is pre-v1 package version `0.1.0`, schema `1.0`, SQLite migration 5, and
-PostgreSQL migration 2. There is no previous public schema major: schema v0 is explicitly
+The current release is pre-v1 package version `0.2.0`, schema `1.0`, SQLite migration 5, and
+PostgreSQL migration 3. There is no previous public schema major: schema v0 is explicitly
 unsupported rather than silently treated as a historical format. The schema-major envelope accepts
 supported major 1; each concrete schema validator still requires its declared minor contract.
 
@@ -26,6 +26,11 @@ supported major 1; each concrete schema validator still requires its declared mi
 Every release updates [machine-readable release metadata](release-metadata.json) with migration,
 re-index, adapter identity, and calibration impact. CI compares that record to package/schema/
 adapter code and fails when it is stale.
+
+Version `0.2.0` intentionally requires `AnalyzePullRequestInput.producerHeadObservation` so the
+producer can be analyzed as a consumer at the exact PR head. Hosted PostgreSQL deployments apply
+migration 3 to add reclaimable webhook-worker leases. Neither change requires adapter re-indexing
+or a calibration reset.
 
 ## Upgrade procedure
 

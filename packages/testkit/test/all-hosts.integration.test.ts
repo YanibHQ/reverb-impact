@@ -124,6 +124,7 @@ describe(`canonical host conformance ${HOST_CONFORMANCE_VERSION}`, () => {
             reviews: true,
             disclosureProjection: true,
             deletionPropagation: true,
+            durableRuntime: true,
             unsupportedOptionalPorts: ['model', 'vector_search'],
           },
           async putAnalysis(result, supersessionKey) {
@@ -200,6 +201,7 @@ describe(`canonical host conformance ${HOST_CONFORMANCE_VERSION}`, () => {
               reviews: true,
               disclosureProjection: true,
               deletionPropagation: false,
+              durableRuntime: false,
               unsupportedOptionalPorts: ['provider_webhooks', 'external_delivery', 'purge'],
             },
             async putAnalysis(result: AnalysisResult, supersessionKey: ContentHash) {

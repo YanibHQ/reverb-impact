@@ -14,6 +14,10 @@ The two hosts execute the same domain operations and emit the same canonical JSO
 
 The system stores a temporal evidence graph over immutable repository generations. It does not keep one mutable “truth graph.” This makes a PR result reproducible, lets two repositories be indexed at different exact SHAs without pretending simultaneity, and makes staleness visible.
 
+The changed repository is also a possible consumer. Its consumer evidence comes from the exact PR
+head observation supplied with the analysis—not from its base generation or a mutable “latest”
+pointer. Downstream repositories continue to use their explicitly selected immutable generations.
+
 ## 2. Architecture drivers
 
 1. The source and consumer repositories are independently versioned.
@@ -46,6 +50,17 @@ SQLite                  PostgreSQL
                    |
               canonical schemas
 ```
+
+The hosted profile composes these boundaries as a durable pipeline:
+
+```text
+signed webhook -> leased inbox -> idempotent job -> analysis/review adapter
+                                             -> canonical record + pointer
+                                             -> delivery outbox -> current-head write
+```
+
+Each arrow crosses an explicit lease or immutable record boundary. Analysis completion never
+depends on a provider write, and disabling reads or writes leaves queued work recoverable.
 
 ### 3.1 Domain package
 

@@ -1,7 +1,7 @@
 # Reverb Architecture and Implementation Plan
 
-**Status:** Phase 001 implemented and locally verified; external Phase 000 publication controls pending  
-**Scope:** complete product plan; implementation has not started
+**Status:** Phases 000–008 implemented; public pre-1.0 release line active; production calibration remains external
+**Scope:** implemented standalone product and continuing release plan
 
 **Owning organization:** `YanibHQ`  
 **Canonical repository:** `YanibHQ/reverb-impact`  

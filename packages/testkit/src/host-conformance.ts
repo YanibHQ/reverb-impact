@@ -18,6 +18,7 @@ export interface HostCapabilityDeclaration {
   readonly reviews: boolean;
   readonly disclosureProjection: boolean;
   readonly deletionPropagation: boolean;
+  readonly durableRuntime: boolean;
   readonly unsupportedOptionalPorts: readonly string[];
 }
 
@@ -110,6 +111,13 @@ export async function runCanonicalHostConformance(input: {
     }
     if (host.capabilities.deletionPropagation && host.purgeRepository === undefined) {
       throw new Error('Host declares deletion propagation without implementing purgeRepository.');
+    }
+    if (
+      host.capabilities.durableRuntime &&
+      (host.capabilities.persistence !== 'durable' ||
+        host.capabilities.unsupportedOptionalPorts.includes('durable_jobs'))
+    ) {
+      throw new Error('Host declares a durable runtime without durable persistence and jobs.');
     }
     if (host.capabilities.deletionPropagation && host.purgeRepository && input.cases[0]) {
       const first = input.cases[0].result;

@@ -5,7 +5,7 @@ TypeScript and npm contract analysis for Reverb.
 ## Installation
 
 ```bash
-pnpm add --save-exact @yanib/reverb-adapter-typescript@0.1.0
+pnpm add --save-exact @yanib/reverb-adapter-typescript@0.2.0
 ```
 
 Import only the documented package root. See the

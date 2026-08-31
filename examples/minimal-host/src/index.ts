@@ -16,6 +16,7 @@ export class MinimalMemoryHost {
     reviews: false,
     disclosureProjection: true,
     deletionPropagation: true,
+    durableRuntime: false,
     unsupportedOptionalPorts: [
       'provider_webhooks',
       'durable_jobs',

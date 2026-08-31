@@ -37,8 +37,17 @@ for (const host of document.hosts) {
   for (const field of ['reviews', 'disclosure_projection', 'deletion_propagation']) {
     if (typeof host[field] !== 'boolean') fail(`${host.host_id} has invalid ${field}`);
   }
+  if (typeof host.durable_runtime !== 'boolean') {
+    fail(`${host.host_id} has invalid durable_runtime`);
+  }
   if (!Array.isArray(host.unsupported_optional_ports)) {
     fail(`${host.host_id} must list unsupported optional ports`);
+  }
+  if (
+    host.durable_runtime &&
+    (host.persistence !== 'durable' || host.unsupported_optional_ports.includes('durable_jobs'))
+  ) {
+    fail(`${host.host_id} declares a durable runtime without durable jobs`);
   }
 }
 

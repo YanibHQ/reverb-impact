@@ -1,8 +1,8 @@
 # Phase 006 — Public Host Adapters and Yanib Integration
 
-**Status:** Standalone implementation complete; external publication and Yanib work not executed  
+**Status:** Standalone implementation and public pre-1.0 publication complete; Yanib work not executed
 **Depends on:** [005](../005-delivery-surfaces/)  
-**Produces:** stable packages/protocol, second-host proof, Yanib guide, public v1 artifact
+**Produces:** stable packages/protocol, independent-host proof, Yanib guide, public release artifact
 
 ## Goal
 

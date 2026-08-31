@@ -16,7 +16,7 @@ must not import storage internals or another host's implementation.
 | `@yanib/reverb-storage-sqlite`     | local durable storage adapter                                         |
 | `@yanib/reverb-storage-postgres`   | hosted scoped records, webhook/jobs/outbox/projection/purge adapter   |
 | `@yanib/reverb-host-local`         | exact local Git/filesystem host primitives                            |
-| `@yanib/reverb-host-github`        | minimum-permission GitHub reference-host primitives                   |
+| `@yanib/reverb-host-github`        | GitHub source, durable runtime, review, and check-delivery adapters   |
 | `@yanib/reverb-testkit`            | conformance v1, fakes, fixtures, and host capability declarations     |
 | `reverb-impact`                    | `reverb` CLI and embeddable CLI construction                          |
 
@@ -41,3 +41,18 @@ example run canonical host conformance v1 without normalizing finding or coverag
 
 Hosts supply ports or call public application use cases. They own their authentication, tenancy,
 billing, notification, provider client, and UI. Reverb domain code never imports those systems.
+
+## Exact producer-as-consumer input
+
+`AnalyzePullRequest` requires `producerHeadObservation`, the contract observation extracted from
+the exact analyzed head. The producer participates in consumer selection through this observation;
+Reverb never substitutes the base or latest default-branch generation for same-repository
+references.
+
+## GitHub hosted runtime
+
+`GitHubHostedRuntime` consumes the structural `GitHubHostedRuntimeStore` contract. A
+`PostgresHostedStore` instance satisfies that contract without either package importing the other.
+Hosts register closed-kind handlers and may use `CanonicalAnalysisJobAdapter`,
+`AuthorizedReviewJobAdapter`, and `GitHubCheckDeliveryAdapter` for the standard persistence and
+provider boundaries.

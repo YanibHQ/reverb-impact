@@ -37,6 +37,12 @@ export interface WebhookInboxEntry {
   readonly pointer: Readonly<Record<string, unknown>>;
 }
 
+export interface WebhookInboxClaim extends WebhookInboxEntry {
+  readonly attempt: number;
+  readonly leaseOwner: string;
+  readonly leaseExpiresAt: Instant;
+}
+
 export interface HostedJobInput {
   readonly workspaceId: WorkspaceId;
   readonly kind: string;
@@ -188,7 +194,16 @@ export class PostgresHostedStore {
           record.createdAt,
         ],
       );
-      return result.rowCount === 1;
+      if (result.rowCount === 1) return true;
+      const existing = await client.query<{ payload_hash: ContentHash }>(
+        `SELECT payload_hash FROM reverb_canonical_records
+         WHERE workspace_id = $1 AND record_type = $2 AND record_id = $3`,
+        [record.workspaceId, record.recordType, record.recordId],
+      );
+      if (existing.rows[0]?.payload_hash !== record.payloadHash) {
+        throw new Error('Canonical record identity conflicts with an immutable payload.');
+      }
+      return false;
     });
   }
 
@@ -307,7 +322,7 @@ export class PostgresHostedStore {
     readonly workspaceId: WorkspaceId;
     readonly installationId: number;
     readonly deliveryId: string;
-    readonly state: 'processed' | 'failed';
+    readonly state: 'pending' | 'processed' | 'failed';
   }): Promise<boolean> {
     return this.#workspace(input.workspaceId, async (client) => {
       const result = await client.query(
@@ -315,6 +330,92 @@ export class PostgresHostedStore {
          WHERE workspace_id = $1 AND installation_id = $2 AND delivery_id = $3
            AND processing_state = 'pending'`,
         [input.workspaceId, input.installationId, input.deliveryId, input.state],
+      );
+      return result.rowCount === 1;
+    });
+  }
+
+  public async claimWebhook(input: {
+    readonly workspaceId: WorkspaceId;
+    readonly workerId: string;
+    readonly now: Instant;
+    readonly leaseExpiresAt: Instant;
+  }): Promise<WebhookInboxClaim | null> {
+    return this.#workspace(input.workspaceId, async (client) => {
+      const result = await client.query<{
+        installation_id: string;
+        delivery_id: string;
+        event_type: string;
+        repository_external_id: string | null;
+        received_at: Date;
+        payload_hash: ContentHash;
+        pointer: unknown;
+        attempt: number;
+        lease_owner: string;
+        lease_expires_at: Date;
+      }>(
+        `WITH selected AS (
+           SELECT installation_id, delivery_id FROM reverb_webhook_inbox
+           WHERE workspace_id = $1
+             AND (processing_state = 'pending' OR
+                  (processing_state = 'processing' AND lease_expires_at <= $2))
+           ORDER BY received_at, delivery_id
+           FOR UPDATE SKIP LOCKED LIMIT 1
+         )
+         UPDATE reverb_webhook_inbox AS inbox
+         SET processing_state = 'processing', attempt = attempt + 1,
+             lease_owner = $3, lease_expires_at = $4
+         FROM selected
+         WHERE inbox.workspace_id = $1
+           AND inbox.installation_id = selected.installation_id
+           AND inbox.delivery_id = selected.delivery_id
+         RETURNING inbox.*`,
+        [input.workspaceId, input.now, input.workerId, input.leaseExpiresAt],
+      );
+      const row = result.rows[0];
+      if (!row) return null;
+      return {
+        workspaceId: input.workspaceId,
+        installationId: Number(row.installation_id),
+        deliveryId: row.delivery_id,
+        eventType: row.event_type,
+        ...(row.repository_external_id === null
+          ? {}
+          : { repositoryExternalId: Number(row.repository_external_id) }),
+        receivedAt: dateString(row.received_at),
+        signatureValidated: true,
+        payloadHash: row.payload_hash,
+        pointer: jsonRecord(row.pointer),
+        attempt: row.attempt,
+        leaseOwner: row.lease_owner,
+        leaseExpiresAt: dateString(row.lease_expires_at),
+      };
+    });
+  }
+
+  public async resolveWebhook(input: {
+    readonly workspaceId: WorkspaceId;
+    readonly installationId: number;
+    readonly deliveryId: string;
+    readonly workerId: string;
+    readonly state: 'processed' | 'failed';
+    readonly failureCode?: string;
+  }): Promise<boolean> {
+    return this.#workspace(input.workspaceId, async (client) => {
+      const result = await client.query(
+        `UPDATE reverb_webhook_inbox
+         SET processing_state = $5, failure_code = $6,
+             lease_owner = NULL, lease_expires_at = NULL
+         WHERE workspace_id = $1 AND installation_id = $2 AND delivery_id = $3
+           AND processing_state = 'processing' AND lease_owner = $4`,
+        [
+          input.workspaceId,
+          input.installationId,
+          input.deliveryId,
+          input.workerId,
+          input.state,
+          input.failureCode ?? null,
+        ],
       );
       return result.rowCount === 1;
     });
@@ -579,6 +680,31 @@ export class PostgresHostedStore {
          WHERE workspace_id = $1 AND idempotency_key = $2
            AND state = 'leased' AND lease_owner = $3`,
         [input.workspaceId, input.idempotencyKey, input.workerId, input.providerExternalId],
+      );
+      return result.rowCount === 1;
+    });
+  }
+
+  public async resolveDelivery(input: {
+    readonly workspaceId: WorkspaceId;
+    readonly idempotencyKey: ContentHash;
+    readonly workerId: string;
+    readonly state: 'delivered' | 'disabled' | 'superseded';
+    readonly providerExternalId?: string;
+  }): Promise<boolean> {
+    return this.#workspace(input.workspaceId, async (client) => {
+      const result = await client.query(
+        `UPDATE reverb_delivery_outbox SET state = $4, provider_external_id = $5,
+           lease_owner = NULL, lease_expires_at = NULL
+         WHERE workspace_id = $1 AND idempotency_key = $2
+           AND state = 'leased' AND lease_owner = $3`,
+        [
+          input.workspaceId,
+          input.idempotencyKey,
+          input.workerId,
+          input.state,
+          input.providerExternalId ?? null,
+        ],
       );
       return result.rowCount === 1;
     });

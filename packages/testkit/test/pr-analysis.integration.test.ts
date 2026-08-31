@@ -47,6 +47,7 @@ const missingConsumer = repositoryStableId(`local:sha256:${'4'.repeat(64)}`);
 const baseGeneration = generationId('gen_01990f64-0000-7000-8000-000000000120');
 const consumerGenerationA = generationId('gen_01990f64-0000-7000-8000-000000000121');
 const consumerGenerationB = generationId('gen_01990f64-0000-7000-8000-000000000122');
+const producerHeadGeneration = generationId('gen_01990f64-0000-7000-8000-000000000123');
 const baseSha = commitSha('a'.repeat(40));
 const firstHead = commitSha('b'.repeat(40));
 const secondHead = commitSha('c'.repeat(40));
@@ -230,6 +231,23 @@ function change(headSha: CommitSha): IndexedContractChange {
   };
 }
 
+function producerHeadObservation(
+  sha: CommitSha,
+  references: readonly IndexedContractReference[] = [],
+): ContractGenerationObservation {
+  return {
+    workspaceId: workspace,
+    repositoryId: producer,
+    generationId: producerHeadGeneration,
+    commitSha: sha,
+    coverageState: 'complete',
+    definitions: [],
+    references,
+    observedAt: now,
+    outputHash: contentHash(`sha256:${'9'.repeat(64)}`),
+  };
+}
+
 async function observation(
   evidence: InMemoryEvidenceGraphStore,
   repositoryId: RepositoryStableId,
@@ -256,6 +274,95 @@ async function observation(
 }
 
 describe('exact multi-repository PR analysis', () => {
+  it('detects same-repository references at the exact head and removes deleted head references', async () => {
+    const generations = new InMemoryGenerationStore();
+    const evidence = new InMemoryEvidenceGraphStore();
+    const registry = new InMemoryRegistry();
+    const clock = new FakeClock(now);
+    await registry.putRevision(registrySnapshot);
+    await completeGeneration(generations, baseGeneration, producer, baseSha, 110);
+    const overlay = overlayId('ovl_01990f64-0000-7000-8000-000000000110');
+    await completeOverlay(generations, overlay, firstHead, 111);
+    const analyzer = new AnalyzePullRequest({ generations, evidence, registry, clock });
+    const liveReference = reference(
+      producer,
+      producerHeadGeneration,
+      firstHead,
+      'same-repository-client',
+    );
+
+    const withReference = await analyzer.execute({
+      analysisId: analysisId('ana_01990f64-0000-7000-8000-000000000110'),
+      workspaceId: workspace,
+      registryRevision: registrySnapshot.revision.revision,
+      policyRevision: policy,
+      policyMajor: 1,
+      producerRepositoryId: producer,
+      baseGenerationId: baseGeneration,
+      overlayId: overlay,
+      pullRequest: { provider: 'local', number: 41, baseSha, headSha: firstHead },
+      changes: [change(firstHead)],
+      producerDefinitions: [definition],
+      producerHeadObservation: producerHeadObservation(firstHead, [liveReference]),
+    });
+    expect(withReference).toMatchObject({
+      ok: true,
+      value: {
+        findings: [{ edge: { consumerRepositoryId: producer, reference: liveReference } }],
+      },
+    });
+
+    const afterDeletion = await analyzer.execute({
+      analysisId: analysisId('ana_01990f64-0000-7000-8000-000000000111'),
+      workspaceId: workspace,
+      registryRevision: registrySnapshot.revision.revision,
+      policyRevision: policy,
+      policyMajor: 1,
+      producerRepositoryId: producer,
+      baseGenerationId: baseGeneration,
+      overlayId: overlay,
+      pullRequest: { provider: 'local', number: 41, baseSha, headSha: firstHead },
+      changes: [change(firstHead)],
+      producerDefinitions: [definition],
+      producerHeadObservation: producerHeadObservation(firstHead),
+    });
+    expect(afterDeletion).toMatchObject({ ok: true, value: { findings: [] } });
+  });
+
+  it('rejects producer-as-consumer evidence from a different head', async () => {
+    const generations = new InMemoryGenerationStore();
+    const evidence = new InMemoryEvidenceGraphStore();
+    const registry = new InMemoryRegistry();
+    await registry.putRevision(registrySnapshot);
+    await completeGeneration(generations, baseGeneration, producer, baseSha, 112);
+    const overlay = overlayId('ovl_01990f64-0000-7000-8000-000000000112');
+    await completeOverlay(generations, overlay, firstHead, 113);
+
+    const result = await new AnalyzePullRequest({
+      generations,
+      evidence,
+      registry,
+      clock: new FakeClock(now),
+    }).execute({
+      analysisId: analysisId('ana_01990f64-0000-7000-8000-000000000112'),
+      workspaceId: workspace,
+      registryRevision: registrySnapshot.revision.revision,
+      policyRevision: policy,
+      policyMajor: 1,
+      producerRepositoryId: producer,
+      baseGenerationId: baseGeneration,
+      overlayId: overlay,
+      pullRequest: { provider: 'local', baseSha, headSha: firstHead },
+      changes: [change(firstHead)],
+      producerDefinitions: [definition],
+      producerHeadObservation: producerHeadObservation(secondHead),
+    });
+    expect(result).toMatchObject({
+      ok: false,
+      failure: { code: 'producer_head_observation_mismatch' },
+    });
+  });
+
   it('records exact SHAs, preserves consumer-specific findings, and supersedes a force-pushed run', async () => {
     const generations = new InMemoryGenerationStore();
     const evidence = new InMemoryEvidenceGraphStore();
@@ -308,6 +415,7 @@ describe('exact multi-repository PR analysis', () => {
       pullRequest: { provider: 'local', number: 42, baseSha, headSha: firstHead },
       changes: [change(firstHead)],
       producerDefinitions: [definition],
+      producerHeadObservation: producerHeadObservation(firstHead),
     });
     expect(first.ok).toBe(true);
     if (!first.ok) return;
@@ -354,6 +462,7 @@ describe('exact multi-repository PR analysis', () => {
       pullRequest: { provider: 'local', number: 42, baseSha, headSha: secondHead },
       changes: [change(secondHead)],
       producerDefinitions: [definition],
+      producerHeadObservation: producerHeadObservation(secondHead),
     });
     expect(second.ok).toBe(true);
     if (!second.ok) return;
@@ -400,12 +509,17 @@ describe('exact multi-repository PR analysis', () => {
       pullRequest: { provider: 'local', baseSha, headSha: firstHead },
       changes: [change(firstHead)],
       producerDefinitions: [definition],
+      producerHeadObservation: producerHeadObservation(firstHead),
       refreshBudgetMs: 10,
     });
     expect(performance.now() - started).toBeLessThan(200);
     expect(result).toMatchObject({ ok: true, value: { state: 'partial' } });
     if (result.ok) {
-      expect(result.value.consumers.every((value) => value.state === 'not_indexed')).toBe(true);
+      expect(
+        result.value.consumers
+          .filter((value) => value.repositoryId !== producer)
+          .every((value) => value.state === 'not_indexed'),
+      ).toBe(true);
       expect(result.value.abstentions).toHaveLength(3);
     }
   });
@@ -436,6 +550,7 @@ describe('exact multi-repository PR analysis', () => {
       pullRequest: { provider: 'local', baseSha, headSha: firstHead },
       changes: [change(firstHead)],
       producerDefinitions: [definition],
+      producerHeadObservation: producerHeadObservation(firstHead),
     });
     expect(result).toMatchObject({ ok: true, value: { state: 'partial', findings: [] } });
     if (result.ok) {
@@ -488,6 +603,7 @@ describe('exact multi-repository PR analysis', () => {
       pullRequest: { provider: 'local', number: 55, baseSha, headSha: firstHead },
       changes: [change(firstHead)],
       producerDefinitions: [definition],
+      producerHeadObservation: producerHeadObservation(firstHead),
     });
     expect(first.ok).toBe(true);
     if (!first.ok) return;
@@ -556,6 +672,7 @@ describe('exact multi-repository PR analysis', () => {
       pullRequest: { provider: 'local', number: 55, baseSha, headSha: firstHead },
       changes: [change(firstHead)],
       producerDefinitions: [definition],
+      producerHeadObservation: producerHeadObservation(firstHead),
     });
     expect(second).toMatchObject({
       ok: true,

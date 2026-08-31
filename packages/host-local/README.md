@@ -5,7 +5,7 @@ Local Git and filesystem host primitives for Reverb.
 ## Installation
 
 ```bash
-pnpm add --save-exact @yanib/reverb-host-local@0.1.0
+pnpm add --save-exact @yanib/reverb-host-local@0.2.0
 ```
 
 Import only the documented package root. See the

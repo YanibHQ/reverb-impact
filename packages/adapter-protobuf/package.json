@@ -1,6 +1,6 @@
 {
   "name": "@yanib/reverb-adapter-protobuf",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Protobuf and gRPC contract adapter for Reverb",
   "type": "module",
   "license": "Apache-2.0",

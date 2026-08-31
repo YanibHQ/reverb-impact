@@ -1,6 +1,6 @@
 # Reverb Implementation Tasks
 
-**Status:** Phases 000–005 implemented locally through shadow; all strata preview-only; external publication/advisory controls pending  
+**Status:** Phases 000–008 implemented; all strata preview-only unless separately promoted
 **Rule:** a task is complete only when its verification command/evidence exists  
 **Source of requirements:** [spec.md](spec.md)
 
@@ -19,6 +19,8 @@
 | FR-9 evaluation/calibration/policy | 004 | 4D–4G | labelled corpus, statistics, replay |
 | FR-10 delivery | 005 | 5A–5G | webhook/check integration, shadow |
 | FR-11 public packages/hosts/Yanib | 006 | 6A–6F | conformance, compatibility, release |
+| FR-12 exact same-repository impact | 007 | 7A–7B | exact-head, deletion, mismatch, CLI integration |
+| FR-13 hosted runtime composition | 008 | 8A–8D | inbox/job/outbox leases, tenant, retry, end-to-end |
 | NFR-1 security/isolation | all, concentrated 001/005/006 | 1G, 5B–5C, 6E–6F | threat corpus, tenant isolation, parser sandbox, purge |
 | NFR-2 reproducibility | 001–004, 006 | 1E–1F, 2A, 3E, 4C–4D, 6D | golden replay, full/incremental equivalence, frozen artifact |
 | NFR-3 performance | 001, 003, 005, 006 | 1E, 3D–3E, 5B, 5F, 6F | representative load and latency budgets |
@@ -54,7 +56,7 @@
 
 - [x] Check `reverb-impact`/publisher availability across GitHub, npm, containers, and domains; record that authorized trademark clearance remains external
 - [x] Record product/repo/package naming ADR; rename before code if needed
-- [ ] Initialize Git repository and default branch protections
+- [x] Initialize Git repository and default branch protections
 - [x] Add root documentation map and copy this feature set into the repository
 
 ### 0B. Legal and governance
@@ -73,7 +75,8 @@
 - [x] Add CI with frozen lockfile and ephemeral SQLite/Postgres services
 - [x] Add ADR and feature-link validation job
 
-**Phase 000 complete when:** a clean clone runs all empty/skeleton quality gates and produces a signed/checksummed unpublished package tarball plus SBOM.
+**Phase 000 complete when:** a clean clone runs all quality gates and produces checksummed package
+tarballs plus an SBOM and independently attested workflow build.
 
 ## 3. Phase 001 — repository index foundation
 
@@ -362,7 +365,9 @@ repository or internals were accessed.
 - [x] fix all broken docs links/placeholders and pin/qualify external claims
 - [x] run clean install, upgrade, conformance, adversarial, load, security, and release drills
 
-**Phase 006 complete when:** two hosts—including Yanib or an independent equivalent—consume the stable protocol without table coupling and the public v1 evidence is archived.
+**Phase 006 complete when:** two hosts—including Yanib or an independent equivalent—consume the
+stable protocol without table coupling and the public release evidence is archived. The independent
+minimal host satisfies this standalone gate; Yanib adoption remains a separate product change.
 
 ## 9. Global definition of done
 

@@ -1,15 +1,16 @@
 # Phase 006 Tasks
 
-**Status:** Standalone implementation complete; external publication/DOI and Yanib-specific work remain open
+**Status:** Standalone implementation and npm publication complete; DOI and Yanib-specific work remain external
 
 ## A. Package/schema stability
 
 - [x] Audit/document package exports and errors
 - [x] Add current schema-major and explicit no-previous-major/unsupported-v0 compatibility fixtures
 - [x] Add migration/re-index/identity/calibration release metadata
-- [ ] Produce signed packages/container, checksums, SBOM, provenance, license report
-  - Local unpublished packages, checksums, SBOM, provenance workflow, and license report exist;
-    signing/container/publication require external authorization.
+- [x] Produce packages, checksums, SBOM, build provenance, and license report
+- [ ] Produce release signatures/container
+  - npm packages and independently attested build artifacts are public; a container and release
+    signatures are not required by the current package-only distribution profile.
 
 ## B. Conformance
 
@@ -63,8 +64,9 @@ Reverb itself.
 - [x] Run clean install and oldest-supported upgrade
 - [x] Run conformance/adversarial/security/load/release drills
 - [x] Validate every local link and pin/qualify external claims
-- [ ] Publish v1 evidence and research status
-  - Local release-candidate evidence and research status exist; public v1 publication is not claimed.
+- [x] Publish pre-v1 release evidence and research status
+- [ ] Publish v1 evidence
+  - Public v1 remains gated on representative production calibration.
 
 ## Verification
 

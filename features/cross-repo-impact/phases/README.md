@@ -15,6 +15,8 @@ Each phase has four documents:
 | [004 — Precision and review](004-precision-and-review/) | Corpus, three-axis labels, calibration, abstention, suppressions and simulation | 003 |
 | [005 — Delivery surfaces](005-delivery-surfaces/) | CLI/API preview, GitHub App and disclosure-safe advisory checks | promoted stratum from 004 |
 | [006 — Host adapters](006-host-adapters/) | Stable public packages, conformance, second-host/Yanib proof and public artifact | 005 |
+| [007 — Exact same-repository impact](007-exact-self-impact/) | Producer-as-consumer joins against the exact pull-request head | 006 |
+| [008 — Hosted runtime](008-hosted-runtime/) | Durable GitHub/PostgreSQL analysis, review, and delivery composition | 007 |
 
 The phases are capability gates, not calendar sprints. Work may prepare a later phase in parallel, but no customer-visible delivery bypasses the earlier evidence, security or promotion gates.
 
