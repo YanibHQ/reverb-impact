@@ -1,11 +1,11 @@
-# @yanibhq/reverb-domain
+# @yanib/reverb-domain
 
 Pure domain values and deterministic analysis policy for Reverb.
 
 ## Installation
 
 ```bash
-pnpm add --save-exact @yanibhq/reverb-domain@0.1.0
+pnpm add --save-exact @yanib/reverb-domain@0.1.0
 ```
 
 Import only the documented package root. See the

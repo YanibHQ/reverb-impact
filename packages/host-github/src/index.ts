@@ -1,4 +1,4 @@
-export const HOST_GITHUB_PACKAGE_ID = '@yanibhq/reverb-host-github';
+export const HOST_GITHUB_PACKAGE_ID = '@yanib/reverb-host-github';
 
 export * from './app-manifest.js';
 export * from './authorization.js';

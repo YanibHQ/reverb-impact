@@ -1,4 +1,4 @@
-import { contentHash } from '@yanibhq/reverb-domain';
+import { contentHash } from '@yanib/reverb-domain';
 import { describe, expect, it } from 'vitest';
 
 import {

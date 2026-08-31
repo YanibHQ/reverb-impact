@@ -19,13 +19,13 @@ import {
   type RepositoryStableId,
   type TreeEntry,
   type TreeManifest,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 import {
   portFailure,
   portSuccess,
   type PortResult,
   type RepositoryReader,
-} from '@yanibhq/reverb-application';
+} from '@yanib/reverb-application';
 
 interface GitOutput {
   readonly stdout: Uint8Array;

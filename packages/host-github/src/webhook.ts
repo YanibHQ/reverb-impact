@@ -1,7 +1,7 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 
-import { contentHash } from '@yanibhq/reverb-domain';
-import type { ContentHash, Instant, WorkspaceId } from '@yanibhq/reverb-domain';
+import { contentHash } from '@yanib/reverb-domain';
+import type { ContentHash, Instant, WorkspaceId } from '@yanib/reverb-domain';
 
 const SUPPORTED_EVENTS = new Set([
   'installation',

@@ -13,7 +13,7 @@ Every canonical payload contains:
   "schema": "reverb.analysis-result",
   "schema_version": "1.0",
   "producer": {
-    "package": "@yanibhq/reverb-application",
+    "package": "@yanib/reverb-application",
     "version": "0.1.0"
   }
 }
@@ -25,7 +25,7 @@ Rules:
 - changing meaning, deleting/renaming a field, or widening a closed enum requires a schema major;
 - readers ignore unknown optional fields and reject unsupported majors;
 - adapter manifests, identity versions, registry revisions, and policy revisions are explicit fields rather than inferred from the package version;
-- JSON Schema files are published from `@yanibhq/reverb-schema` and mirrored under `schemas/` in releases.
+- JSON Schema files are published from `@yanib/reverb-schema` and mirrored under `schemas/` in releases.
 
 ## 2. Domain API
 
@@ -445,7 +445,7 @@ Every host adapter MUST pass fixtures for:
 
 ## 12. Yanib integration boundary
 
-Yanib consumes `AnalysisResult`, `FindingOccurrence`, `Coverage`, and review APIs through `@yanibhq/reverb-schema` and a thin SDK. It does not:
+Yanib consumes `AnalysisResult`, `FindingOccurrence`, `Coverage`, and review APIs through `@yanib/reverb-schema` and a thin SDK. It does not:
 
 - import a reference-host database client;
 - depend on Reverb's SQLite/Postgres tables;

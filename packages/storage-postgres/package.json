@@ -1,5 +1,5 @@
 {
-  "name": "@yanibhq/reverb-storage-postgres",
+  "name": "@yanib/reverb-storage-postgres",
   "version": "0.1.0",
   "description": "PostgreSQL storage adapter for Reverb reference hosts",
   "type": "module",
@@ -31,8 +31,8 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@yanibhq/reverb-application": "workspace:*",
-    "@yanibhq/reverb-domain": "workspace:*",
+    "@yanib/reverb-application": "workspace:*",
+    "@yanib/reverb-domain": "workspace:*",
     "pg": "8.23.0"
   },
   "devDependencies": {

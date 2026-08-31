@@ -1,11 +1,11 @@
-# @yanibhq/reverb-storage-postgres
+# @yanib/reverb-storage-postgres
 
 PostgreSQL storage for hosted Reverb integrations.
 
 ## Installation
 
 ```bash
-pnpm add --save-exact @yanibhq/reverb-storage-postgres@0.1.0
+pnpm add --save-exact @yanib/reverb-storage-postgres@0.1.0
 ```
 
 Import only the documented package root. See the

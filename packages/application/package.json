@@ -1,5 +1,5 @@
 {
-  "name": "@yanibhq/reverb-application",
+  "name": "@yanib/reverb-application",
   "version": "0.1.0",
   "description": "Reverb application use cases and host-neutral ports",
   "type": "module",
@@ -31,7 +31,7 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@yanibhq/reverb-domain": "workspace:*"
+    "@yanib/reverb-domain": "workspace:*"
   },
   "publishConfig": {
     "access": "public",

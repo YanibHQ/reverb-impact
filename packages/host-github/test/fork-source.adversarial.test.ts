@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto';
 
-import { commitSha, instant, repositoryStableId, workspaceId } from '@yanibhq/reverb-domain';
+import { commitSha, instant, repositoryStableId, workspaceId } from '@yanib/reverb-domain';
 import { describe, expect, it, vi } from 'vitest';
 
 import {

@@ -1,4 +1,4 @@
-import type { PromotionRecord, RepositoryStableId, WorkspaceId } from '@yanibhq/reverb-domain';
+import type { PromotionRecord, RepositoryStableId, WorkspaceId } from '@yanib/reverb-domain';
 
 export type HostedCapability = 'read' | 'parser' | 'model' | 'write';
 

@@ -1,4 +1,4 @@
-import type { ContentHash } from '@yanibhq/reverb-domain';
+import type { ContentHash } from '@yanib/reverb-domain';
 
 import type { DifferMetadata, ExternalToolDeclaration } from './types.js';
 import { AdapterValidationError } from './validation.js';

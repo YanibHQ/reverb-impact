@@ -1,4 +1,4 @@
-import { createAdmissionReport } from '@yanibhq/reverb-adapter-sdk';
+import { createAdmissionReport } from '@yanib/reverb-adapter-sdk';
 
 import { TYPESCRIPT_ADAPTER_MANIFEST } from './manifest.js';
 

@@ -3,7 +3,7 @@ import {
   createReviewEvent,
   type ReviewEvent,
   type SuppressionRule,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 
 import { portFailure, portSuccess } from './ports.js';
 import type { EvidenceGraphStore, PortResult, ReviewEvaluationStore } from './ports.js';

@@ -1,11 +1,11 @@
-# @yanibhq/reverb-adapter-openapi
+# @yanib/reverb-adapter-openapi
 
 OpenAPI and HTTP contract analysis for Reverb.
 
 ## Installation
 
 ```bash
-pnpm add --save-exact @yanibhq/reverb-adapter-openapi@0.1.0
+pnpm add --save-exact @yanib/reverb-adapter-openapi@0.1.0
 ```
 
 Import only the documented package root. See the

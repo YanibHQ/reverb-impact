@@ -1,5 +1,5 @@
 {
-  "name": "@yanibhq/reverb-host-local",
+  "name": "@yanib/reverb-host-local",
   "version": "0.1.0",
   "description": "Local Git and filesystem host adapters for Reverb",
   "type": "module",
@@ -31,12 +31,12 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@yanibhq/reverb-application": "workspace:*",
-    "@yanibhq/reverb-domain": "workspace:*",
+    "@yanib/reverb-application": "workspace:*",
+    "@yanib/reverb-domain": "workspace:*",
     "yaml": "2.8.3"
   },
   "devDependencies": {
-    "@yanibhq/reverb-testkit": "workspace:*"
+    "@yanib/reverb-testkit": "workspace:*"
   },
   "publishConfig": {
     "access": "public",

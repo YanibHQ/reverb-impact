@@ -1,5 +1,5 @@
 {
-  "name": "@yanibhq/reverb-adapter-sdk",
+  "name": "@yanib/reverb-adapter-sdk",
   "version": "0.1.0",
   "description": "Contract adapter interfaces and validation for Reverb",
   "type": "module",
@@ -31,8 +31,8 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@yanibhq/reverb-domain": "workspace:*",
-    "@yanibhq/reverb-schema": "workspace:*"
+    "@yanib/reverb-domain": "workspace:*",
+    "@yanib/reverb-schema": "workspace:*"
   },
   "publishConfig": {
     "access": "public",

@@ -1,4 +1,4 @@
-import type { CheckDeliveryPlan, ProviderAnnotation } from '@yanibhq/reverb-domain';
+import type { CheckDeliveryPlan, ProviderAnnotation } from '@yanib/reverb-domain';
 
 import type { HostedOperationalControls } from './controls.js';
 

@@ -5,7 +5,7 @@ import type {
   ReviewEvent,
   SuppressionRule,
   WorkspaceId,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 import type {
   AuthorizationPort,
   EvidenceGraphStore,
@@ -13,8 +13,8 @@ import type {
   RecordReviewInput,
   ReviewEvaluationStore,
   Subject,
-} from '@yanibhq/reverb-application';
-import { RecordReview, portFailure, portSuccess } from '@yanibhq/reverb-application';
+} from '@yanib/reverb-application';
+import { RecordReview, portFailure, portSuccess } from '@yanib/reverb-application';
 
 export interface FindingDetailProjection {
   readonly schema: 'reverb.finding-detail';

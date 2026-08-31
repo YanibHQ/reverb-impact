@@ -1,4 +1,4 @@
-import { configRevision, contentHash, repoPath, sha256Bytes } from '@yanibhq/reverb-domain';
+import { configRevision, contentHash, repoPath, sha256Bytes } from '@yanib/reverb-domain';
 import {
   validateAdapterManifest,
   type ArtifactInput,

@@ -1,5 +1,5 @@
 {
-  "name": "@yanibhq/reverb-adapter-protobuf",
+  "name": "@yanib/reverb-adapter-protobuf",
   "version": "0.1.0",
   "description": "Protobuf and gRPC contract adapter for Reverb",
   "type": "module",
@@ -31,8 +31,8 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@yanibhq/reverb-adapter-sdk": "workspace:*",
-    "@yanibhq/reverb-domain": "workspace:*"
+    "@yanib/reverb-adapter-sdk": "workspace:*",
+    "@yanib/reverb-domain": "workspace:*"
   },
   "publishConfig": {
     "access": "public",

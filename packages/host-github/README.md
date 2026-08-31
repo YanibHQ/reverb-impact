@@ -1,11 +1,11 @@
-# @yanibhq/reverb-host-github
+# @yanib/reverb-host-github
 
 GitHub App host primitives for Reverb.
 
 ## Installation
 
 ```bash
-pnpm add --save-exact @yanibhq/reverb-host-github@0.1.0
+pnpm add --save-exact @yanib/reverb-host-github@0.1.0
 ```
 
 Import only the documented package root. See the

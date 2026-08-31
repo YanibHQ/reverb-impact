@@ -1,11 +1,11 @@
-# @yanibhq/reverb-testkit
+# @yanib/reverb-testkit
 
 Host conformance tests, deterministic fakes, and fixtures for Reverb.
 
 ## Installation
 
 ```bash
-pnpm add --save-exact @yanibhq/reverb-testkit@0.1.0
+pnpm add --save-exact @yanib/reverb-testkit@0.1.0
 ```
 
 Import only the documented package root. See the

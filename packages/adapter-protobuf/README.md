@@ -1,11 +1,11 @@
-# @yanibhq/reverb-adapter-protobuf
+# @yanib/reverb-adapter-protobuf
 
 Protobuf and gRPC contract analysis for Reverb.
 
 ## Installation
 
 ```bash
-pnpm add --save-exact @yanibhq/reverb-adapter-protobuf@0.1.0
+pnpm add --save-exact @yanib/reverb-adapter-protobuf@0.1.0
 ```
 
 Import only the documented package root. See the

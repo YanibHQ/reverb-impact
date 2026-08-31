@@ -88,15 +88,15 @@ GitHub host, and PostgreSQL storage explicitly:
 
 ```bash
 pnpm add --save-exact \
-  @yanibhq/reverb-domain@0.1.0 \
-  @yanibhq/reverb-schema@0.1.0 \
-  @yanibhq/reverb-application@0.1.0 \
-  @yanibhq/reverb-adapter-sdk@0.1.0 \
-  @yanibhq/reverb-adapter-typescript@0.1.0 \
-  @yanibhq/reverb-adapter-openapi@0.1.0 \
-  @yanibhq/reverb-adapter-protobuf@0.1.0 \
-  @yanibhq/reverb-host-github@0.1.0 \
-  @yanibhq/reverb-storage-postgres@0.1.0
+  @yanib/reverb-domain@0.1.0 \
+  @yanib/reverb-schema@0.1.0 \
+  @yanib/reverb-application@0.1.0 \
+  @yanib/reverb-adapter-sdk@0.1.0 \
+  @yanib/reverb-adapter-typescript@0.1.0 \
+  @yanib/reverb-adapter-openapi@0.1.0 \
+  @yanib/reverb-adapter-protobuf@0.1.0 \
+  @yanib/reverb-host-github@0.1.0 \
+  @yanib/reverb-storage-postgres@0.1.0
 ```
 
 Install only the packages the host uses. SQLite, the local Git host, the CLI, and the testkit are
@@ -164,18 +164,18 @@ promotion decisions, status, and diagnostics.
 | Package | Purpose |
 | --- | --- |
 | `reverb-impact` | Local `reverb` CLI and embeddable CLI construction |
-| `@yanibhq/reverb-domain` | Immutable values and deterministic analysis policy |
-| `@yanibhq/reverb-schema` | Canonical JSON Schemas and runtime validation |
-| `@yanibhq/reverb-application` | Host-neutral use cases and ports |
-| `@yanibhq/reverb-adapter-sdk` | Contract-adapter interfaces, validation, and admission helpers |
-| `@yanibhq/reverb-adapter-typescript` | TypeScript and npm contract analysis |
-| `@yanibhq/reverb-adapter-openapi` | OpenAPI and HTTP contract analysis |
-| `@yanibhq/reverb-adapter-protobuf` | Protobuf and gRPC contract analysis |
-| `@yanibhq/reverb-storage-sqlite` | Local durable storage |
-| `@yanibhq/reverb-storage-postgres` | Hosted PostgreSQL storage |
-| `@yanibhq/reverb-host-local` | Local Git and filesystem host primitives |
-| `@yanibhq/reverb-host-github` | GitHub reference-host primitives |
-| `@yanibhq/reverb-testkit` | Host conformance tests, fakes, and fixtures |
+| `@yanib/reverb-domain` | Immutable values and deterministic analysis policy |
+| `@yanib/reverb-schema` | Canonical JSON Schemas and runtime validation |
+| `@yanib/reverb-application` | Host-neutral use cases and ports |
+| `@yanib/reverb-adapter-sdk` | Contract-adapter interfaces, validation, and admission helpers |
+| `@yanib/reverb-adapter-typescript` | TypeScript and npm contract analysis |
+| `@yanib/reverb-adapter-openapi` | OpenAPI and HTTP contract analysis |
+| `@yanib/reverb-adapter-protobuf` | Protobuf and gRPC contract analysis |
+| `@yanib/reverb-storage-sqlite` | Local durable storage |
+| `@yanib/reverb-storage-postgres` | Hosted PostgreSQL storage |
+| `@yanib/reverb-host-local` | Local Git and filesystem host primitives |
+| `@yanib/reverb-host-github` | GitHub reference-host primitives |
+| `@yanib/reverb-testkit` | Host conformance tests, fakes, and fixtures |
 
 Package consumers should import documented root entry points only. See the
 [public package API](docs/api/public-packages.md) and

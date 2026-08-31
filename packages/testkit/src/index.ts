@@ -5,4 +5,4 @@ export * from './graph-conformance.js';
 export * from './review-conformance.js';
 export * from './host-conformance.js';
 
-export const TESTKIT_PACKAGE_ID = '@yanibhq/reverb-testkit';
+export const TESTKIT_PACKAGE_ID = '@yanib/reverb-testkit';

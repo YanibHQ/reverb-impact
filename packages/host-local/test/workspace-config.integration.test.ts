@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 
-import { createRegistrySnapshot, resolveServiceAlias } from '@yanibhq/reverb-domain';
+import { createRegistrySnapshot, resolveServiceAlias } from '@yanib/reverb-domain';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { LocalWorkspaceConfig } from '../src/index.js';

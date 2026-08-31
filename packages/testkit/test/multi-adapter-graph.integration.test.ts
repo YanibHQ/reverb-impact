@@ -11,7 +11,7 @@ import {
   sha256Bytes,
   workspaceId,
   type ContractKind,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 import {
   materializeContractChanges,
   materializeContractObservation,

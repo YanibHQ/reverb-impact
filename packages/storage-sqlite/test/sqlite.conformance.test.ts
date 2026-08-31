@@ -6,7 +6,7 @@ import {
   runEvidenceGraphStoreConformance,
   runGenerationStoreConformance,
   runReviewStoreConformance,
-} from '@yanibhq/reverb-testkit';
+} from '@yanib/reverb-testkit';
 import { describe, it } from 'vitest';
 
 import { SqliteStore } from '../src/index.js';

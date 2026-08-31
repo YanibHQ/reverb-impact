@@ -34,15 +34,15 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@yanibhq/reverb-adapter-openapi": "workspace:*",
-    "@yanibhq/reverb-adapter-protobuf": "workspace:*",
-    "@yanibhq/reverb-adapter-sdk": "workspace:*",
-    "@yanibhq/reverb-adapter-typescript": "workspace:*",
-    "@yanibhq/reverb-application": "workspace:*",
-    "@yanibhq/reverb-domain": "workspace:*",
-    "@yanibhq/reverb-host-local": "workspace:*",
-    "@yanibhq/reverb-schema": "workspace:*",
-    "@yanibhq/reverb-storage-sqlite": "workspace:*",
+    "@yanib/reverb-adapter-openapi": "workspace:*",
+    "@yanib/reverb-adapter-protobuf": "workspace:*",
+    "@yanib/reverb-adapter-sdk": "workspace:*",
+    "@yanib/reverb-adapter-typescript": "workspace:*",
+    "@yanib/reverb-application": "workspace:*",
+    "@yanib/reverb-domain": "workspace:*",
+    "@yanib/reverb-host-local": "workspace:*",
+    "@yanib/reverb-schema": "workspace:*",
+    "@yanib/reverb-storage-sqlite": "workspace:*",
     "commander": "14.0.0"
   },
   "publishConfig": {

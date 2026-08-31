@@ -1,5 +1,5 @@
-import { hashCanonical } from '@yanibhq/reverb-domain';
-import type { ContentHash, Instant, WorkspaceId } from '@yanibhq/reverb-domain';
+import { hashCanonical } from '@yanib/reverb-domain';
+import type { ContentHash, Instant, WorkspaceId } from '@yanib/reverb-domain';
 import { Pool } from 'pg';
 import type { PoolClient, PoolConfig, QueryResultRow } from 'pg';
 

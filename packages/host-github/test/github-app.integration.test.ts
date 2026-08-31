@@ -24,13 +24,13 @@ import {
   stableReferenceId,
   treeHash,
   workspaceId,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 import type {
   AnalysisResult,
   FindingOccurrence,
   PromotionRecord,
   RepositoryStableId,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 import { describe, expect, it, vi } from 'vitest';
 
 import {

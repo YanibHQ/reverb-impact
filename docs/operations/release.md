@@ -21,9 +21,9 @@ SBOM. Publish the verified tarballs under `artifacts/packages/`, not a mutable w
 
 Publish packages in dependency order so every registry dependency exists before a dependent package:
 
-1. `@yanibhq/reverb-domain`, `@yanibhq/reverb-schema`;
-2. `@yanibhq/reverb-application`, `@yanibhq/reverb-adapter-sdk`;
-3. the three contract adapters, two storage adapters, two hosts, and `@yanibhq/reverb-testkit`;
+1. `@yanib/reverb-domain`, `@yanib/reverb-schema`;
+2. `@yanib/reverb-application`, `@yanib/reverb-adapter-sdk`;
+3. the three contract adapters, two storage adapters, two hosts, and `@yanib/reverb-testkit`;
 4. `reverb-impact`.
 
 All scoped packages must be public. Local publication uses the authenticated `yanib` npm account and

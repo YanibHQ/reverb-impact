@@ -1,11 +1,11 @@
-# @yanibhq/reverb-schema
+# @yanib/reverb-schema
 
 Canonical Reverb JSON Schemas and runtime validation.
 
 ## Installation
 
 ```bash
-pnpm add --save-exact @yanibhq/reverb-schema@0.1.0
+pnpm add --save-exact @yanib/reverb-schema@0.1.0
 ```
 
 Import only the documented package root. See the

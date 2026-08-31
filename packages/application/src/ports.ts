@@ -45,7 +45,7 @@ import type {
   EvaluationReport,
   TreeManifest,
   WorkspaceId,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 
 export type PortFailureKind =
   | 'domain'

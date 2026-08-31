@@ -45,7 +45,9 @@ packages/cli
 packages/testkit
 ```
 
-Published names use the planned `@yanibhq/reverb-*` scope, subject to npm publisher permissions and naming/trademark clearance. `Reverb` remains a codename until those checks pass.
+Published libraries use the personally owned `@yanib/reverb-*` scope. Publisher ownership and
+package-name availability were verified before version `0.1.0`; `reverb-impact` is the unscoped CLI
+distribution.
 
 ## Canonical indexing model
 

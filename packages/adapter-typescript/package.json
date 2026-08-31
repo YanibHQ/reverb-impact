@@ -1,5 +1,5 @@
 {
-  "name": "@yanibhq/reverb-adapter-typescript",
+  "name": "@yanib/reverb-adapter-typescript",
   "version": "0.1.0",
   "description": "TypeScript and npm contract adapter for Reverb",
   "type": "module",
@@ -31,8 +31,8 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@yanibhq/reverb-adapter-sdk": "workspace:*",
-    "@yanibhq/reverb-domain": "workspace:*",
+    "@yanib/reverb-adapter-sdk": "workspace:*",
+    "@yanib/reverb-domain": "workspace:*",
     "typescript": "5.9.2"
   },
   "publishConfig": {

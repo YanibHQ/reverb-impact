@@ -2,14 +2,14 @@ import {
   REPOSITORY_ACTIONS,
   createRegistrySnapshot,
   repositoryStableId,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 import type {
   ConsentGrant,
   Instant,
   RegistrySnapshot,
   RepositoryAction,
   WorkspaceId,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 
 export interface GitHubSelectedRepository {
   readonly id: number;

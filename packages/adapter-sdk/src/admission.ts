@@ -1,4 +1,4 @@
-import { contentHash, hashCanonical } from '@yanibhq/reverb-domain';
+import { contentHash, hashCanonical } from '@yanib/reverb-domain';
 
 import type { AdapterAdmissionReport, AdapterManifest, AdmissionCheck } from './types.js';
 import { validateAdapterManifest } from './validation.js';

@@ -4,4 +4,4 @@ export * from './identity.js';
 export * from './manifest.js';
 export * from './parser.js';
 
-export const ADAPTER_TYPESCRIPT_PACKAGE_ID = '@yanibhq/reverb-adapter-typescript';
+export const ADAPTER_TYPESCRIPT_PACKAGE_ID = '@yanib/reverb-adapter-typescript';

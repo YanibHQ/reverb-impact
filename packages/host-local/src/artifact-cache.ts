@@ -8,7 +8,7 @@ import {
   hashCanonical,
   workspaceId,
   type FileArtifact,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 import {
   portFailure,
   portSuccess,
@@ -16,7 +16,7 @@ import {
   type ArtifactCachePort,
   type CachedArtifact,
   type PortResult,
-} from '@yanibhq/reverb-application';
+} from '@yanib/reverb-application';
 
 import { createSystemId } from './system.js';
 

@@ -4,7 +4,7 @@ import {
   repoPath,
   type BoundedDiagnostic,
   type ContentHash,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 import {
   AdapterValidationError,
   DeclaredExternalDiffer,
@@ -22,7 +22,7 @@ import {
   type DiffRequest,
   type DifferMetadata,
   type ExtractRequest,
-} from '@yanibhq/reverb-adapter-sdk';
+} from '@yanib/reverb-adapter-sdk';
 
 import {
   protobufFieldNameFallbackKey,

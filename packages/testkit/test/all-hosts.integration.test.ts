@@ -13,8 +13,8 @@ import {
   registryRevision,
   repositoryStableId,
   workspaceId,
-} from '@yanibhq/reverb-domain';
-import type { AnalysisResult, ContentHash } from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
+import type { AnalysisResult, ContentHash } from '@yanib/reverb-domain';
 import { Pool } from 'pg';
 import type { PoolConfig } from 'pg';
 import { afterAll, beforeAll, describe, it } from 'vitest';

@@ -16,4 +16,4 @@ export * from './policy.js';
 export * from './values.js';
 export * from './vocabularies.js';
 
-export const DOMAIN_PACKAGE_ID = '@yanibhq/reverb-domain';
+export const DOMAIN_PACKAGE_ID = '@yanib/reverb-domain';

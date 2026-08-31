@@ -1,5 +1,5 @@
 {
-  "name": "@yanibhq/reverb-domain",
+  "name": "@yanib/reverb-domain",
   "version": "0.1.0",
   "description": "Pure domain values and deterministic algorithms for Reverb",
   "type": "module",

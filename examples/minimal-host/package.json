@@ -16,6 +16,6 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@yanibhq/reverb-domain": "workspace:*"
+    "@yanib/reverb-domain": "workspace:*"
   }
 }

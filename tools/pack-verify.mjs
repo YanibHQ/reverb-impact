@@ -67,7 +67,7 @@ for (const archive of archives) {
       if (String(version).startsWith('workspace:')) {
         throw new Error(`${archive} retains workspace protocol dependency ${name}.`);
       }
-      if (name.startsWith('@yanibhq/reverb-') && version !== workspaceManifest.version) {
+      if (name.startsWith('@yanib/reverb-') && version !== workspaceManifest.version) {
         throw new Error(`${archive} has mismatched internal dependency ${name}@${version}.`);
       }
     }

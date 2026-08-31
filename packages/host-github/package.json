@@ -1,5 +1,5 @@
 {
-  "name": "@yanibhq/reverb-host-github",
+  "name": "@yanib/reverb-host-github",
   "version": "0.1.0",
   "description": "GitHub App reference host for Reverb",
   "type": "module",
@@ -31,8 +31,8 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@yanibhq/reverb-application": "workspace:*",
-    "@yanibhq/reverb-domain": "workspace:*"
+    "@yanib/reverb-application": "workspace:*",
+    "@yanib/reverb-domain": "workspace:*"
   },
   "publishConfig": {
     "access": "public",

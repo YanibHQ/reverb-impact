@@ -1,4 +1,4 @@
-import { contentHash, hashCanonical } from '@yanibhq/reverb-domain';
+import { contentHash, hashCanonical } from '@yanib/reverb-domain';
 import type {
   AuthorizationDecision,
   AuthorizationPort,
@@ -6,15 +6,15 @@ import type {
   DisclosureRequest,
   PortResult,
   Subject,
-} from '@yanibhq/reverb-application';
-import { portFailure, portSuccess } from '@yanibhq/reverb-application';
-import { registryRevision } from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-application';
+import { portFailure, portSuccess } from '@yanib/reverb-application';
+import { registryRevision } from '@yanib/reverb-domain';
 import type {
   RegistrySnapshot,
   RepositoryAction,
   RepositoryStableId,
   WorkspaceId,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 
 export interface CurrentRegistryProvider {
   current(workspaceId: WorkspaceId): Promise<RegistrySnapshot | null>;

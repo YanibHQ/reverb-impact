@@ -9,6 +9,8 @@ explicit and package breaking changes may occur in minor releases.
 
 ## 0.1.0 - 2026-08-30
 
+- Published the host-neutral libraries under the personal npm scope `@yanib` and the CLI as
+  `reverb-impact`.
 - Added the primary Reverb logo and brand-asset usage/provenance guidance.
 - Established the standalone Apache-2.0 project constitution.
 - Added the Node 24 and pnpm monorepo foundation.

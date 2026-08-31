@@ -5,7 +5,7 @@ import {
   type BoundedDiagnostic,
   type ContentHash,
   type RepoPath,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 import {
   AdapterValidationError,
   DeclaredExternalDiffer,
@@ -24,7 +24,7 @@ import {
   type DiffRequest,
   type DifferMetadata,
   type ExtractRequest,
-} from '@yanibhq/reverb-adapter-sdk';
+} from '@yanib/reverb-adapter-sdk';
 
 import { openApiFallbackKey, openApiOperationKey } from './identity.js';
 import { OPENAPI_ADAPTER_MANIFEST } from './manifest.js';
