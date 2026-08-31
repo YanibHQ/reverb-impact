@@ -48,3 +48,15 @@ After publication:
 The GitHub artifact workflow independently reruns release verification and creates build-provenance
 attestations for the package tarballs and SBOM. Container publication remains a separate release
 gate.
+
+## Version 0.1.0 publication record
+
+All 13 packages were published to the public npm registry on 2026-08-31. Registry SHA-1 digests
+matched the verified local tarballs for every package. A new temporary project installed the exact
+public versions with zero reported vulnerabilities, imported all 13 root entry points under Node
+24, and reported `0.1.0` from the installed `reverb` binary.
+
+The initial upload was performed locally with interactive npm authorization, so npm provenance is
+not claimed for these registry artifacts. The repository artifact workflow remains available for
+independent build attestations. Container publication and release signatures are not part of this
+release record.
