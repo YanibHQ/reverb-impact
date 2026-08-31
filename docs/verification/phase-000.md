@@ -1,7 +1,7 @@
 # Phase 000 local verification
 
 - Date: 2026-08-28
-- Scope: local repository constitution and unpublished artifact preparation
+- Scope: repository constitution and reproducible artifact preparation
 - Canonical owner/repository: `YanibHQ/reverb-impact`
 
 ## Implemented
@@ -25,7 +25,7 @@ pnpm sbom
 pnpm audit:check
 ```
 
-The package verification creates 13 unpublished package archives plus `SHA256SUMS` under the
+The package verification creates 13 package archives plus `SHA256SUMS` under the
 ignored `artifacts/packages/` directory. The SBOM is written to ignored
 `artifacts/sbom.cdx.json`.
 

@@ -1,14 +1,20 @@
-import { randomUUID } from 'node:crypto';
+import { createHmac, randomUUID } from 'node:crypto';
 
 import { contentHash, instant, workspaceId } from '@yanib/reverb-domain';
 import { Pool } from 'pg';
 import type { PoolConfig } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import {
+  GitHubHostedRuntime,
+  GitHubWebhookReceiver,
+  HostedOperationalControls,
+} from '../../host-github/src/index.js';
 import { POSTGRES_MIGRATIONS, PostgresHostedStore } from '../src/index.js';
 
 const workspaceA = workspaceId('wsp_01990f64-0000-7000-8000-000000000101');
 const workspaceB = workspaceId('wsp_01990f64-0000-7000-8000-000000000102');
+const workspaceC = workspaceId('wsp_01990f64-0000-7000-8000-000000000103');
 const now = instant('2026-08-28T20:00:00.000Z');
 const later = instant('2026-08-28T20:05:00.000Z');
 const leaseEnd = instant('2026-08-28T20:01:00.000Z');
@@ -61,7 +67,7 @@ describe('Postgres hosted control-plane integration', () => {
       const versions = await legacyPool.query<{ version: number }>(
         'SELECT version FROM reverb_schema_migrations ORDER BY version',
       );
-      expect(versions.rows.map((row) => row.version)).toEqual([1, 2]);
+      expect(versions.rows.map((row) => row.version)).toEqual([1, 2, 3]);
       const pointerTable = await legacyPool.query<{ name: string | null }>(
         "SELECT to_regclass('reverb_canonical_pointers')::text AS name",
       );
@@ -155,14 +161,35 @@ describe('Postgres hosted control-plane integration', () => {
     };
     expect(await store.receiveWebhook(receipt)).toBe(true);
     expect(await store.receiveWebhook(receipt)).toBe(false);
+    const webhookClaim = await store.claimWebhook({
+      workspaceId: workspaceA,
+      workerId: 'webhook-worker-a',
+      now,
+      leaseExpiresAt: leaseEnd,
+    });
+    expect(webhookClaim).toMatchObject({
+      deliveryId: 'delivery-1',
+      attempt: 1,
+      leaseOwner: 'webhook-worker-a',
+      pointer: { pullRequestNumber: 9 },
+    });
     expect(
-      await store.markWebhookProcessed({
+      await store.resolveWebhook({
         workspaceId: workspaceA,
         installationId: 77,
         deliveryId: 'delivery-1',
+        workerId: 'webhook-worker-a',
         state: 'processed',
       }),
     ).toBe(true);
+    expect(
+      await store.claimWebhook({
+        workspaceId: workspaceA,
+        workerId: 'webhook-worker-b',
+        now,
+        leaseExpiresAt: leaseEnd,
+      }),
+    ).toBeNull();
 
     const jobInput = {
       workspaceId: workspaceA,
@@ -310,6 +337,106 @@ describe('Postgres hosted control-plane integration', () => {
         providerExternalId: 'check-44',
       }),
     ).toBe(false);
+  });
+
+  it('runs the signed webhook, analysis record, outbox, and delivery composition end to end', async () => {
+    const secret = 'runtime-webhook-secret';
+    const rawBody = Buffer.from(
+      JSON.stringify({
+        action: 'synchronize',
+        installation: { id: 88 },
+        repository: { id: 303 },
+        number: 12,
+        pull_request: {
+          base: { sha: '3'.repeat(40) },
+          head: { sha: '4'.repeat(40), repo: { fork: false } },
+        },
+      }),
+    );
+    const receiver = new GitHubWebhookReceiver({ store, secret });
+    await expect(
+      receiver.receive({
+        workspaceId: workspaceC,
+        rawBody,
+        signatureHeader: `sha256=${createHmac('sha256', secret).update(rawBody).digest('hex')}`,
+        deliveryId: 'runtime-delivery-12',
+        eventType: 'pull_request',
+        receivedAt: now,
+      }),
+    ).resolves.toMatchObject({ accepted: true });
+
+    const canonicalHash = contentHash(`sha256:${'8'.repeat(64)}`);
+    const outboxKey = contentHash(`sha256:${'9'.repeat(64)}`);
+    const controls = new HostedOperationalControls();
+    const runtime = new GitHubHostedRuntime({
+      store,
+      controls,
+      handlers: {
+        async analyze_pull_request(claim) {
+          expect(claim.payload).toMatchObject({ pointer: { pullRequestNumber: 12 } });
+          return {
+            resultHash: canonicalHash,
+            records: [
+              {
+                workspaceId: workspaceC,
+                recordType: 'analysis',
+                recordId: 'runtime-analysis-12',
+                repositoryId: 'github:303',
+                payloadHash: canonicalHash,
+                payload: { schema: 'reverb.analysis-result', state: 'complete' },
+                createdAt: now,
+              },
+            ],
+            deliveries: [
+              {
+                workspaceId: workspaceC,
+                idempotencyKey: outboxKey,
+                repositoryId: 'github:303',
+                canonicalRecordHash: canonicalHash,
+                projectionHash: contentHash(`sha256:${'0'.repeat(64)}`),
+                projection: { schema: 'runtime-projection' },
+                availableAt: now,
+                maximumAttempts: 3,
+              },
+            ],
+          };
+        },
+      },
+    });
+    await expect(
+      runtime.processNextWebhook({
+        workspaceId: workspaceC,
+        workerId: 'runtime-worker',
+        now,
+        leaseExpiresAt: leaseEnd,
+      }),
+    ).resolves.toMatchObject({ state: 'complete' });
+    await expect(
+      runtime.processNextJob({
+        workspaceId: workspaceC,
+        workerId: 'runtime-worker',
+        now,
+        leaseExpiresAt: leaseEnd,
+        retryAt: later,
+      }),
+    ).resolves.toMatchObject({ state: 'complete' });
+    expect(await store.countRows(workspaceC, 'reverb_canonical_records')).toBe(1);
+    expect(await store.countRows(workspaceC, 'reverb_delivery_outbox')).toBe(1);
+
+    controls.setDisabled('write', false);
+    await expect(
+      runtime.processNextDelivery({
+        workspaceId: workspaceC,
+        workerId: 'runtime-worker',
+        now,
+        leaseExpiresAt: leaseEnd,
+        retryAt: later,
+        async deliver(claim) {
+          expect(claim.idempotencyKey).toBe(outboxKey);
+          return { state: 'delivered', providerExternalId: 'check-runtime-12' };
+        },
+      }),
+    ).resolves.toMatchObject({ state: 'complete' });
   });
 
   it('invalidates projections by authorization revision and purges derived rows', async () => {

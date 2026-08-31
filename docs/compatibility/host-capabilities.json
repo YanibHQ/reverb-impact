@@ -11,6 +11,7 @@
       "reviews": true,
       "disclosure_projection": true,
       "deletion_propagation": true,
+      "durable_runtime": true,
       "unsupported_optional_ports": ["model", "vector_search"]
     },
     {
@@ -21,6 +22,7 @@
       "reviews": true,
       "disclosure_projection": true,
       "deletion_propagation": false,
+      "durable_runtime": false,
       "unsupported_optional_ports": ["provider_webhooks", "external_delivery", "purge"]
     },
     {
@@ -31,6 +33,7 @@
       "reviews": false,
       "disclosure_projection": true,
       "deletion_propagation": true,
+      "durable_runtime": false,
       "unsupported_optional_ports": [
         "provider_webhooks",
         "durable_jobs",

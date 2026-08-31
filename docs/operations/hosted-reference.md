@@ -13,13 +13,17 @@ default, and external check writing starts disabled.
 - Parser/adapter work receives bounded blobs and no provider token, database credential, or
   network capability.
 - Canonical results commit before a disclosure projection or delivery-outbox row is created.
+- `GitHubHostedRuntime` leases inbox, job, and outbox stages independently. The canonical analysis
+  and review adapters persist their records before acknowledging a job.
 - Only `packages/host-github/src/check-writer.ts` owns the provider check-write client capability;
   the import-boundary check enforces this.
 
 PostgreSQL migrations are applied with `PostgresHostedStore.migrate()`. Every hosted table uses a
 composite workspace key, explicit workspace predicates, row-level security, and `FORCE ROW LEVEL
 SECURITY`. Worker claims use `FOR UPDATE SKIP LOCKED`, expiring leases, bounded attempts, and stable
-idempotency keys. Provider calls never occur inside a database transaction.
+idempotency keys. Migration 3 adds reclaimable webhook-worker leases so a crash between receipt and
+job scheduling does not lose accepted work. Provider calls never occur inside a database
+transaction.
 
 ## Kill switches and rollout
 
@@ -38,9 +42,15 @@ write: disabled
 delivery: shadow/no-write
 ```
 
-Rollback is one operation: set the write kill switch. Pending/leased outbox effects are changed to
-`disabled`; indexing and evaluation continue. A broader incident can independently disable reads or
-parsers.
+Immediate rollback is one operation: set the write kill switch. New outbox claims stop while queued
+work remains recoverable; use `disablePendingDeliveries()` only when the effects should be
+terminally discarded. Indexing and evaluation continue. A broader incident can independently
+disable reads or parsers.
+
+Start workers in order: signed webhook receipt, inbox routing, source/index/analysis/review jobs,
+then delivery. Keep delivery workers disabled until the earlier stages and reconciliation have been
+observed healthy. On shutdown, stop new claims, allow active leases to finish, and rely on lease
+expiry for any worker that cannot drain.
 
 ## Backup, restore, and purge
 

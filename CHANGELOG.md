@@ -7,6 +7,21 @@ explicit and package breaking changes may occur in minor releases.
 
 ## Unreleased
 
+## 0.2.0 - 2026-08-31
+
+- Added exact same-repository producer-as-consumer analysis through a required, scope-validated
+  pull-request head contract observation.
+- Added regression and CLI integration coverage proving live same-repository references are found,
+  deleted head references disappear, and mismatched head evidence fails closed.
+- Added durable hosted runtime composition from signed GitHub webhook pointers through reclaimable
+  PostgreSQL inbox/job leases, canonical analysis/review records, and delivery outbox effects.
+- Added canonical analysis, authorized review, and current-head/reauthorized GitHub check adapters,
+  with read/write kill switches that retain queued work.
+- Added PostgreSQL migration 3 for webhook worker leases and immutable canonical-record conflict
+  detection, with in-memory fault tests and a real signed-webhook-to-delivery database test.
+- Added Phase 007/008 specifications, embedding guidance, compatibility metadata, and hosted
+  operations documentation. No Yanib source code or data is accessed.
+
 ## 0.1.0 - 2026-08-31
 
 - Published the host-neutral libraries under the personal npm scope `@yanib` and the CLI as

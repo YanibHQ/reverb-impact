@@ -6,5 +6,6 @@ export * from './check-writer.js';
 export * from './controls.js';
 export * from './detail.js';
 export * from './registry-sync.js';
+export * from './runtime.js';
 export * from './source.js';
 export * from './webhook.js';

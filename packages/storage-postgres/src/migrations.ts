@@ -177,6 +177,24 @@ CREATE POLICY reverb_canonical_pointers_workspace_isolation ON reverb_canonical_
   WITH CHECK (workspace_id = NULLIF(current_setting('reverb.workspace_id', true), ''));
 `,
   },
+  {
+    version: 3,
+    name: 'webhook_worker_leases',
+    sql: `
+ALTER TABLE reverb_webhook_inbox
+  DROP CONSTRAINT IF EXISTS reverb_webhook_inbox_processing_state_check;
+ALTER TABLE reverb_webhook_inbox
+  ADD CONSTRAINT reverb_webhook_inbox_processing_state_check
+  CHECK (processing_state IN ('pending', 'processing', 'processed', 'failed'));
+ALTER TABLE reverb_webhook_inbox
+  ADD COLUMN IF NOT EXISTS attempt integer NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS lease_owner text,
+  ADD COLUMN IF NOT EXISTS lease_expires_at timestamptz,
+  ADD COLUMN IF NOT EXISTS failure_code text;
+CREATE INDEX IF NOT EXISTS reverb_webhook_inbox_claim
+  ON reverb_webhook_inbox (workspace_id, processing_state, received_at);
+`,
+  },
 ];
 
 export const POSTGRES_TARGET_MAJOR = 18;

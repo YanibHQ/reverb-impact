@@ -1,6 +1,6 @@
 # Publishing a release
 
-Reverb packages use a fixed version across the workspace. The first public release is `0.1.0`.
+Reverb packages use a fixed version across the workspace. The current candidate is `0.2.0`.
 Before publishing, confirm that every public manifest, the CLI version, schema compatibility record,
 changelog, and [release metadata](../compatibility/release-metadata.json) name the same version.
 
@@ -41,9 +41,9 @@ After publication:
 1. query every package for the exact version and integrity digest;
 2. install the hosted Yanib package set into a new temporary project from the public registry;
 3. import each root entry point under Node 24;
-4. run `pnpm dlx reverb-impact@0.1.0 --version`;
-5. mark npm publication in release metadata, merge that status update, and create the `v0.1.0`
-   GitHub release from the exact release commit.
+4. run `pnpm dlx reverb-impact@<version> --version`;
+5. mark npm publication in release metadata, merge that status update, and create the matching
+   GitHub release tag from the exact release commit.
 
 The GitHub artifact workflow independently reruns release verification and creates build-provenance
 attestations for the package tarballs and SBOM. Container publication remains a separate release

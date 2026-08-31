@@ -6,6 +6,7 @@ import {
   matchSuppression,
   type AnalysisId,
   type AnalysisResult,
+  type ContractGenerationObservation,
   type ConsumerGenerationSelection,
   type FindingAbstention,
   type FindingOccurrence,
@@ -52,6 +53,8 @@ export interface AnalyzePullRequestInput {
   };
   readonly changes: readonly IndexedContractChange[];
   readonly producerDefinitions: readonly IndexedContractDefinition[];
+  /** Exact contract evidence extracted from the analyzed PR head. */
+  readonly producerHeadObservation: ContractGenerationObservation;
   readonly subject?: Subject;
   readonly freshnessTtlMs?: number;
   readonly refreshBudgetMs?: number;
@@ -231,6 +234,53 @@ export class AnalyzePullRequest {
     return portSuccess(initial);
   }
 
+  async #selectProducerHead(
+    input: AnalyzePullRequestInput,
+    repository: RepositoryMembership,
+  ): Promise<PortResult<ConsumerGenerationSelection>> {
+    if (this.dependencies.authorization !== undefined) {
+      const authorization = await this.dependencies.authorization.authorizeRepositoryUse(
+        input.subject ?? { kind: 'workspace', id: input.workspaceId },
+        'evidence.consume',
+        repository.repositoryId,
+      );
+      if (!authorization.ok || !authorization.value.allowed) {
+        return portSuccess(
+          unavailableSelection(
+            repository.repositoryId,
+            'unauthorized',
+            authorization.ok ? authorization.value.reason : authorization.failure.code,
+          ),
+        );
+      }
+    }
+    const observation = input.producerHeadObservation;
+    if (observation.coverageState === 'failed') {
+      return portSuccess(
+        unavailableSelection(repository.repositoryId, 'failed', 'head_contract_extraction_failed'),
+      );
+    }
+    if (observation.coverageState === 'unsupported') {
+      return portSuccess({
+        repositoryId: repository.repositoryId,
+        state: 'unsupported',
+        generationId: observation.generationId,
+        commitSha: observation.commitSha,
+        selectedAt: observation.observedAt,
+        reason: 'head_contract_inputs_unsupported',
+      });
+    }
+    return portSuccess({
+      repositoryId: repository.repositoryId,
+      state: 'current',
+      generationId: observation.generationId,
+      commitSha: observation.commitSha,
+      selectedAt: observation.observedAt,
+      freshnessAgeMs: 0,
+      coverageState: observation.coverageState,
+    });
+  }
+
   public async execute(input: AnalyzePullRequestInput): Promise<PortResult<AnalysisResult>> {
     const startedAt = this.dependencies.clock.now();
     const base = await this.dependencies.generations.getGeneration(input.baseGenerationId);
@@ -256,6 +306,31 @@ export class AnalyzePullRequest {
     ) {
       return invalid('overlay_mismatch', 'Analysis requires the exact producer head overlay.');
     }
+    const producerHead = input.producerHeadObservation;
+    if (
+      producerHead.workspaceId !== input.workspaceId ||
+      producerHead.repositoryId !== input.producerRepositoryId ||
+      producerHead.commitSha !== input.pullRequest.headSha ||
+      producerHead.definitions.some(
+        (value) =>
+          value.workspaceId !== producerHead.workspaceId ||
+          value.repositoryId !== producerHead.repositoryId ||
+          value.generationId !== producerHead.generationId ||
+          value.commitSha !== producerHead.commitSha,
+      ) ||
+      producerHead.references.some(
+        (value) =>
+          value.workspaceId !== producerHead.workspaceId ||
+          value.repositoryId !== producerHead.repositoryId ||
+          value.generationId !== producerHead.generationId ||
+          value.commitSha !== producerHead.commitSha,
+      )
+    ) {
+      return invalid(
+        'producer_head_observation_mismatch',
+        'Analysis requires contract evidence from the exact producer head.',
+      );
+    }
     const registry = await this.dependencies.registry.getRevision(
       input.workspaceId,
       input.registryRevision,
@@ -277,14 +352,25 @@ export class AnalyzePullRequest {
     }
     const consumers: ConsumerGenerationSelection[] = [];
     for (const repository of registry.value.repositories
-      .filter((value) => value.selected && value.repositoryId !== input.producerRepositoryId)
+      .filter((value) => value.selected)
       .sort((left, right) => left.repositoryId.localeCompare(right.repositoryId))) {
-      const selected = await this.#selectConsumer(input, repository, startedAt);
+      const selected =
+        repository.repositoryId === input.producerRepositoryId
+          ? await this.#selectProducerHead(input, repository)
+          : await this.#selectConsumer(input, repository, startedAt);
       if (!selected.ok) return propagated(selected.failure);
       consumers.push(selected.value);
     }
+    if (!consumers.some((value) => value.repositoryId === input.producerRepositoryId)) {
+      return invalid(
+        'producer_not_selected',
+        'The producer repository must be selected in the workspace registry.',
+      );
+    }
     const generationIds = consumers.flatMap((consumer) =>
-      consumer.generationId === undefined ? [] : [consumer.generationId],
+      consumer.repositoryId === input.producerRepositoryId || consumer.generationId === undefined
+        ? []
+        : [consumer.generationId],
     );
     const references = await this.dependencies.evidence.readReferences({
       workspaceId: input.workspaceId,
@@ -292,10 +378,28 @@ export class AnalyzePullRequest {
       canonicalKeys: input.changes.map((change) => change.canonicalKey),
     });
     if (!references.ok) return propagated(references.failure);
+    const producerSelected = consumers.some(
+      (value) =>
+        value.repositoryId === input.producerRepositoryId &&
+        value.state === 'current' &&
+        value.generationId === producerHead.generationId,
+    );
+    const changedKeys = new Set(input.changes.map((change) => change.canonicalKey));
+    const exactReferences = [
+      ...references.value,
+      ...(producerSelected
+        ? producerHead.references.filter(
+            (value) =>
+              (value.canonicalKey !== undefined && changedKeys.has(value.canonicalKey)) ||
+              (value.constrainedContractKey !== undefined &&
+                changedKeys.has(value.constrainedContractKey)),
+          )
+        : []),
+    ];
     const joined = joinChangedContracts({
       changes: input.changes,
       definitions: input.producerDefinitions,
-      references: references.value,
+      references: exactReferences,
       selections: consumers,
       registry: registry.value,
       observedAt: this.dependencies.clock.now(),

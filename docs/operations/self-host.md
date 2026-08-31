@@ -27,6 +27,12 @@ read/parser enabled and model/write disabled. The detailed topology, reconciliat
 restore, purge, incident, and kill-switch procedures are in the
 [hosted operations runbook](hosted-reference.md).
 
+Use `GitHubHostedRuntime` for the durable inbox/job/outbox loop and register only the job handlers
+the deployment supports. Run inbox and analysis workers before enabling delivery workers. Keep the
+write switch disabled until authorization, current-head, disclosure, and promotion checks have
+been exercised against the deployment. PostgreSQL migration 3 adds reclaimable webhook leases;
+older workers must be drained before it is applied.
+
 ## Upgrade and incidents
 
 Follow the [compatibility policy](../compatibility/versioning.md). On an incident, disable the

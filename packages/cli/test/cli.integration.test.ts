@@ -127,6 +127,10 @@ describe('local CLI workflow', () => {
       resolve(producer, 'index.ts'),
       'export function x(value: string): string { return value; }\n',
     );
+    await writeFile(
+      resolve(producer, 'client.ts'),
+      "import { x } from '@fixture/api';\nexport const local = x('same-repository');\n",
+    );
     await git(producer, 'add', '--all');
     await git(producer, 'commit', '-m', 'base API');
     const base = await git(producer, 'rev-parse', 'HEAD');
@@ -181,9 +185,9 @@ describe('local CLI workflow', () => {
     };
     expect(page).toMatchObject({
       schema: 'reverb.analysis-page',
-      total_findings: 1,
+      total_findings: 2,
       returned_findings: 1,
-      next_cursor: null,
+      next_cursor: 'offset:1',
       result: { pull_request: { base_sha: base, head_sha: head } },
     });
     expect(page.result.findings[0]?.delivery.decision).toBe('preview_only');

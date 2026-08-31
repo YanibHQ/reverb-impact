@@ -24,7 +24,8 @@ a clean result.
 
 ## Why Reverb?
 
-- **Cross-repository analysis:** trace contract changes beyond the repository where they originate.
+- **Cross- and same-repository analysis:** trace changed contracts to concrete consumers both
+  inside the pull request repository and across the configured workspace.
 - **Exact pull-request semantics:** analyze immutable base and head commits rather than comparing
   unrelated local scans.
 - **Evidence-first findings:** preserve the definitions, references, paths, and commit identities
@@ -61,7 +62,7 @@ compatibility, sandboxing, and admission interfaces.
 
 ## Release status
 
-Reverb `0.1.0` is the first public pre-1.0 release. Public APIs and storage formats may change in a
+Reverb `0.2.0` is the current public pre-1.0 release. Public APIs and storage formats may change in a
 future minor release, so downstream users should pin an exact package version. Analysis output is
 advisory: evidence classes must be calibrated with representative, human-reviewed data before they
 are used for automated delivery or policy decisions.
@@ -81,7 +82,7 @@ data; product integrations use Reverb's public package and host boundaries.
 Run the local CLI without adding it to a project:
 
 ```bash
-pnpm dlx reverb-impact@0.1.0 --help
+pnpm dlx reverb-impact@0.2.0 --help
 ```
 
 Hosted integrations such as Yanib should install the host-neutral core, selected contract adapters,
@@ -89,15 +90,15 @@ GitHub host, and PostgreSQL storage explicitly:
 
 ```bash
 pnpm add --save-exact \
-  @yanib/reverb-domain@0.1.0 \
-  @yanib/reverb-schema@0.1.0 \
-  @yanib/reverb-application@0.1.0 \
-  @yanib/reverb-adapter-sdk@0.1.0 \
-  @yanib/reverb-adapter-typescript@0.1.0 \
-  @yanib/reverb-adapter-openapi@0.1.0 \
-  @yanib/reverb-adapter-protobuf@0.1.0 \
-  @yanib/reverb-host-github@0.1.0 \
-  @yanib/reverb-storage-postgres@0.1.0
+  @yanib/reverb-domain@0.2.0 \
+  @yanib/reverb-schema@0.2.0 \
+  @yanib/reverb-application@0.2.0 \
+  @yanib/reverb-adapter-sdk@0.2.0 \
+  @yanib/reverb-adapter-typescript@0.2.0 \
+  @yanib/reverb-adapter-openapi@0.2.0 \
+  @yanib/reverb-adapter-protobuf@0.2.0 \
+  @yanib/reverb-host-github@0.2.0 \
+  @yanib/reverb-storage-postgres@0.2.0
 ```
 
 Install only the packages the host uses. SQLite, the local Git host, the CLI, and the testkit are
@@ -173,9 +174,9 @@ promotion decisions, status, and diagnostics.
 | `@yanib/reverb-adapter-openapi` | OpenAPI and HTTP contract analysis |
 | `@yanib/reverb-adapter-protobuf` | Protobuf and gRPC contract analysis |
 | `@yanib/reverb-storage-sqlite` | Local durable storage |
-| `@yanib/reverb-storage-postgres` | Hosted PostgreSQL storage |
+| `@yanib/reverb-storage-postgres` | Hosted PostgreSQL records, inbox, jobs, outbox, and operations |
 | `@yanib/reverb-host-local` | Local Git and filesystem host primitives |
-| `@yanib/reverb-host-github` | GitHub reference-host primitives |
+| `@yanib/reverb-host-github` | GitHub source, runtime composition, review, and advisory delivery |
 | `@yanib/reverb-testkit` | Host conformance tests, fakes, and fixtures |
 
 Package consumers should import documented root entry points only. See the
