@@ -3,7 +3,7 @@
 <img src="../../docs/assets/reverb-logo.png" alt="Reverb logo" width="112" align="right" />
 
 **Type:** standalone public product owned by `YanibHQ`  
-**Status:** Standalone release candidate—Phases 000–006 implemented locally  
+**Status:** Standalone pre-v1 public release
 **Working product name:** Reverb
 
 ## What this feature is

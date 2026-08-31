@@ -10,12 +10,19 @@ import { POSTGRES_MIGRATIONS } from '../packages/storage-postgres/dist/index.js'
 import { SQLITE_SCHEMA_VERSION } from '../packages/storage-sqlite/dist/index.js';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const workspaceManifest = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'));
 const metadata = JSON.parse(
   await readFile(resolve(root, 'docs/compatibility/release-metadata.json'), 'utf8'),
 );
 const failures = [];
-if (metadata.package_version !== '0.0.0' || metadata.release_status !== 'pre_v1_unpublished') {
-  failures.push('release metadata must remain honest about the current unpublished pre-v1 state');
+if (metadata.package_version !== workspaceManifest.version) {
+  failures.push('release metadata package version differs from the workspace version');
+}
+if (!['pre_v1_release_candidate', 'pre_v1_published'].includes(metadata.release_status)) {
+  failures.push('release metadata has an unsupported pre-v1 release status');
+}
+if ((metadata.release_status === 'pre_v1_published') !== (metadata.publication.npm === true)) {
+  failures.push('release metadata npm publication flag differs from its release status');
 }
 if (metadata.schema.current_version !== SCHEMA_COMPATIBILITY.currentVersion) {
   failures.push('release metadata schema version is stale');

@@ -1,10 +1,11 @@
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const workspaceManifest = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'));
 const listed = JSON.parse(
   execFileSync('pnpm', ['list', '--recursive', '--prod', '--depth', 'Infinity', '--json'], {
     cwd: root,
@@ -50,7 +51,11 @@ const bom = {
   version: 1,
   metadata: {
     timestamp: new Date().toISOString(),
-    component: { type: 'application', name: 'reverb-impact', version: '0.0.0' },
+    component: {
+      type: 'application',
+      name: 'reverb-impact',
+      version: workspaceManifest.version,
+    },
     tools: { components: [{ type: 'application', name: 'reverb-sbom-generator', version: '1' }] },
   },
   components: [...components.values()].sort((left, right) =>

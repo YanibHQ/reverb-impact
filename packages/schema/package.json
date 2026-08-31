@@ -1,9 +1,21 @@
 {
   "name": "@yanibhq/reverb-schema",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Canonical Reverb JSON Schemas and validators",
   "type": "module",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YanibHQ/reverb-impact.git",
+    "directory": "packages/schema"
+  },
+  "homepage": "https://github.com/YanibHQ/reverb-impact#readme",
+  "bugs": {
+    "url": "https://github.com/YanibHQ/reverb-impact/issues"
+  },
+  "engines": {
+    "node": ">=24 <26"
+  },
   "files": [
     "dist"
   ],

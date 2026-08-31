@@ -5,7 +5,7 @@ export const SCHEMA_COMPATIBILITY = Object.freeze({
   currentMajor: 1,
   supportedMajors: [1] as const,
   previousSupportedMajors: [] as const,
-  oldestSupportedPackageVersion: '0.0.0',
+  oldestSupportedPackageVersion: '0.1.0',
   previousMajorDisposition:
     'No previous public schema major exists before the first release; v0 is intentionally unsupported.',
 });

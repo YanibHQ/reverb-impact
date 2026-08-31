@@ -6,8 +6,8 @@ Reverb versions three independent surfaces:
 2. canonical JSON/storage schema major/minor;
 3. adapter extraction and identity versions.
 
-The current repository is unpublished pre-v1 package version `0.0.0`, schema `1.0`, SQLite
-migration 5, and PostgreSQL migration 2. There is no previous public schema major: v0 is explicitly
+The current release is pre-v1 package version `0.1.0`, schema `1.0`, SQLite migration 5, and
+PostgreSQL migration 2. There is no previous public schema major: schema v0 is explicitly
 unsupported rather than silently treated as a historical format. The schema-major envelope accepts
 supported major 1; each concrete schema validator still requires its declared minor contract.
 

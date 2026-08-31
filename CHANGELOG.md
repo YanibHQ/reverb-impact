@@ -7,6 +7,8 @@ explicit and package breaking changes may occur in minor releases.
 
 ## Unreleased
 
+## 0.1.0 - 2026-08-30
+
 - Added the primary Reverb logo and brand-asset usage/provenance guidance.
 - Established the standalone Apache-2.0 project constitution.
 - Added the Node 24 and pnpm monorepo foundation.

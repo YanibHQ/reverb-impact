@@ -58,12 +58,12 @@ were generated locally from repository-backed references.
 Additional contract types can be implemented through the public adapter SDK and its validation,
 compatibility, sandboxing, and admission interfaces.
 
-## Development status
+## Release status
 
-Reverb is under active development and is available for evaluation from source. Public APIs and
-storage formats may change before the first stable release, so downstream users should pin an
-exact commit. Analysis output is advisory: evidence classes must be calibrated with representative,
-human-reviewed data before they are used for automated delivery or policy decisions.
+Reverb `0.1.0` is the first public pre-1.0 release. Public APIs and storage formats may change in a
+future minor release, so downstream users should pin an exact package version. Analysis output is
+advisory: evidence classes must be calibrated with representative, human-reviewed data before they
+are used for automated delivery or policy decisions.
 
 The project is independently versioned and operated. It does not depend on Yanib source code or
 data; product integrations use Reverb's public package and host boundaries.
@@ -74,6 +74,33 @@ data; product integrations use Reverb's public package and host boundaries.
 - pnpm 10.27.x
 - Git
 - SQLite for the local host, or PostgreSQL 18 for a hosted integration
+
+## Install from npm
+
+Run the local CLI without adding it to a project:
+
+```bash
+pnpm dlx reverb-impact@0.1.0 --help
+```
+
+Hosted integrations such as Yanib should install the host-neutral core, selected contract adapters,
+GitHub host, and PostgreSQL storage explicitly:
+
+```bash
+pnpm add --save-exact \
+  @yanibhq/reverb-domain@0.1.0 \
+  @yanibhq/reverb-schema@0.1.0 \
+  @yanibhq/reverb-application@0.1.0 \
+  @yanibhq/reverb-adapter-sdk@0.1.0 \
+  @yanibhq/reverb-adapter-typescript@0.1.0 \
+  @yanibhq/reverb-adapter-openapi@0.1.0 \
+  @yanibhq/reverb-adapter-protobuf@0.1.0 \
+  @yanibhq/reverb-host-github@0.1.0 \
+  @yanibhq/reverb-storage-postgres@0.1.0
+```
+
+Install only the packages the host uses. SQLite, the local Git host, the CLI, and the testkit are
+separate packages and are not runtime requirements for a hosted integration.
 
 ## Build from source
 
