@@ -15,14 +15,14 @@ import {
   registryRevision,
   repositoryStableId,
   workspaceId,
-} from '@yanibhq/reverb-domain';
-import { CreatePullRequestOverlay, IndexRepositoryGeneration } from '@yanibhq/reverb-application';
+} from '@yanib/reverb-domain';
+import { CreatePullRequestOverlay, IndexRepositoryGeneration } from '@yanib/reverb-application';
 import {
   FakeClock,
   InMemoryArtifactCache,
   InMemoryGenerationStore,
   MemoryTelemetry,
-} from '@yanibhq/reverb-testkit';
+} from '@yanib/reverb-testkit';
 import fc from 'fast-check';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 

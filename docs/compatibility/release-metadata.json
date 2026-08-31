@@ -1,8 +1,8 @@
 {
   "document_schema": "reverb.release-compatibility-metadata",
   "schema_version": "1.0",
-  "release_status": "pre_v1_unpublished",
-  "package_version": "0.0.0",
+  "release_status": "pre_v1_release_candidate",
+  "package_version": "0.1.0",
   "schema": {
     "current_version": "1.0",
     "supported_majors": [1],
@@ -43,6 +43,6 @@
     "container": false,
     "signature": false,
     "provenance_workflow": true,
-    "reason": "Publisher, signing, container, and public release authorization remain external gates."
+    "reason": "Version 0.1.0 is prepared and verified; npm registry publication is pending."
   }
 }

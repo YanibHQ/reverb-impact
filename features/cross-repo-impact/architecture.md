@@ -549,19 +549,19 @@ The full threat model is [security.md](security.md). Architectural enforcement p
 
 ```text
 packages/
-  domain/                 @yanibhq/reverb-domain
-  application/            @yanibhq/reverb-application
-  schema/                 @yanibhq/reverb-schema
-  adapter-sdk/            @yanibhq/reverb-adapter-sdk
-  adapter-typescript/     @yanibhq/reverb-adapter-typescript
-  adapter-openapi/        @yanibhq/reverb-adapter-openapi
-  adapter-protobuf/       @yanibhq/reverb-adapter-protobuf
-  storage-sqlite/         @yanibhq/reverb-storage-sqlite
-  storage-postgres/       @yanibhq/reverb-storage-postgres
-  host-local/             @yanibhq/reverb-host-local
-  host-github/            @yanibhq/reverb-host-github
+  domain/                 @yanib/reverb-domain
+  application/            @yanib/reverb-application
+  schema/                 @yanib/reverb-schema
+  adapter-sdk/            @yanib/reverb-adapter-sdk
+  adapter-typescript/     @yanib/reverb-adapter-typescript
+  adapter-openapi/        @yanib/reverb-adapter-openapi
+  adapter-protobuf/       @yanib/reverb-adapter-protobuf
+  storage-sqlite/         @yanib/reverb-storage-sqlite
+  storage-postgres/       @yanib/reverb-storage-postgres
+  host-local/             @yanib/reverb-host-local
+  host-github/            @yanib/reverb-host-github
   cli/                    reverb-impact (binary: reverb)
-  testkit/                @yanibhq/reverb-testkit
+  testkit/                @yanib/reverb-testkit
 ```
 
 The implementation language is TypeScript on Node 24 LTS. Reasons:

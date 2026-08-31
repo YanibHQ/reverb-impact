@@ -6,7 +6,7 @@ import {
   hashCanonical,
   repoPath,
   type BoundedDiagnostic,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 
 import {
   ACTIVATION_TIMINGS,

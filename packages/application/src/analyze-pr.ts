@@ -18,7 +18,7 @@ import {
   type RepositoryStableId,
   type WorkspaceId,
   type SuppressionVersionContext,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 
 import { portFailure, portSuccess } from './ports.js';
 import type {

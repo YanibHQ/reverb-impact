@@ -1,4 +1,4 @@
-import { canonicalContractKey } from '@yanibhq/reverb-adapter-sdk';
+import { canonicalContractKey } from '@yanib/reverb-adapter-sdk';
 
 export type TypeScriptSymbolSpace = 'type' | 'value';
 

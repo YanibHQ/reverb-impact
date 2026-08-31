@@ -33,14 +33,14 @@ import {
   type RepositoryMembership,
   type SuppressionMatcher,
   type SuppressionRule,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 import {
   AnalyzePullRequest,
   CreatePullRequestOverlay,
   IndexRepositoryGeneration,
   RecordReview,
-} from '@yanibhq/reverb-application';
-import { materializeContractChanges } from '@yanibhq/reverb-adapter-sdk';
+} from '@yanib/reverb-application';
+import { materializeContractChanges } from '@yanib/reverb-adapter-sdk';
 import {
   AlwaysCurrentCancellation,
   createSystemId,
@@ -50,8 +50,8 @@ import {
   NoopTelemetry,
   SystemClock,
   type LoadedWorkspace,
-} from '@yanibhq/reverb-host-local';
-import { SqliteStore } from '@yanibhq/reverb-storage-sqlite';
+} from '@yanib/reverb-host-local';
+import { SqliteStore } from '@yanib/reverb-storage-sqlite';
 import {
   corpusManifestSchema,
   impactCaseSchema,
@@ -59,7 +59,7 @@ import {
   SchemaValidationError,
   suppressionRuleSchema,
   validateWithSchema,
-} from '@yanibhq/reverb-schema';
+} from '@yanib/reverb-schema';
 import { Command } from 'commander';
 
 import {
@@ -271,7 +271,7 @@ export async function createCli(): Promise<Command> {
   const program = new Command()
     .name('reverb')
     .description('Evidence-first cross-repository pull-request impact analysis')
-    .version('0.0.0');
+    .version('0.1.0');
 
   program
     .command('init')

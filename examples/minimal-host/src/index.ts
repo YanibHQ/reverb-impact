@@ -4,7 +4,7 @@ import type {
   ContentHash,
   RepositoryStableId,
   WorkspaceId,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 
 export class MinimalMemoryHost {
   public readonly capabilities = Object.freeze({

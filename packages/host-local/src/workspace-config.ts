@@ -17,7 +17,7 @@ import {
   type RepositoryStableId,
   type ServiceAlias,
   type ServiceIdentity,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 import { parseDocument, stringify } from 'yaml';
 
 import { createSystemId, systemInstant } from './system.js';

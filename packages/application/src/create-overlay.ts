@@ -13,7 +13,7 @@ import {
   type RegistryRevision,
   type RepositoryStableId,
   type WorkspaceId,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 
 import {
   failedArtifact,

@@ -8,7 +8,7 @@ import {
   type GenerationId,
   type RepoPath,
   type TreeEntry,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 
 export const FOUNDATION_PARSER_ID = adapterId('reverb.file-metadata');
 export const FOUNDATION_PARSER_VERSION = '1.0.0';

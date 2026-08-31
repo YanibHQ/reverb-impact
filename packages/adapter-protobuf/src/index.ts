@@ -4,4 +4,4 @@ export * from './identity.js';
 export * from './manifest.js';
 export * from './parser.js';
 
-export const ADAPTER_PROTOBUF_PACKAGE_ID = '@yanibhq/reverb-adapter-protobuf';
+export const ADAPTER_PROTOBUF_PACKAGE_ID = '@yanib/reverb-adapter-protobuf';

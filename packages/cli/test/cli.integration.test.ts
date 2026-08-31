@@ -17,7 +17,7 @@ import {
   registryRevision,
   repositoryStableId,
   stableReferenceId,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 import { afterEach, describe, expect, it } from 'vitest';
 
 const exec = promisify(execFile);

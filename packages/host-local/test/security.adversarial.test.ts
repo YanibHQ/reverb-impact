@@ -10,7 +10,7 @@ import {
   type ArtifactCacheKey,
   type ArtifactCachePort,
   type CachedArtifact,
-} from '@yanibhq/reverb-application';
+} from '@yanib/reverb-application';
 import {
   adapterId,
   commitSha,
@@ -25,14 +25,14 @@ import {
   treeHash,
   workspaceId,
   type ReverbError,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 import {
   FakeClock,
   InMemoryCancellation,
   InMemoryGenerationStore,
   InMemoryRepositoryReader,
   MemoryTelemetry,
-} from '@yanibhq/reverb-testkit';
+} from '@yanib/reverb-testkit';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { LocalArtifactObjectCache, LocalWorkspaceConfig } from '../src/index.js';

@@ -1,5 +1,5 @@
-import type { RepositoryReader } from '@yanibhq/reverb-application';
-import { portFailure, portSuccess } from '@yanibhq/reverb-application';
+import type { RepositoryReader } from '@yanib/reverb-application';
+import { portFailure, portSuccess } from '@yanib/reverb-application';
 import type {
   BlobResult,
   CommitDescriptor,
@@ -9,7 +9,7 @@ import type {
   RepositoryDescriptor,
   RepositoryStableId,
   TreeManifest,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 
 export interface GitHubReadTokenBroker {
   withReadToken<Value>(

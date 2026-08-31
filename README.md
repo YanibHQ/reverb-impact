@@ -58,12 +58,12 @@ were generated locally from repository-backed references.
 Additional contract types can be implemented through the public adapter SDK and its validation,
 compatibility, sandboxing, and admission interfaces.
 
-## Development status
+## Release status
 
-Reverb is under active development and is available for evaluation from source. Public APIs and
-storage formats may change before the first stable release, so downstream users should pin an
-exact commit. Analysis output is advisory: evidence classes must be calibrated with representative,
-human-reviewed data before they are used for automated delivery or policy decisions.
+Reverb `0.1.0` is the first public pre-1.0 release. Public APIs and storage formats may change in a
+future minor release, so downstream users should pin an exact package version. Analysis output is
+advisory: evidence classes must be calibrated with representative, human-reviewed data before they
+are used for automated delivery or policy decisions.
 
 The project is independently versioned and operated. It does not depend on Yanib source code or
 data; product integrations use Reverb's public package and host boundaries.
@@ -74,6 +74,33 @@ data; product integrations use Reverb's public package and host boundaries.
 - pnpm 10.27.x
 - Git
 - SQLite for the local host, or PostgreSQL 18 for a hosted integration
+
+## Install from npm
+
+Run the local CLI without adding it to a project:
+
+```bash
+pnpm dlx reverb-impact@0.1.0 --help
+```
+
+Hosted integrations such as Yanib should install the host-neutral core, selected contract adapters,
+GitHub host, and PostgreSQL storage explicitly:
+
+```bash
+pnpm add --save-exact \
+  @yanib/reverb-domain@0.1.0 \
+  @yanib/reverb-schema@0.1.0 \
+  @yanib/reverb-application@0.1.0 \
+  @yanib/reverb-adapter-sdk@0.1.0 \
+  @yanib/reverb-adapter-typescript@0.1.0 \
+  @yanib/reverb-adapter-openapi@0.1.0 \
+  @yanib/reverb-adapter-protobuf@0.1.0 \
+  @yanib/reverb-host-github@0.1.0 \
+  @yanib/reverb-storage-postgres@0.1.0
+```
+
+Install only the packages the host uses. SQLite, the local Git host, the CLI, and the testkit are
+separate packages and are not runtime requirements for a hosted integration.
 
 ## Build from source
 
@@ -137,18 +164,18 @@ promotion decisions, status, and diagnostics.
 | Package | Purpose |
 | --- | --- |
 | `reverb-impact` | Local `reverb` CLI and embeddable CLI construction |
-| `@yanibhq/reverb-domain` | Immutable values and deterministic analysis policy |
-| `@yanibhq/reverb-schema` | Canonical JSON Schemas and runtime validation |
-| `@yanibhq/reverb-application` | Host-neutral use cases and ports |
-| `@yanibhq/reverb-adapter-sdk` | Contract-adapter interfaces, validation, and admission helpers |
-| `@yanibhq/reverb-adapter-typescript` | TypeScript and npm contract analysis |
-| `@yanibhq/reverb-adapter-openapi` | OpenAPI and HTTP contract analysis |
-| `@yanibhq/reverb-adapter-protobuf` | Protobuf and gRPC contract analysis |
-| `@yanibhq/reverb-storage-sqlite` | Local durable storage |
-| `@yanibhq/reverb-storage-postgres` | Hosted PostgreSQL storage |
-| `@yanibhq/reverb-host-local` | Local Git and filesystem host primitives |
-| `@yanibhq/reverb-host-github` | GitHub reference-host primitives |
-| `@yanibhq/reverb-testkit` | Host conformance tests, fakes, and fixtures |
+| `@yanib/reverb-domain` | Immutable values and deterministic analysis policy |
+| `@yanib/reverb-schema` | Canonical JSON Schemas and runtime validation |
+| `@yanib/reverb-application` | Host-neutral use cases and ports |
+| `@yanib/reverb-adapter-sdk` | Contract-adapter interfaces, validation, and admission helpers |
+| `@yanib/reverb-adapter-typescript` | TypeScript and npm contract analysis |
+| `@yanib/reverb-adapter-openapi` | OpenAPI and HTTP contract analysis |
+| `@yanib/reverb-adapter-protobuf` | Protobuf and gRPC contract analysis |
+| `@yanib/reverb-storage-sqlite` | Local durable storage |
+| `@yanib/reverb-storage-postgres` | Hosted PostgreSQL storage |
+| `@yanib/reverb-host-local` | Local Git and filesystem host primitives |
+| `@yanib/reverb-host-github` | GitHub reference-host primitives |
+| `@yanib/reverb-testkit` | Host conformance tests, fakes, and fixtures |
 
 Package consumers should import documented root entry points only. See the
 [public package API](docs/api/public-packages.md) and

@@ -1,4 +1,4 @@
-import { canonicalJson } from '@yanibhq/reverb-domain';
+import { canonicalJson } from '@yanib/reverb-domain';
 
 import type { AdapterExtractionResult, ContractAdapter, ExtractRequest } from './types.js';
 import { AdapterValidationError, validateAdapterManifest } from './validation.js';

@@ -1,11 +1,11 @@
-import { contentHash, hashCanonical } from '@yanibhq/reverb-domain';
+import { contentHash, hashCanonical } from '@yanib/reverb-domain';
 import type {
   AnalysisId,
   AnalysisResult,
   ContentHash,
   RepositoryStableId,
   WorkspaceId,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 
 export const HOST_CONFORMANCE_VERSION = '1.0.0';
 

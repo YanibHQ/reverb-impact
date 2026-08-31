@@ -7,7 +7,7 @@ import {
   runGenerationStoreConformance,
   runReviewStoreConformance,
 } from '../src/index.js';
-import type { EvidenceGraphStore, GenerationStore } from '@yanibhq/reverb-application';
+import type { EvidenceGraphStore, GenerationStore } from '@yanib/reverb-application';
 
 describe('in-memory generation store conformance', () => {
   it('passes lifecycle, atomicity, selection, and overlay cases', async () => {

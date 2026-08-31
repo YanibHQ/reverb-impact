@@ -17,7 +17,7 @@ The product name is memorable but not unique. Initial checks on 2026-08-28 found
 - the authenticated project owner is an active YanibHQ administrator; the public
   `YanibHQ/reverb-impact` repository was created on 2026-08-29;
 - npm user `yanib` is authenticated; `reverb-impact` and the planned sampled
-  `@yanibhq/reverb-*` package names returned not found from the npm registry.
+  `@yanib/reverb-*` package names returned not found from the npm registry.
 - `yanibhq/reverb-impact` returned not found from Docker Hub. The intended container namespace is
   GHCR, which will be created with the repository.
 - `reverb-impact.com`, `.dev`, and `.org` had no A records. This is not a registrar-availability
@@ -30,9 +30,9 @@ The product name is memorable but not unique. Initial checks on 2026-08-28 found
 1. Build Reverb as a standalone TypeScript/Node 24 monorepo intended for
    `YanibHQ/reverb-impact`.
 2. License Reverb code and documentation under Apache-2.0.
-3. Use package scope `@yanibhq/reverb-*`, distribution package `reverb-impact`, binary `reverb`,
-   and container `ghcr.io/yanibhq/reverb-impact`, subject to publisher and legal clearance before
-   public release.
+3. Use the personally owned package scope `@yanib/reverb-*`, distribution package
+   `reverb-impact`, binary `reverb`, and container `ghcr.io/yanibhq/reverb-impact`. Publisher and
+   package-name availability were verified before the first public release.
 4. Use the Developer Certificate of Origin 1.1, not a CLA, for initial contributions.
 5. Treat Repowise as prior art and a benchmark only. Do not copy, translate, adapt, link, or import
    its implementation into Reverb packages.

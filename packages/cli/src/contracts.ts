@@ -9,20 +9,20 @@ import {
   type RegistrySnapshot,
   type RepositoryStableId,
   type WorkspaceId,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 import type {
   EvidenceGraphStore,
   GenerationStore,
   RepositoryReader,
-} from '@yanibhq/reverb-application';
-import { openApiAdapter } from '@yanibhq/reverb-adapter-openapi';
-import { protobufAdapter } from '@yanibhq/reverb-adapter-protobuf';
+} from '@yanib/reverb-application';
+import { openApiAdapter } from '@yanib/reverb-adapter-openapi';
+import { protobufAdapter } from '@yanib/reverb-adapter-protobuf';
 import {
   materializeContractObservation,
   type AdapterExtractionResult,
   type ArtifactInput,
-} from '@yanibhq/reverb-adapter-sdk';
-import { typeScriptAdapter } from '@yanibhq/reverb-adapter-typescript';
+} from '@yanib/reverb-adapter-sdk';
+import { typeScriptAdapter } from '@yanib/reverb-adapter-typescript';
 
 const MAXIMUM_CONTRACT_FILE_BYTES = 4 * 1024 * 1024;
 const MAXIMUM_CONTRACT_FILES = 10_000;

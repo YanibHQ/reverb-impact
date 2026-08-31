@@ -4,7 +4,7 @@ import {
   contentHash,
   hashCanonical,
   repoPath,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 import { describe, expect, it } from 'vitest';
 
 import {

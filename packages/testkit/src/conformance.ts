@@ -17,8 +17,8 @@ import {
   type BeginGeneration,
   type FileArtifact,
   type GenerationId,
-} from '@yanibhq/reverb-domain';
-import type { GenerationStore } from '@yanibhq/reverb-application';
+} from '@yanib/reverb-domain';
+import type { GenerationStore } from '@yanib/reverb-application';
 
 export const CONFORMANCE_FIXTURE = Object.freeze({
   workspaceId: workspaceId('wsp_01990f64-0000-7000-8000-000000000001'),

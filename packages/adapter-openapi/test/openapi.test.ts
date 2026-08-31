@@ -4,8 +4,8 @@ import {
   repoPath,
   sha256Bytes,
   type ConfigRevision,
-} from '@yanibhq/reverb-domain';
-import type { AdapterSandboxRunner, ArtifactInput } from '@yanibhq/reverb-adapter-sdk';
+} from '@yanib/reverb-domain';
+import type { AdapterSandboxRunner, ArtifactInput } from '@yanib/reverb-adapter-sdk';
 import { describe, expect, it } from 'vitest';
 
 import {

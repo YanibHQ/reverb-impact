@@ -1,9 +1,21 @@
 {
-  "name": "@yanibhq/reverb-application",
-  "version": "0.0.0",
+  "name": "@yanib/reverb-application",
+  "version": "0.1.0",
   "description": "Reverb application use cases and host-neutral ports",
   "type": "module",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YanibHQ/reverb-impact.git",
+    "directory": "packages/application"
+  },
+  "homepage": "https://github.com/YanibHQ/reverb-impact#readme",
+  "bugs": {
+    "url": "https://github.com/YanibHQ/reverb-impact/issues"
+  },
+  "engines": {
+    "node": ">=24 <26"
+  },
   "files": [
     "dist"
   ],
@@ -19,7 +31,7 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@yanibhq/reverb-domain": "workspace:*"
+    "@yanib/reverb-domain": "workspace:*"
   },
   "publishConfig": {
     "access": "public",

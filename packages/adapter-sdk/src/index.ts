@@ -6,4 +6,4 @@ export * from './sandbox.js';
 export * from './types.js';
 export * from './validation.js';
 
-export const ADAPTER_SDK_PACKAGE_ID = '@yanibhq/reverb-adapter-sdk';
+export const ADAPTER_SDK_PACKAGE_ID = '@yanib/reverb-adapter-sdk';

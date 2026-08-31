@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { promisify } from 'node:util';
 
-import { commitSha, repoPath, repositoryStableId } from '@yanibhq/reverb-domain';
+import { commitSha, repoPath, repositoryStableId } from '@yanib/reverb-domain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { LocalGitRepositoryReader } from '../src/index.js';

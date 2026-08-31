@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { contentHash, instant, workspaceId } from '@yanibhq/reverb-domain';
+import { contentHash, instant, workspaceId } from '@yanib/reverb-domain';
 import { Pool } from 'pg';
 import type { PoolConfig } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';

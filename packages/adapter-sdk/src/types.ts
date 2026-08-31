@@ -5,9 +5,9 @@ import type {
   ContractKind,
   ContentHash,
   RepoPath,
-} from '@yanibhq/reverb-domain';
-export { CONTRACT_KINDS } from '@yanibhq/reverb-domain';
-export type { ContractKind } from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
+export { CONTRACT_KINDS } from '@yanib/reverb-domain';
+export type { ContractKind } from '@yanib/reverb-domain';
 
 export const CAPABILITY_TIERS = ['contract_grade', 'structural', 'preview'] as const;
 export type CapabilityTier = (typeof CAPABILITY_TIERS)[number];

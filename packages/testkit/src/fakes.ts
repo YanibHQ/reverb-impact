@@ -23,7 +23,7 @@ import {
   type RepositoryStableId,
   type TreeManifest,
   type WorkspaceId,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 import {
   portFailure,
   portSuccess,
@@ -66,7 +66,7 @@ import {
   type WorkerIdentity,
   type WorkspaceRegistry,
   type CanonicalRecord,
-} from '@yanibhq/reverb-application';
+} from '@yanib/reverb-application';
 import type {
   BeginGeneration,
   BlobResult,
@@ -75,7 +75,7 @@ import type {
   RepositoryAction,
   ReviewEventId,
   AnalysisId,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 
 const notFound = (subject: string) =>
   portFailure({

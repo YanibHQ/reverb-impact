@@ -1,9 +1,21 @@
 {
-  "name": "@yanibhq/reverb-testkit",
-  "version": "0.0.0",
+  "name": "@yanib/reverb-testkit",
+  "version": "0.1.0",
   "description": "Host conformance fakes and fixtures for Reverb",
   "type": "module",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YanibHQ/reverb-impact.git",
+    "directory": "packages/testkit"
+  },
+  "homepage": "https://github.com/YanibHQ/reverb-impact#readme",
+  "bugs": {
+    "url": "https://github.com/YanibHQ/reverb-impact/issues"
+  },
+  "engines": {
+    "node": ">=24 <26"
+  },
   "files": [
     "dist"
   ],
@@ -19,8 +31,8 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@yanibhq/reverb-application": "workspace:*",
-    "@yanibhq/reverb-domain": "workspace:*"
+    "@yanib/reverb-application": "workspace:*",
+    "@yanib/reverb-domain": "workspace:*"
   },
   "devDependencies": {
     "@types/pg": "8.23.1",

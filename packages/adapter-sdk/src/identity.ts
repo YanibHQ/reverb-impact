@@ -1,4 +1,4 @@
-import { canonicalJson, contentHash, hashCanonical } from '@yanibhq/reverb-domain';
+import { canonicalJson, contentHash, hashCanonical } from '@yanib/reverb-domain';
 
 import { AdapterValidationError } from './validation.js';
 

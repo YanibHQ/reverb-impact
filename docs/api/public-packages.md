@@ -4,21 +4,21 @@ All publishable packages expose one documented root entry point (`.`) and includ
 their tarball. Internal file paths are deliberately unavailable through package `exports`; hosts
 must not import storage internals or another host's implementation.
 
-| Package                              | Public role                                                           |
-| ------------------------------------ | --------------------------------------------------------------------- |
-| `@yanibhq/reverb-domain`             | immutable values, canonical records, graph/evaluation/delivery policy |
-| `@yanibhq/reverb-schema`             | canonical JSON Schemas, compatibility policy, runtime validation      |
-| `@yanibhq/reverb-application`        | orchestration use cases and host-neutral ports                        |
-| `@yanibhq/reverb-adapter-sdk`        | adapter contract, validation, sandbox and admission helpers           |
-| `@yanibhq/reverb-adapter-typescript` | TypeScript/npm extraction and compatibility adapter                   |
-| `@yanibhq/reverb-adapter-openapi`    | OpenAPI operation extraction and compatibility adapter                |
-| `@yanibhq/reverb-adapter-protobuf`   | Protobuf/gRPC extraction and compatibility adapter                    |
-| `@yanibhq/reverb-storage-sqlite`     | local durable storage adapter                                         |
-| `@yanibhq/reverb-storage-postgres`   | hosted scoped records, webhook/jobs/outbox/projection/purge adapter   |
-| `@yanibhq/reverb-host-local`         | exact local Git/filesystem host primitives                            |
-| `@yanibhq/reverb-host-github`        | minimum-permission GitHub reference-host primitives                   |
-| `@yanibhq/reverb-testkit`            | conformance v1, fakes, fixtures, and host capability declarations     |
-| `reverb-impact`                      | `reverb` CLI and embeddable CLI construction                          |
+| Package                            | Public role                                                           |
+| ---------------------------------- | --------------------------------------------------------------------- |
+| `@yanib/reverb-domain`             | immutable values, canonical records, graph/evaluation/delivery policy |
+| `@yanib/reverb-schema`             | canonical JSON Schemas, compatibility policy, runtime validation      |
+| `@yanib/reverb-application`        | orchestration use cases and host-neutral ports                        |
+| `@yanib/reverb-adapter-sdk`        | adapter contract, validation, sandbox and admission helpers           |
+| `@yanib/reverb-adapter-typescript` | TypeScript/npm extraction and compatibility adapter                   |
+| `@yanib/reverb-adapter-openapi`    | OpenAPI operation extraction and compatibility adapter                |
+| `@yanib/reverb-adapter-protobuf`   | Protobuf/gRPC extraction and compatibility adapter                    |
+| `@yanib/reverb-storage-sqlite`     | local durable storage adapter                                         |
+| `@yanib/reverb-storage-postgres`   | hosted scoped records, webhook/jobs/outbox/projection/purge adapter   |
+| `@yanib/reverb-host-local`         | exact local Git/filesystem host primitives                            |
+| `@yanib/reverb-host-github`        | minimum-permission GitHub reference-host primitives                   |
+| `@yanib/reverb-testkit`            | conformance v1, fakes, fixtures, and host capability declarations     |
+| `reverb-impact`                    | `reverb` CLI and embeddable CLI construction                          |
 
 ## Errors and states
 

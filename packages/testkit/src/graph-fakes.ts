@@ -20,7 +20,7 @@ import {
   type ImpactCase,
   type EvaluationReport,
   type PromotionRecord,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 import {
   portFailure,
   portSuccess,
@@ -30,7 +30,7 @@ import {
   type PortResult,
   type ReferenceQuery,
   type ReviewEvaluationStore,
-} from '@yanibhq/reverb-application';
+} from '@yanib/reverb-application';
 
 function conflict(message: string) {
   return portFailure({

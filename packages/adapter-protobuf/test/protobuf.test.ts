@@ -1,5 +1,5 @@
-import { configRevision, contentHash, repoPath, sha256Bytes } from '@yanibhq/reverb-domain';
-import type { AdapterSandboxRunner, ArtifactInput } from '@yanibhq/reverb-adapter-sdk';
+import { configRevision, contentHash, repoPath, sha256Bytes } from '@yanib/reverb-domain';
+import type { AdapterSandboxRunner, ArtifactInput } from '@yanib/reverb-adapter-sdk';
 import { describe, expect, it } from 'vitest';
 
 import {

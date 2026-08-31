@@ -1,4 +1,4 @@
-import { canonicalContractKey } from '@yanibhq/reverb-adapter-sdk';
+import { canonicalContractKey } from '@yanib/reverb-adapter-sdk';
 
 function qualified(packageName: string, declaration: string): string {
   return packageName.trim().length === 0 ? declaration : `${packageName}.${declaration}`;

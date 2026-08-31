@@ -61,7 +61,7 @@ Before first public publish:
 Until then:
 
 - repository: `YanibHQ/reverb-impact`;
-- npm scope: `@yanibhq/reverb-*` (planned; publisher permissions and availability must be verified);
+- npm scope: `@yanib/reverb-*` (personally owned and verified for the first public release);
 - CLI distribution package: `reverb-impact` with binary `reverb`;
 - container: `ghcr.io/yanibhq/reverb-impact`;
 - protocol identifiers use `reverb.*`, which are internal schema names rather than a registry claim.
@@ -111,18 +111,18 @@ CI produces:
 
 | Package | Purpose | Runtime dependencies allowed |
 | --- | --- | --- |
-| `@yanibhq/reverb-domain` | pure values and algorithms | small validation/hash utilities only; no I/O clients |
-| `@yanibhq/reverb-application` | use cases over ports | domain, schema, port interfaces |
-| `@yanibhq/reverb-schema` | generated JSON Schema/types | no runtime or minimal validator |
-| `@yanibhq/reverb-adapter-sdk` | adapter manifest/contracts/test harness | domain/schema |
-| `@yanibhq/reverb-adapter-typescript` | TS/npm definitions/references/diffs | TypeScript compiler API, manifest/lock parsers |
-| `@yanibhq/reverb-adapter-openapi` | OpenAPI operations and compatibility wrapper | safe parser, pinned external differ integration |
-| `@yanibhq/reverb-adapter-protobuf` | Protobuf/gRPC definitions/references/diffs | descriptor parser, pinned `buf` integration |
-| `@yanibhq/reverb-storage-sqlite` | local persistence/job implementation | SQLite driver/migrations |
-| `@yanibhq/reverb-storage-postgres` | hosted persistence/job implementation | PostgreSQL driver/migrations |
-| `@yanibhq/reverb-host-local` | Git/filesystem source and local registry | Git process adapter, filesystem |
-| `@yanibhq/reverb-host-github` | app/webhook/source/check adapter | GitHub SDK/web framework |
-| `@yanibhq/reverb-testkit` | conformance fixtures and fake ports | domain/application/schema |
+| `@yanib/reverb-domain` | pure values and algorithms | small validation/hash utilities only; no I/O clients |
+| `@yanib/reverb-application` | use cases over ports | domain, schema, port interfaces |
+| `@yanib/reverb-schema` | generated JSON Schema/types | no runtime or minimal validator |
+| `@yanib/reverb-adapter-sdk` | adapter manifest/contracts/test harness | domain/schema |
+| `@yanib/reverb-adapter-typescript` | TS/npm definitions/references/diffs | TypeScript compiler API, manifest/lock parsers |
+| `@yanib/reverb-adapter-openapi` | OpenAPI operations and compatibility wrapper | safe parser, pinned external differ integration |
+| `@yanib/reverb-adapter-protobuf` | Protobuf/gRPC definitions/references/diffs | descriptor parser, pinned `buf` integration |
+| `@yanib/reverb-storage-sqlite` | local persistence/job implementation | SQLite driver/migrations |
+| `@yanib/reverb-storage-postgres` | hosted persistence/job implementation | PostgreSQL driver/migrations |
+| `@yanib/reverb-host-local` | Git/filesystem source and local registry | Git process adapter, filesystem |
+| `@yanib/reverb-host-github` | app/webhook/source/check adapter | GitHub SDK/web framework |
+| `@yanib/reverb-testkit` | conformance fixtures and fake ports | domain/application/schema |
 | `reverb-impact` | CLI composition | local host, adapters, SQLite |
 
 Optional model/vector integration lives in separate packages and is absent from the CLI/default host dependency graph.
@@ -231,7 +231,7 @@ First-party in-tree adapters set the trust and test model. External adapters lat
 
 ### 10.2 Host adapters
 
-Host adapters implement ports and pass `@yanibhq/reverb-testkit`. They do not fork domain logic. GitLab/Bitbucket are deferred until GitHub semantics and the provider-neutral DTOs are stable.
+Host adapters implement ports and pass `@yanib/reverb-testkit`. They do not fork domain logic. GitLab/Bitbucket are deferred until GitHub semantics and the provider-neutral DTOs are stable.
 
 ### 10.3 Artifact import/export
 
@@ -261,10 +261,10 @@ Yanib sends append-only review events through the SDK. Reverb never reads or wri
 
 ## 12. Public project governance
 
-`binaydhakal` owns the initial repository, package publisher, GitHub App namespace, release signing
-identity and security contact. Reverb remains a standalone codebase: Yanib product changes do not
-silently change Reverb’s protocol, and Reverb releases do not directly modify Yanib production
-tables or workflows.
+`binaydhakal` owns the initial repository, GitHub App namespace, release signing identity and
+security contact; npm user `yanib` owns the public package scope. Reverb remains a standalone
+codebase: Yanib product changes do not silently change Reverb’s protocol, and Reverb releases do
+not directly modify Yanib production tables or workflows.
 
 Before accepting adapters from multiple organizations:
 

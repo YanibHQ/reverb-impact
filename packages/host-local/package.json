@@ -1,9 +1,21 @@
 {
-  "name": "@yanibhq/reverb-host-local",
-  "version": "0.0.0",
+  "name": "@yanib/reverb-host-local",
+  "version": "0.1.0",
   "description": "Local Git and filesystem host adapters for Reverb",
   "type": "module",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YanibHQ/reverb-impact.git",
+    "directory": "packages/host-local"
+  },
+  "homepage": "https://github.com/YanibHQ/reverb-impact#readme",
+  "bugs": {
+    "url": "https://github.com/YanibHQ/reverb-impact/issues"
+  },
+  "engines": {
+    "node": ">=24 <26"
+  },
   "files": [
     "dist"
   ],
@@ -19,12 +31,12 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@yanibhq/reverb-application": "workspace:*",
-    "@yanibhq/reverb-domain": "workspace:*",
+    "@yanib/reverb-application": "workspace:*",
+    "@yanib/reverb-domain": "workspace:*",
     "yaml": "2.8.3"
   },
   "devDependencies": {
-    "@yanibhq/reverb-testkit": "workspace:*"
+    "@yanib/reverb-testkit": "workspace:*"
   },
   "publishConfig": {
     "access": "public",

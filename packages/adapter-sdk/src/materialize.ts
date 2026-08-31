@@ -11,7 +11,7 @@ import {
   type Instant,
   type RepositoryStableId,
   type WorkspaceId,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 
 import type { AdapterDiffResult, AdapterExtractionResult } from './types.js';
 

@@ -1,9 +1,21 @@
 {
-  "name": "@yanibhq/reverb-adapter-protobuf",
-  "version": "0.0.0",
+  "name": "@yanib/reverb-adapter-protobuf",
+  "version": "0.1.0",
   "description": "Protobuf and gRPC contract adapter for Reverb",
   "type": "module",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YanibHQ/reverb-impact.git",
+    "directory": "packages/adapter-protobuf"
+  },
+  "homepage": "https://github.com/YanibHQ/reverb-impact#readme",
+  "bugs": {
+    "url": "https://github.com/YanibHQ/reverb-impact/issues"
+  },
+  "engines": {
+    "node": ">=24 <26"
+  },
   "files": [
     "dist"
   ],
@@ -19,8 +31,8 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@yanibhq/reverb-adapter-sdk": "workspace:*",
-    "@yanibhq/reverb-domain": "workspace:*"
+    "@yanib/reverb-adapter-sdk": "workspace:*",
+    "@yanib/reverb-domain": "workspace:*"
   },
   "publishConfig": {
     "access": "public",

@@ -1,5 +1,5 @@
-import { adapterId } from '@yanibhq/reverb-domain';
-import { validateAdapterManifest, type AdapterManifest } from '@yanibhq/reverb-adapter-sdk';
+import { adapterId } from '@yanib/reverb-domain';
+import { validateAdapterManifest, type AdapterManifest } from '@yanib/reverb-adapter-sdk';
 
 export const TYPESCRIPT_ADAPTER_MANIFEST: AdapterManifest = validateAdapterManifest({
   schema: 'reverb.adapter-manifest',

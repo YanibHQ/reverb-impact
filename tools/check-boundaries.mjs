@@ -11,9 +11,9 @@ const adapterRoots = [
 ].map((name) => fileURLToPath(new URL(`../packages/${name}/src/`, import.meta.url)));
 const githubHostRoot = fileURLToPath(new URL('../packages/host-github/src/', import.meta.url));
 const forbidden = [
-  '@yanibhq/reverb-application',
-  '@yanibhq/reverb-host-',
-  '@yanibhq/reverb-storage-',
+  '@yanib/reverb-application',
+  '@yanib/reverb-host-',
+  '@yanib/reverb-storage-',
   '@octokit/',
   'pg',
   'node:fs',
@@ -45,9 +45,9 @@ for (const file of await walk(domainRoot)) {
 }
 
 const forbiddenAdapterImports = [
-  '@yanibhq/reverb-application',
-  '@yanibhq/reverb-storage-',
-  '@yanibhq/reverb-host-',
+  '@yanib/reverb-application',
+  '@yanib/reverb-storage-',
+  '@yanib/reverb-host-',
   'node:child_process',
   'node:fs',
   'node:net',

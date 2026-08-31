@@ -27,8 +27,8 @@ import {
   type IndexedContractReference,
   type OverlayId,
   type RepositoryStableId,
-} from '@yanibhq/reverb-domain';
-import { AnalyzePullRequest } from '@yanibhq/reverb-application';
+} from '@yanib/reverb-domain';
+import { AnalyzePullRequest } from '@yanib/reverb-application';
 import { describe, expect, it } from 'vitest';
 
 import {

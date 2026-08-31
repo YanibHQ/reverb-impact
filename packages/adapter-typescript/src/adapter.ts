@@ -5,7 +5,7 @@ import {
   type BoundedDiagnostic,
   type ContentHash,
   type RepoPath,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 import {
   AdapterValidationError,
   assertComparableExtractions,
@@ -22,7 +22,7 @@ import {
   type DiffRequest,
   type DifferMetadata,
   type ExtractRequest,
-} from '@yanibhq/reverb-adapter-sdk';
+} from '@yanib/reverb-adapter-sdk';
 
 import { normalizeNpmSubpath, parseNpmSpecifier, typeScriptSymbolKey } from './identity.js';
 import { TYPESCRIPT_ADAPTER_MANIFEST } from './manifest.js';

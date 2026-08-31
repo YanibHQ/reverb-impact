@@ -25,8 +25,8 @@ import {
   type IndexedContractDefinition,
   type IndexedContractReference,
   type RepositoryStableId,
-} from '@yanibhq/reverb-domain';
-import type { EvidenceGraphStore, GenerationStore } from '@yanibhq/reverb-application';
+} from '@yanib/reverb-domain';
+import type { EvidenceGraphStore, GenerationStore } from '@yanib/reverb-application';
 
 const workspace = workspaceId('wsp_01990f64-0000-7000-8000-000000000090');
 const producer = repositoryStableId(`local:sha256:${'1'.repeat(64)}`);

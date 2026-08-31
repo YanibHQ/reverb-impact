@@ -20,8 +20,8 @@ import {
   simulateFrozenPolicy,
   stableReferenceId,
   type ReviewEvent,
-} from '@yanibhq/reverb-domain';
-import type { ReviewEvaluationStore } from '@yanibhq/reverb-application';
+} from '@yanib/reverb-domain';
+import type { ReviewEvaluationStore } from '@yanib/reverb-application';
 
 export interface ReviewStoreHarness {
   readonly store: ReviewEvaluationStore;

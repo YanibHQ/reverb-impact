@@ -2,8 +2,8 @@ import { posix } from 'node:path';
 
 import ts from 'typescript';
 
-import type { ContentHash, RepoPath } from '@yanibhq/reverb-domain';
-import type { ArtifactInput, SourceRange } from '@yanibhq/reverb-adapter-sdk';
+import type { ContentHash, RepoPath } from '@yanib/reverb-domain';
+import type { ArtifactInput, SourceRange } from '@yanib/reverb-adapter-sdk';
 
 import type { TypeScriptSymbolSpace } from './identity.js';
 

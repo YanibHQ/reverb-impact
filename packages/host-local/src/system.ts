@@ -1,13 +1,13 @@
 import { randomBytes } from 'node:crypto';
 
-import { createPrefixedUuidV7, instant, type Instant } from '@yanibhq/reverb-domain';
+import { createPrefixedUuidV7, instant, type Instant } from '@yanib/reverb-domain';
 import {
   portSuccess,
   type CancellationPort,
   type Clock,
   type PortResult,
   type TelemetryPort,
-} from '@yanibhq/reverb-application';
+} from '@yanib/reverb-application';
 
 export function systemInstant(date = new Date()): Instant {
   return instant(date.toISOString());

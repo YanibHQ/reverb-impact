@@ -55,7 +55,7 @@ describe('canonical foundation schemas', () => {
       currentVersion: '1.0',
       supportedMajors: [1],
       previousSupportedMajors: [],
-      oldestSupportedPackageVersion: '0.0.0',
+      oldestSupportedPackageVersion: '0.1.0',
     });
     expect(assertReadableSchemaVersion('1.0')).toEqual({ major: 1, minor: 0 });
     expect(assertReadableSchemaVersion('1.99')).toEqual({ major: 1, minor: 99 });

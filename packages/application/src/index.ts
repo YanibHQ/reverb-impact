@@ -5,4 +5,4 @@ export * from './index-generation.js';
 export * from './ports.js';
 export * from './review.js';
 
-export const APPLICATION_PACKAGE_ID = '@yanibhq/reverb-application';
+export const APPLICATION_PACKAGE_ID = '@yanib/reverb-application';

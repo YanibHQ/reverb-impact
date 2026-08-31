@@ -1,9 +1,21 @@
 {
   "name": "reverb-impact",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Local CLI for evidence-first cross-repository impact analysis",
   "type": "module",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YanibHQ/reverb-impact.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/YanibHQ/reverb-impact#readme",
+  "bugs": {
+    "url": "https://github.com/YanibHQ/reverb-impact/issues"
+  },
+  "engines": {
+    "node": ">=24 <26"
+  },
   "files": [
     "dist"
   ],
@@ -22,15 +34,15 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@yanibhq/reverb-adapter-openapi": "workspace:*",
-    "@yanibhq/reverb-adapter-protobuf": "workspace:*",
-    "@yanibhq/reverb-adapter-sdk": "workspace:*",
-    "@yanibhq/reverb-adapter-typescript": "workspace:*",
-    "@yanibhq/reverb-application": "workspace:*",
-    "@yanibhq/reverb-domain": "workspace:*",
-    "@yanibhq/reverb-host-local": "workspace:*",
-    "@yanibhq/reverb-schema": "workspace:*",
-    "@yanibhq/reverb-storage-sqlite": "workspace:*",
+    "@yanib/reverb-adapter-openapi": "workspace:*",
+    "@yanib/reverb-adapter-protobuf": "workspace:*",
+    "@yanib/reverb-adapter-sdk": "workspace:*",
+    "@yanib/reverb-adapter-typescript": "workspace:*",
+    "@yanib/reverb-application": "workspace:*",
+    "@yanib/reverb-domain": "workspace:*",
+    "@yanib/reverb-host-local": "workspace:*",
+    "@yanib/reverb-schema": "workspace:*",
+    "@yanib/reverb-storage-sqlite": "workspace:*",
     "commander": "14.0.0"
   },
   "publishConfig": {

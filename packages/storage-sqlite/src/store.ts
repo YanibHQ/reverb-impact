@@ -51,7 +51,7 @@ import {
   type ImpactCase,
   type EvaluationReport,
   type PromotionRecord,
-} from '@yanibhq/reverb-domain';
+} from '@yanib/reverb-domain';
 import {
   portFailure,
   portSuccess,
@@ -71,7 +71,7 @@ import {
   type ReferenceQuery,
   type WorkspaceRegistry,
   type ReviewEvaluationStore,
-} from '@yanibhq/reverb-application';
+} from '@yanib/reverb-application';
 
 export const SQLITE_SCHEMA_VERSION = 5;
 
