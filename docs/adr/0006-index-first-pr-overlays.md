@@ -62,11 +62,11 @@ The exact exported names are chosen during implementation, but v0.3 must provide
 
 Initial partition ownership is adapter-specific:
 
-| Adapter | Partition | Invalidation boundary |
-| --- | --- | --- |
+| Adapter        | Partition                                                           | Invalidation boundary                                                                   |
+| -------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | TypeScript/npm | package root with per-module parse facts and import/re-export graph | changed module, package metadata/exports, dependency context, reverse re-export closure |
-| OpenAPI | root document plus local `$ref` closure | changed document or referenced local schema |
-| Protobuf | descriptor/import compilation unit | changed source, imported descriptor, package/service identity, compiler configuration |
+| OpenAPI        | root document plus local `$ref` closure                             | changed document or referenced local schema                                             |
+| Protobuf       | descriptor/import compilation unit                                  | changed source, imported descriptor, package/service identity, compiler configuration   |
 
 ## Runtime invariants
 
