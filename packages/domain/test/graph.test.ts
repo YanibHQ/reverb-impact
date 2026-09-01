@@ -206,7 +206,7 @@ function reference(
 function selection(
   repositoryId: typeof consumerA | typeof consumerB,
   generation: typeof consumerGenerationA | typeof consumerGenerationB,
-  state: ConsumerGenerationSelection['state'] = 'current',
+  state: Extract<ConsumerGenerationSelection['state'], 'current' | 'stale'> = 'current',
 ): ConsumerGenerationSelection {
   return {
     repositoryId,

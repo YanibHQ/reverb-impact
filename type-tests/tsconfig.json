@@ -1,0 +1,16 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": "..",
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true,
+    "paths": {
+      "@yanib/reverb-application": ["packages/application/src/index.ts"],
+      "@yanib/reverb-domain": ["packages/domain/src/index.ts"]
+    },
+    "sourceMap": false
+  },
+  "include": ["./**/*.ts"]
+}
