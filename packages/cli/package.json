@@ -43,7 +43,8 @@
     "@yanib/reverb-host-local": "workspace:*",
     "@yanib/reverb-schema": "workspace:*",
     "@yanib/reverb-storage-sqlite": "workspace:*",
-    "commander": "14.0.0"
+    "commander": "14.0.0",
+    "picocolors": "1.1.1"
   },
   "publishConfig": {
     "access": "public",

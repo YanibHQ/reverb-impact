@@ -8,4 +8,5 @@ Accepted ADRs are immutable. A new ADR supersedes an old decision and links it e
 - [0001 — Project constitution](0001-project-constitution.md)
 - [0002 — Phase 003 comparative gate](0002-phase-003-comparative-gate.md)
 - [0003 — Promotion interval and frozen replay](0003-promotion-interval.md)
+- [0004 — Adapter manifest SemVer validation](0004-adapter-manifest-semver-validation.md)
 - [0005 — Canonical JSON object boundary](0005-canonical-json-object-boundary.md)

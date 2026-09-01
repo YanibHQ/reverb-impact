@@ -67,6 +67,7 @@ import {
   extractContractsAtCommit,
   INITIAL_ADAPTERS,
 } from './contracts.js';
+import { configureCliPresentation, styleRuntimeError, styleState } from './presentation.js';
 
 const INDEXER_BUNDLE_VERSION = 'foundation-1.0.0';
 
@@ -268,13 +269,16 @@ function pageOptions(limitValue: string, cursorValue?: string): { limit: number;
 }
 
 export async function createCli(): Promise<Command> {
-  const program = new Command()
-    .name('reverb')
-    .description('Evidence-first cross-repository pull-request impact analysis')
-    .version('0.2.0');
+  const program = configureCliPresentation(
+    new Command()
+      .name('reverb')
+      .description('Evidence-first cross-repository pull-request impact analysis')
+      .version('0.2.0'),
+  );
 
   program
     .command('init')
+    .helpGroup('Workspace')
     .argument('[path]', 'workspace root', '.')
     .option('--name <name>', 'workspace display name')
     .action(async (path: string, options: { name?: string }) => {
@@ -292,6 +296,7 @@ export async function createCli(): Promise<Command> {
 
   const workspace = program
     .command('workspace')
+    .helpGroup('Workspace')
     .description('manage explicit repository membership');
   workspace
     .command('add')
@@ -319,7 +324,10 @@ export async function createCli(): Promise<Command> {
       process.stdout.write(`${updated.snapshot.revision.revision}\n`);
     });
 
-  const registry = program.command('registry').description('manage the service registry');
+  const registry = program
+    .command('registry')
+    .helpGroup('Workspace')
+    .description('manage the service registry');
   registry.command('validate').action(async () => {
     const current = await LocalWorkspaceConfig.load(process.cwd());
     process.stdout.write(
@@ -392,6 +400,7 @@ export async function createCli(): Promise<Command> {
 
   program
     .command('index')
+    .helpGroup('Analysis')
     .option('--repo <alias>', 'one repository alias')
     .option('--ref <ref>', 'Git ref, resolved to an exact commit')
     .option('--json', 'emit canonical machine output')
@@ -442,7 +451,7 @@ export async function createCli(): Promise<Command> {
       else {
         for (const result of results) {
           process.stdout.write(
-            `${result.alias}: ${result.state} ${result.artifactCount} artifacts, ${result.definition_count} definitions, ${result.reference_count} references at ${result.commit_sha} (${result.contract_coverage} contract coverage)\n`,
+            `${result.alias}: ${styleState(result.state)} ${result.artifactCount} artifacts, ${result.definition_count} definitions, ${result.reference_count} references at ${result.commit_sha} (${styleState(result.contract_coverage)} contract coverage)\n`,
           );
         }
       }
@@ -450,6 +459,7 @@ export async function createCli(): Promise<Command> {
 
   program
     .command('analyze')
+    .helpGroup('Analysis')
     .description('preview exact base-to-head cross-repository impact')
     .requiredOption('--repo <alias>', 'producer repository alias')
     .requiredOption('--base <ref>', 'exact base SHA or resolvable Git ref')
@@ -643,7 +653,10 @@ export async function createCli(): Promise<Command> {
       },
     );
 
-  const finding = program.command('finding').description('inspect persisted finding evidence');
+  const finding = program
+    .command('finding')
+    .helpGroup('Analysis')
+    .description('inspect persisted finding evidence');
   finding
     .command('show')
     .argument('<fingerprint>')
@@ -666,6 +679,7 @@ export async function createCli(): Promise<Command> {
 
   const review = program
     .command('review')
+    .helpGroup('Governance')
     .description('append human labels and inspect immutable review history');
   review
     .command('add')
@@ -950,7 +964,10 @@ export async function createCli(): Promise<Command> {
       process.stdout.write(`${JSON.stringify({ imported_reviews: imported })}\n`);
     });
 
-  const corpus = program.command('corpus').description('manage frozen evaluation corpora');
+  const corpus = program
+    .command('corpus')
+    .helpGroup('Governance')
+    .description('manage frozen evaluation corpora');
   corpus
     .command('import')
     .argument('<manifest>', 'JSON bundle containing canonical manifest and cases')
@@ -968,6 +985,7 @@ export async function createCli(): Promise<Command> {
 
   program
     .command('eval')
+    .helpGroup('Governance')
     .description('evaluate a frozen corpus without rerunning adapters or models')
     .requiredOption('--corpus <revision>')
     .option('--policy <file>', 'also replay a frozen candidate policy')
@@ -1020,7 +1038,10 @@ export async function createCli(): Promise<Command> {
       }
     });
 
-  const policyCommands = program.command('policy').description('replay frozen delivery policies');
+  const policyCommands = program
+    .command('policy')
+    .helpGroup('Governance')
+    .description('replay frozen delivery policies');
   policyCommands
     .command('simulate')
     .argument('<file>', 'candidate policy JSON')
@@ -1065,7 +1086,10 @@ export async function createCli(): Promise<Command> {
       },
     );
 
-  const promotion = program.command('promotion').description('append promotion audit decisions');
+  const promotion = program
+    .command('promotion')
+    .helpGroup('Governance')
+    .description('append promotion audit decisions');
   promotion
     .command('decide')
     .argument('<evidence>', 'frozen promotion evidence JSON')
@@ -1101,6 +1125,7 @@ export async function createCli(): Promise<Command> {
 
   program
     .command('status')
+    .helpGroup('Operations')
     .option('--json', 'emit JSON')
     .action(async (options: { json?: boolean }) => {
       const current = await LocalWorkspaceConfig.load(process.cwd());
@@ -1145,7 +1170,7 @@ export async function createCli(): Promise<Command> {
       else {
         for (const status of statuses) {
           process.stdout.write(
-            `${status.alias}: ${status.selected ? `${status.selected.state} ${status.selected.commit_sha}; contracts ${status.selected.contracts?.coverage ?? 'not indexed'} (${status.selected.contracts?.definitions ?? 0} definitions, ${status.selected.contracts?.references ?? 0} references)` : 'not indexed'}\n`,
+            `${status.alias}: ${status.selected ? `${styleState(status.selected.state)} ${status.selected.commit_sha}; contracts ${styleState(status.selected.contracts?.coverage ?? 'not indexed')} (${status.selected.contracts?.definitions ?? 0} definitions, ${status.selected.contracts?.references ?? 0} references)` : styleState('not indexed')}\n`,
           );
         }
       }
@@ -1153,6 +1178,7 @@ export async function createCli(): Promise<Command> {
 
   program
     .command('doctor')
+    .helpGroup('Operations')
     .option('--json', 'emit JSON')
     .action(async (options: { json?: boolean }) => {
       const checks: { name: string; state: 'pass' | 'fail'; detail: string }[] = [];
@@ -1204,7 +1230,7 @@ export async function createCli(): Promise<Command> {
       if (options.json) process.stdout.write(`${JSON.stringify({ checks })}\n`);
       else
         checks.forEach((check) =>
-          process.stdout.write(`${check.state}: ${check.name} — ${check.detail}\n`),
+          process.stdout.write(`${styleState(check.state)}: ${check.name} — ${check.detail}\n`),
         );
       if (checks.some((check) => check.state === 'fail')) process.exitCode = 3;
     });
@@ -1217,7 +1243,9 @@ export async function main(argv = process.argv): Promise<void> {
   try {
     await cli.parseAsync(argv);
   } catch (error) {
-    process.stderr.write(`${error instanceof Error ? error.message : 'Reverb command failed.'}\n`);
+    process.stderr.write(
+      `${styleRuntimeError(error instanceof Error ? error.message : 'Reverb command failed.')}\n`,
+    );
     process.exitCode = 5;
   }
 }
