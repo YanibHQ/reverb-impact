@@ -80,6 +80,16 @@ export const repositoryGenerationSchema = {
     coverage_hash: { type: 'string', pattern: hashPattern },
     artifact_result_hash: { type: 'string', pattern: hashPattern },
     selectable: { type: 'boolean' },
+    derivation: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['base_generation_id', 'overlay_id', 'storage_mode'],
+      properties: {
+        base_generation_id: { type: 'string', pattern: `^gen_${uuidV7Pattern}$` },
+        overlay_id: { type: 'string', pattern: `^ovl_${uuidV7Pattern}$` },
+        storage_mode: { const: 'base_overlay' },
+      },
+    },
   },
 } as const satisfies JsonSchema;
 

@@ -2,6 +2,7 @@ import {
   contentHash,
   hashCanonical,
   jobId,
+  materializeOverlayArtifacts,
   type ArtifactBatch,
   type BoundedDiagnostic,
   type CommitDescriptor,
@@ -41,6 +42,7 @@ import {
   type ClaimedJob,
   type Clock,
   type DeliveryWriter,
+  type DeriveGeneration,
   type DisclosureProjection,
   type DisclosureRequest,
   type DurableJob,
@@ -226,6 +228,70 @@ export class InMemoryGenerationStore implements GenerationStore {
     return generation ? portSuccess(generation) : notFound('Generation');
   }
 
+  public async deriveGeneration(
+    input: DeriveGeneration,
+  ): Promise<PortResult<RepositoryGeneration>> {
+    const existing = this.#generations.get(input.generationId);
+    if (existing) {
+      const sameDerivation =
+        existing.derivation?.baseGenerationId === input.baseGenerationId &&
+        existing.derivation.overlayId === input.overlayId &&
+        existing.coverageHash === input.coverageHash &&
+        existing.artifactResultHash === input.artifactResultHash;
+      return sameDerivation
+        ? portSuccess(existing)
+        : conflict('Generation ID was reused for a different derivation.');
+    }
+    if (input.generationId === input.baseGenerationId) {
+      return conflict('A derived generation cannot be its own base.');
+    }
+    const base = this.#generations.get(input.baseGenerationId);
+    const overlay = this.#overlays.get(input.overlayId);
+    if (!base || (base.state !== 'complete' && base.state !== 'partial')) {
+      return conflict('Derived generation requires a completed base generation.');
+    }
+    if (!overlay || (overlay.state !== 'complete' && overlay.state !== 'partial')) {
+      return conflict('Derived generation requires a completed overlay.');
+    }
+    const compatible =
+      overlay.baseGenerationId === base.id &&
+      overlay.workspaceId === base.workspaceId &&
+      overlay.repositoryId === base.repositoryId &&
+      overlay.baseSha === base.commitSha &&
+      overlay.indexerBundleVersion === base.indexerBundleVersion &&
+      overlay.configRevision === base.configRevision &&
+      overlay.registryRevision === base.registryRevision;
+    if (!compatible) {
+      return conflict('Overlay is incompatible with its requested base generation.');
+    }
+    const generation: RepositoryGeneration = {
+      id: input.generationId,
+      workspaceId: base.workspaceId,
+      repositoryId: base.repositoryId,
+      commitSha: overlay.headSha,
+      treeHash: overlay.headTreeHash,
+      indexerBundleVersion: overlay.indexerBundleVersion,
+      configRevision: overlay.configRevision,
+      registryRevision: overlay.registryRevision,
+      state: base.state === 'partial' || overlay.state === 'partial' ? 'partial' : 'complete',
+      startedAt: overlay.startedAt,
+      completedAt: input.completedAt,
+      coverageHash: input.coverageHash,
+      artifactResultHash: input.artifactResultHash,
+      selectable: false,
+      derivation: {
+        baseGenerationId: base.id,
+        overlayId: overlay.id,
+        storageMode: 'base_overlay',
+      },
+    };
+    this.#generations.set(generation.id, generation);
+    this.#artifactBatches.set(generation.id, [
+      { artifacts: [], coverage: input.coverage, diagnostics: input.diagnostics },
+    ]);
+    return portSuccess(generation);
+  }
+
   public async selectGeneration(
     query: GenerationSelection,
   ): Promise<PortResult<GenerationSelectionResult>> {
@@ -255,13 +321,36 @@ export class InMemoryGenerationStore implements GenerationStore {
   public async listArtifacts(
     generationId: GenerationId,
   ): Promise<PortResult<readonly FileArtifact[]>> {
+    return this.#listArtifacts(generationId, new Set());
+  }
+
+  #listArtifacts(
+    generationId: GenerationId,
+    visited: Set<GenerationId>,
+  ): PortResult<readonly FileArtifact[]> {
     const generation = this.#generations.get(generationId);
     if (!generation || (generation.state !== 'complete' && generation.state !== 'partial')) {
       return notFound('Selectable generation artifacts');
     }
-    return portSuccess(
-      (this.#artifactBatches.get(generationId) ?? []).flatMap((batch) => [...batch.artifacts]),
-    );
+    if (!generation.derivation) {
+      return portSuccess(
+        (this.#artifactBatches.get(generationId) ?? []).flatMap((batch) => [...batch.artifacts]),
+      );
+    }
+    if (visited.has(generationId)) {
+      return conflict('Derived generation ancestry contains a cycle.');
+    }
+    visited.add(generationId);
+    const base = this.#listArtifacts(generation.derivation.baseGenerationId, visited);
+    visited.delete(generationId);
+    if (!base.ok) return base;
+    const entries = this.#overlayEntries.get(generation.derivation.overlayId);
+    if (!entries) return notFound('Derived generation overlay entries');
+    try {
+      return portSuccess(materializeOverlayArtifacts(generationId, base.value, entries));
+    } catch {
+      return conflict('Derived generation overlay entries are invalid.');
+    }
   }
 
   public async getGenerationCoverage(

@@ -44,6 +44,22 @@
     "completed_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T.*Z$" },
     "coverage_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
     "artifact_result_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
-    "selectable": { "type": "boolean" }
+    "selectable": { "type": "boolean" },
+    "derivation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base_generation_id", "overlay_id", "storage_mode"],
+      "properties": {
+        "base_generation_id": {
+          "type": "string",
+          "pattern": "^gen_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "overlay_id": {
+          "type": "string",
+          "pattern": "^ovl_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "storage_mode": { "const": "base_overlay" }
+      }
+    }
   }
 }

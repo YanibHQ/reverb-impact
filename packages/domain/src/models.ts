@@ -58,6 +58,13 @@ export interface RepositoryGeneration {
   readonly coverageHash?: ContentHash;
   readonly artifactResultHash?: ContentHash;
   readonly selectable: boolean;
+  readonly derivation?: GenerationDerivation;
+}
+
+export interface GenerationDerivation {
+  readonly baseGenerationId: GenerationId;
+  readonly overlayId: OverlayId;
+  readonly storageMode: 'base_overlay';
 }
 
 export interface BeginGeneration {
