@@ -374,7 +374,7 @@ export class LocalGitRepositoryReader implements RepositoryReader {
     try {
       const binaryByPath = new Map<RepoPath, boolean>();
       const numstatFields = decodeText(numstat.value.stdout).split('\0');
-      for (let index = 0; index < numstatFields.length; ) {
+      for (let index = 0; index < numstatFields.length;) {
         const header = numstatFields[index++];
         if (!header) continue;
         const firstTab = header.indexOf('\t');
@@ -393,7 +393,7 @@ export class LocalGitRepositoryReader implements RepositoryReader {
           binaryByPath.set(repoPath(nextPath), binary);
         }
       }
-      for (let index = 0; index < fields.length; ) {
+      for (let index = 0; index < fields.length;) {
         const status = fields[index++];
         if (!status) continue;
         const kind = statusKind(status);

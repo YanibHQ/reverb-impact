@@ -12,6 +12,11 @@ pnpm install --frozen-lockfile
 pnpm run ci
 ```
 
+[Oxfmt](https://oxc.rs/docs/guide/usage/formatter) and
+[Oxlint](https://oxc.rs/docs/guide/usage/linter) provide the repository's formatting and linting
+checks. Run `pnpm format` to apply formatting, `pnpm format:check` to verify it without writing
+files, and `pnpm lint` for Oxlint plus the repository's architectural boundary checks.
+
 Changes to canonical identity, evidence, coverage, authorization, disclosure, schemas, or adapters
 need an ADR and tests tied to the relevant invariant. A fixture proves mechanics; it must not be
 described as production precision.
