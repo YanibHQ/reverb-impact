@@ -5,7 +5,7 @@ import { performance } from 'node:perf_hooks';
 import { fileURLToPath, URL } from 'node:url';
 import { TextEncoder } from 'node:util';
 
-import { format } from 'prettier';
+import { format } from 'oxfmt';
 
 import {
   commitSha,
@@ -104,7 +104,9 @@ if (profile === 'release') {
       'No customer source, repository identity, review, or provider payload is included.',
     ],
   };
-  const serialized = await format(JSON.stringify(report), { parser: 'json' });
+  const { code: serialized } = await format('release-benchmark.json', JSON.stringify(report), {
+    printWidth: 80,
+  });
   if (process.argv.includes('--write')) {
     const output = resolve(root, 'docs/verification/phase-006-release-benchmark.json');
     await mkdir(resolve(output, '..'), { recursive: true });
@@ -174,7 +176,9 @@ if (profile === 'release') {
       'It is not a production SLO observation and contains no customer source or repository identity.',
     ],
   };
-  const serialized = await format(JSON.stringify(report), { parser: 'json' });
+  const { code: serialized } = await format('hosted-benchmark.json', JSON.stringify(report), {
+    printWidth: 80,
+  });
   if (process.argv.includes('--write')) {
     const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
     const output = resolve(root, 'docs/verification/phase-005-hosted-benchmark.json');
@@ -429,7 +433,9 @@ if (profile === 'release') {
       'Reduced baselines intentionally omit product features outside their named evidence source.',
     ],
   };
-  const serialized = await format(JSON.stringify(report), { parser: 'json' });
+  const { code: serialized } = await format('reduced-baselines.json', JSON.stringify(report), {
+    printWidth: 80,
+  });
   if (process.argv.includes('--write')) {
     const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
     const output = resolve(
