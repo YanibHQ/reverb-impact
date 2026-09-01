@@ -122,7 +122,8 @@ function previousArtifactMatches(
   if (entry.kind === 'submodule') return artifact.classification === 'submodule';
   if (artifact.classification === 'symlink' || artifact.classification === 'submodule')
     return false;
-  const oversized = entry.size !== undefined && entry.size > maximumFileBytes;
+  const effectiveSize = entry.size ?? artifact.size;
+  const oversized = effectiveSize > maximumFileBytes;
   return oversized
     ? artifact.classification === 'oversized'
     : artifact.classification !== 'oversized';
@@ -339,11 +340,11 @@ export class IndexRepositoryGeneration {
           maximumFileBytes,
         );
         if (blob.ok) {
-          if (blob.value.path !== entry.path) {
+          if (blob.value.path !== entry.path || blob.value.sourceBlobId !== entry.objectId) {
             return fail({
               kind: 'incomplete_provider_data',
               code: 'blob_scope_mismatch',
-              safeMessage: 'Source reader returned a blob outside the requested path.',
+              safeMessage: 'Source reader returned a blob outside the requested tree entry.',
               retryable: false,
             });
           }

@@ -97,6 +97,42 @@ async function extract(value: unknown) {
 }
 
 describe('Protobuf adapter', () => {
+  it('canonicalizes tied generated-stub bindings independently of context order', async () => {
+    const bindings = [
+      {
+        kind: 'method',
+        packageName: 'pet.v1',
+        declaration: 'PetService',
+        member: 'GetPet',
+        path: 'generated/pet.ts',
+        contentHash: `sha256:${'1'.repeat(64)}`,
+      },
+      {
+        kind: 'method',
+        packageName: 'pet.v1',
+        declaration: 'PetService',
+        member: 'GetPet',
+        path: 'generated/pet.ts',
+        contentHash: `sha256:${'2'.repeat(64)}`,
+      },
+    ] as const;
+    const common = { artifacts: [artifact(descriptor())], configRevision: revision } as const;
+    const first = await protobufAdapter.extract({
+      ...common,
+      context: { generatedStubBindings: bindings },
+    });
+    const reordered = await protobufAdapter.extract({
+      ...common,
+      context: { generatedStubBindings: [...bindings].reverse() },
+    });
+
+    expect(reordered.sourceFingerprint).toBe(first.sourceFingerprint);
+    expect(reordered.outputHash).toBe(first.outputHash);
+    expect(reordered.references.map((reference) => reference.contentHash)).toEqual(
+      first.references.map((reference) => reference.contentHash),
+    );
+  });
+
   it('extracts descriptor methods, wire fields, nested fields, and generated-stub references', async () => {
     const result = await extract(descriptor());
     expect(result.coverage.state).toBe('complete');

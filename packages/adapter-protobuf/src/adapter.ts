@@ -76,8 +76,8 @@ function sourceFingerprint(request: ExtractRequest): ContentHash {
       contentHash: reference.contentHash,
     }))
     .sort((left, right) =>
-      `${left.contractKind}\0${left.canonicalKey ?? left.unresolvedPattern}\0${left.path}`.localeCompare(
-        `${right.contractKind}\0${right.canonicalKey ?? right.unresolvedPattern}\0${right.path}`,
+      `${left.contractKind}\0${left.canonicalKey ?? ''}\0${left.unresolvedPattern ?? ''}\0${left.path}\0${left.contentHash}`.localeCompare(
+        `${right.contractKind}\0${right.canonicalKey ?? ''}\0${right.unresolvedPattern ?? ''}\0${right.path}\0${right.contentHash}`,
       ),
     );
   return contentHash(
@@ -161,7 +161,11 @@ function generatedReferences(request: ExtractRequest): readonly ContractReferenc
       });
     }
   }
-  return references;
+  return references.sort((left, right) =>
+    `${left.contractKind}\0${left.canonicalKey ?? ''}\0${left.unresolvedPattern ?? ''}\0${left.path}\0${left.contentHash}`.localeCompare(
+      `${right.contractKind}\0${right.canonicalKey ?? ''}\0${right.unresolvedPattern ?? ''}\0${right.path}\0${right.contentHash}`,
+    ),
+  );
 }
 
 function coverage(

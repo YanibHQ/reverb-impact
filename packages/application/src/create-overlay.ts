@@ -250,11 +250,11 @@ export class CreatePullRequestOverlay {
           partial = true;
           sourceFailed = true;
         } else {
-          if (blob.value.path !== change.path) {
+          if (blob.value.path !== change.path || blob.value.sourceBlobId !== treeEntry.objectId) {
             return fail({
               kind: 'incomplete_provider_data',
               code: 'blob_scope_mismatch',
-              safeMessage: 'Source reader returned a blob outside the requested path.',
+              safeMessage: 'Source reader returned a blob outside the requested tree entry.',
               retryable: false,
             });
           }

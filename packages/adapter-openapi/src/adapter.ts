@@ -137,7 +137,9 @@ function clientBindings(context: Readonly<Record<string, unknown>>): readonly Cl
     }
   }
   return bindings.sort((left, right) =>
-    `${left.operationId}\0${left.path}`.localeCompare(`${right.operationId}\0${right.path}`),
+    `${left.operationId}\0${left.path}\0${left.contentHash}`.localeCompare(
+      `${right.operationId}\0${right.path}\0${right.contentHash}`,
+    ),
   );
 }
 

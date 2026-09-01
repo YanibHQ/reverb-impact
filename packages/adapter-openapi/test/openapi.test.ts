@@ -77,6 +77,36 @@ function sandbox(exitCode: number): AdapterSandboxRunner {
 }
 
 describe('OpenAPI adapter', () => {
+  it('canonicalizes tied generated-client bindings independently of context order', async () => {
+    const common = request(base);
+    const bindings = [
+      {
+        operationId: 'getPet',
+        path: 'generated/pet-client.ts',
+        contentHash: `sha256:${'1'.repeat(64)}`,
+      },
+      {
+        operationId: 'getPet',
+        path: 'generated/pet-client.ts',
+        contentHash: `sha256:${'2'.repeat(64)}`,
+      },
+    ] as const;
+    const first = await openApiAdapter.extract({
+      ...common,
+      context: { ...common.context, generatedClientBindings: bindings },
+    });
+    const reordered = await openApiAdapter.extract({
+      ...common,
+      context: { ...common.context, generatedClientBindings: [...bindings].reverse() },
+    });
+
+    expect(reordered.sourceFingerprint).toBe(first.sourceFingerprint);
+    expect(reordered.outputHash).toBe(first.outputHash);
+    expect(reordered.references.map((reference) => reference.contentHash)).toEqual(
+      first.references.map((reference) => reference.contentHash),
+    );
+  });
+
   it('extracts operations from local path-item references', async () => {
     const result = await openApiAdapter.extract(
       request(`

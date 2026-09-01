@@ -16,7 +16,11 @@ import {
   repositoryStableId,
   workspaceId,
 } from '@yanib/reverb-domain';
-import { CreatePullRequestOverlay, IndexRepositoryGeneration } from '@yanib/reverb-application';
+import {
+  CreatePullRequestOverlay,
+  IndexRepositoryGeneration,
+  type RepositoryReader,
+} from '@yanib/reverb-application';
 import {
   FakeClock,
   InMemoryArtifactCache,
@@ -65,11 +69,207 @@ function source(): LocalGitRepositoryReader {
   );
 }
 
+function readerWithMismatchedBlobId(delegate: LocalGitRepositoryReader): RepositoryReader {
+  return {
+    resolveRepository: (id) => delegate.resolveRepository(id),
+    resolveCommit: (id, ref) => delegate.resolveCommit(id, ref),
+    listTree: (id, sha) => delegate.listTree(id, sha),
+    compare: (id, base, head) => delegate.compare(id, base, head),
+    readBlob: async (id, sha, path, maximumBytes) => {
+      const result = await delegate.readBlob(id, sha, path, maximumBytes);
+      return result.ok
+        ? { ok: true, value: { ...result.value, sourceBlobId: '0'.repeat(64) } }
+        : result;
+    },
+  };
+}
+
+function readerWithoutSize(
+  delegate: LocalGitRepositoryReader,
+  pathWithoutSize: string,
+): RepositoryReader {
+  return {
+    resolveRepository: (id) => delegate.resolveRepository(id),
+    resolveCommit: (id, ref) => delegate.resolveCommit(id, ref),
+    compare: (id, base, head) => delegate.compare(id, base, head),
+    readBlob: (id, sha, path, maximumBytes) => delegate.readBlob(id, sha, path, maximumBytes),
+    listTree: async (id, sha) => {
+      const result = await delegate.listTree(id, sha);
+      return result.ok
+        ? {
+            ok: true,
+            value: {
+              ...result.value,
+              entries: result.value.entries.map((entry) =>
+                entry.path === pathWithoutSize
+                  ? {
+                      path: entry.path,
+                      mode: entry.mode,
+                      kind: entry.kind,
+                      objectId: entry.objectId,
+                    }
+                  : entry,
+              ),
+            },
+          }
+        : result;
+    },
+  };
+}
+
 function id(prefix: 'gen' | 'lea' | 'ovl', sequence: number): string {
   return `${prefix}_01990f64-0000-7000-8000-${sequence.toString(16).padStart(12, '0')}`;
 }
 
 describe('generation and overlay orchestration', () => {
+  it('rejects blobs whose identity does not match the exact tree entry', async () => {
+    await writeFile(resolve(root, 'source.ts'), 'export const value = 1;\n');
+    await git('add', '--all');
+    await git('commit', '-m', 'blob identity base');
+    const baseSha = commitSha(await git('rev-parse', 'HEAD'));
+    const reader = source();
+    const mismatchedReader = readerWithMismatchedBlobId(reader);
+
+    const rejectedGeneration = await new IndexRepositoryGeneration({
+      reader: mismatchedReader,
+      store: new InMemoryGenerationStore(),
+      cache: new InMemoryArtifactCache(),
+      clock: new FakeClock(now),
+      telemetry: new MemoryTelemetry(),
+    }).execute({
+      generationId: generationId(id('gen', 20)),
+      leaseId: generationLeaseId(id('lea', 20)),
+      leaseExpiresAt: expires,
+      workspaceId: workspace,
+      registryRevision: registry,
+      repositoryId: repository,
+      commitSha: baseSha,
+      configRevision: config,
+      indexerBundleVersion: 'foundation-1.0.0',
+    });
+    expect(rejectedGeneration).toMatchObject({
+      ok: false,
+      failure: { code: 'blob_scope_mismatch' },
+    });
+
+    const store = new InMemoryGenerationStore();
+    const base = await new IndexRepositoryGeneration({
+      reader,
+      store,
+      cache: new InMemoryArtifactCache(),
+      clock: new FakeClock(now),
+      telemetry: new MemoryTelemetry(),
+    }).execute({
+      generationId: generationId(id('gen', 21)),
+      leaseId: generationLeaseId(id('lea', 21)),
+      leaseExpiresAt: expires,
+      workspaceId: workspace,
+      registryRevision: registry,
+      repositoryId: repository,
+      commitSha: baseSha,
+      configRevision: config,
+      indexerBundleVersion: 'foundation-1.0.0',
+    });
+    expect(base.ok).toBe(true);
+    if (!base.ok) return;
+
+    await writeFile(resolve(root, 'source.ts'), 'export const value = 2;\n');
+    await git('add', '--all');
+    await git('commit', '-m', 'blob identity head');
+    const headSha = commitSha(await git('rev-parse', 'HEAD'));
+    const rejectedOverlay = await new CreatePullRequestOverlay({
+      reader: mismatchedReader,
+      store,
+      clock: new FakeClock(now),
+      telemetry: new MemoryTelemetry(),
+    }).execute({
+      overlayId: overlayId(id('ovl', 21)),
+      leaseId: generationLeaseId(id('lea', 22)),
+      leaseExpiresAt: expires,
+      workspaceId: workspace,
+      registryRevision: registry,
+      repositoryId: repository,
+      baseGenerationId: base.value.generationId,
+      baseSha,
+      headSha,
+      configRevision: config,
+      indexerBundleVersion: 'foundation-1.0.0',
+      supersessionKey: contentHash(`sha256:${'7'.repeat(64)}`),
+    });
+    expect(rejectedOverlay).toMatchObject({
+      ok: false,
+      failure: { code: 'blob_scope_mismatch' },
+    });
+  });
+
+  it('does not reuse a prior artifact below a reduced byte limit when tree size is absent', async () => {
+    await writeFile(resolve(root, 'source.ts'), `export const value = '${'x'.repeat(100)}';\n`);
+    await writeFile(resolve(root, 'marker.ts'), 'export const marker = 1;\n');
+    await git('add', '--all');
+    await git('commit', '-m', 'byte limit base');
+    const baseSha = commitSha(await git('rev-parse', 'HEAD'));
+
+    const reader = source();
+    const store = new InMemoryGenerationStore();
+    const cache = new InMemoryArtifactCache();
+    const indexer = new IndexRepositoryGeneration({
+      reader,
+      store,
+      cache,
+      clock: new FakeClock(now),
+      telemetry: new MemoryTelemetry(),
+    });
+    const base = await indexer.execute({
+      generationId: generationId(id('gen', 30)),
+      leaseId: generationLeaseId(id('lea', 30)),
+      leaseExpiresAt: expires,
+      workspaceId: workspace,
+      registryRevision: registry,
+      repositoryId: repository,
+      commitSha: baseSha,
+      configRevision: config,
+      indexerBundleVersion: 'foundation-1.0.0',
+      maximumFileBytes: 1_024,
+    });
+    expect(base.ok).toBe(true);
+    if (!base.ok) return;
+
+    await writeFile(resolve(root, 'marker.ts'), 'export const marker = 2;\n');
+    await git('add', '--all');
+    await git('commit', '-m', 'byte limit head');
+    const headSha = commitSha(await git('rev-parse', 'HEAD'));
+    const limited = await new IndexRepositoryGeneration({
+      reader: readerWithoutSize(reader, 'source.ts'),
+      store,
+      cache,
+      clock: new FakeClock(now),
+      telemetry: new MemoryTelemetry(),
+    }).execute({
+      generationId: generationId(id('gen', 31)),
+      leaseId: generationLeaseId(id('lea', 31)),
+      leaseExpiresAt: expires,
+      workspaceId: workspace,
+      registryRevision: registry,
+      repositoryId: repository,
+      commitSha: headSha,
+      configRevision: config,
+      indexerBundleVersion: 'foundation-1.0.0',
+      previousGenerationId: base.value.generationId,
+      maximumFileBytes: 10,
+    });
+    expect(limited.ok).toBe(true);
+    if (!limited.ok) return;
+    expect(limited.value.reusedArtifactCount).toBe(0);
+
+    const artifacts = await store.listArtifacts(limited.value.generationId);
+    expect(artifacts.ok).toBe(true);
+    if (artifacts.ok) {
+      expect(artifacts.value).toContainEqual(
+        expect.objectContaining({ path: 'source.ts', parseState: 'failed' }),
+      );
+    }
+  });
+
   it('keeps path-sensitive classifications separate for identical Git blobs', async () => {
     const identical = 'export const copied = true;\n';
     await mkdir(resolve(root, 'vendor'), { recursive: true });
