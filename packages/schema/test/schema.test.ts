@@ -1,4 +1,5 @@
 import {
+  adapterManifestSchema,
   analysisResultSchema,
   assertSupportedSchemaVersion,
   evidenceEdgeSchema,
@@ -48,6 +49,42 @@ describe('canonical foundation schemas', () => {
         code: 'unsupported_schema_major',
       }),
     );
+  });
+
+  it('requires canonical adapter manifest versions to match the SDK SemVer policy', () => {
+    const manifest = {
+      schema: 'reverb.adapter-manifest',
+      schema_version: '1.0',
+      id: 'test.adapter',
+      version: '1.2.3',
+      identity_version: 1,
+      contract_kinds: ['typescript_symbol'],
+      capability_tiers: [{}],
+      evidence_strata: [{}],
+      external_tools: [],
+      limitations: [],
+      resource_budget: {
+        timeout_ms: 1,
+        memory_mib: 1,
+        maximum_input_bytes: 1,
+        maximum_output_bytes: 1,
+        maximum_items: 1,
+      },
+      maintainer: 'test',
+    };
+
+    for (const version of ['1.2.3', '1.2.3-release.1']) {
+      expect(() =>
+        validateWithSchema(adapterManifestSchema.$id, { ...manifest, version }),
+      ).not.toThrow();
+    }
+    for (const version of ['1.2.3not-semver', '01.2.3', '1.2']) {
+      expect(() =>
+        validateWithSchema(adapterManifestSchema.$id, { ...manifest, version }),
+      ).toThrowError(
+        expect.objectContaining<Partial<SchemaValidationError>>({ code: 'invalid_schema' }),
+      );
+    }
   });
 
   it('publishes the pre-v1 current/previous-major compatibility disposition', () => {
