@@ -72,7 +72,7 @@ export function materializeContractObservation(input: {
       const stableId = deriveStableReferenceId({
         contractKind: reference.contractKind,
         ...(reference.canonicalKey === undefined
-          ? { unresolvedPattern: reference.unresolvedPattern ?? 'unknown' }
+          ? { unresolvedPattern: reference.unresolvedPattern }
           : { canonicalKey: reference.canonicalKey }),
         ...(reference.semanticOwner === undefined
           ? {}
