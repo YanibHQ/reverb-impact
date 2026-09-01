@@ -18,12 +18,12 @@ describe('SQLite migrations and runtime mode', () => {
     roots.push(root);
     const path = resolve(root, 'reverb.sqlite');
     const first = new SqliteStore(path);
-    expect(first.migrationVersions()).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(first.migrationVersions()).toEqual([1, 2, 3, 4, 5, 6, 7]);
     expect(first.pragma('journal_mode')).toMatchObject({ journal_mode: 'wal' });
     first.close();
 
     const reopened = new SqliteStore(path);
-    expect(reopened.migrationVersions()).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(reopened.migrationVersions()).toEqual([1, 2, 3, 4, 5, 6, 7]);
     reopened.close();
   });
 
@@ -33,8 +33,8 @@ describe('SQLite migrations and runtime mode', () => {
     const path = resolve(root, 'reverb.sqlite');
     const left = new SqliteStore(path);
     const right = new SqliteStore(path);
-    expect(left.migrationVersions()).toEqual([1, 2, 3, 4, 5, 6]);
-    expect(right.migrationVersions()).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(left.migrationVersions()).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(right.migrationVersions()).toEqual([1, 2, 3, 4, 5, 6, 7]);
     left.close();
     right.close();
   });

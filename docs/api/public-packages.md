@@ -58,6 +58,15 @@ mode. `listArtifacts` resolves the exact logical view from persisted metadata; i
 provider source reads. Hosts remain responsible for supplying canonical coverage and artifact hashes
 produced by their bounded orchestration.
 
+## Adapter semantic snapshots
+
+`AdapterSnapshotStore` persists canonical `AdapterSemanticPartition` records by content hash and one
+immutable `AdapterGenerationSnapshot` per generation and adapter. A snapshot may derive from a
+compatible base snapshot using replacement and tombstone entries. Resolution reuses untouched
+partitions and rejects missing, cross-workspace, cross-repository, or version-incompatible content.
+Partition payloads remain adapter-owned canonical records; the storage boundary does not interpret
+or weaken their evidence semantics.
+
 ## GitHub hosted runtime
 
 `GitHubHostedRuntime` consumes the structural `GitHubHostedRuntimeStore` contract. A

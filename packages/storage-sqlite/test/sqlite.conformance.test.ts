@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 
 import {
   runEvidenceGraphStoreConformance,
+  runAdapterSnapshotStoreConformance,
   runGenerationStoreConformance,
   runReviewStoreConformance,
 } from '@yanib/reverb-testkit';
@@ -23,6 +24,20 @@ describe('SQLite generation store conformance', () => {
       });
     } finally {
       await Promise.all(roots.map((root) => rm(root, { recursive: true, force: true })));
+    }
+  });
+});
+
+describe('SQLite adapter snapshot store conformance', () => {
+  it('passes immutable partition and derived snapshot cases', async () => {
+    const root = await mkdtemp(resolve(tmpdir(), 'reverb-sqlite-snapshot-conformance-'));
+    try {
+      await runAdapterSnapshotStoreConformance(() => {
+        const store = new SqliteStore(resolve(root, 'reverb.sqlite'));
+        return { store, close: () => store.close() };
+      });
+    } finally {
+      await rm(root, { recursive: true, force: true });
     }
   });
 });

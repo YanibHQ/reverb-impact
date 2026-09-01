@@ -1,9 +1,14 @@
 import {
+  assertCanonicalAdapterGenerationSnapshot,
+  assertCanonicalAdapterSemanticPartition,
+  canonicalJson,
   contentHash,
   hashCanonical,
   jobId,
   materializeOverlayArtifacts,
   type ArtifactBatch,
+  type AdapterGenerationSnapshot,
+  type AdapterSemanticPartition,
   type BoundedDiagnostic,
   type CommitDescriptor,
   type CommitSha,
@@ -29,6 +34,8 @@ import {
   portFailure,
   portSuccess,
   type AllowedTelemetryEvent,
+  type AdapterSnapshotQuery,
+  type AdapterSnapshotStore,
   type ArtifactBlobStore,
   type ArtifactCacheKey,
   type ArtifactCachePort,
@@ -111,7 +118,7 @@ export class FakeClock implements Clock {
   }
 }
 
-export class InMemoryGenerationStore implements GenerationStore {
+export class InMemoryGenerationStore implements GenerationStore, AdapterSnapshotStore {
   readonly #generations = new Map<GenerationId, RepositoryGeneration>();
   readonly #leases = new Map<GenerationId, GenerationLease>();
   readonly #artifactBatches = new Map<GenerationId, ArtifactBatch[]>();
@@ -119,6 +126,9 @@ export class InMemoryGenerationStore implements GenerationStore {
   readonly #overlays = new Map<OverlayId, PullRequestOverlay>();
   readonly #overlayLeases = new Map<OverlayId, GenerationLease>();
   readonly #overlayEntries = new Map<OverlayId, OverlayEntry[]>();
+  readonly #adapterPartitions = new Map<string, AdapterSemanticPartition>();
+  readonly #adapterSnapshots = new Map<string, AdapterGenerationSnapshot>();
+  readonly #adapterSnapshotPointers = new Map<string, string>();
 
   public async beginGeneration(input: BeginGeneration): Promise<PortResult<GenerationLease>> {
     const existingLease = this.#leases.get(input.generationId);
@@ -456,6 +466,194 @@ export class InMemoryGenerationStore implements GenerationStore {
       return notFound('Completed overlay entries');
     }
     return portSuccess(this.#overlayEntries.get(id) ?? []);
+  }
+
+  public async putAdapterPartition(
+    partition: AdapterSemanticPartition,
+  ): Promise<PortResult<ReturnType<typeof contentHash>>> {
+    try {
+      assertCanonicalAdapterSemanticPartition(partition);
+    } catch {
+      return conflict('Adapter semantic partition is not canonical.');
+    }
+    const key = `${partition.workspaceId}|${partition.outputHash}`;
+    const existing = this.#adapterPartitions.get(key);
+    if (existing && canonicalJson(existing) !== canonicalJson(partition)) {
+      return conflict('Adapter partition hash was reused for different content.');
+    }
+    this.#adapterPartitions.set(key, partition);
+    return portSuccess(partition.outputHash);
+  }
+
+  public async getAdapterPartition(
+    workspaceId: WorkspaceId,
+    outputHash: ReturnType<typeof contentHash>,
+  ): Promise<PortResult<AdapterSemanticPartition | null>> {
+    return portSuccess(this.#adapterPartitions.get(`${workspaceId}|${outputHash}`) ?? null);
+  }
+
+  public async putAdapterSnapshot(
+    snapshot: AdapterGenerationSnapshot,
+  ): Promise<PortResult<ReturnType<typeof contentHash>>> {
+    try {
+      assertCanonicalAdapterGenerationSnapshot(snapshot);
+    } catch {
+      return conflict('Adapter generation snapshot is not canonical.');
+    }
+    const generation = this.#generations.get(snapshot.generationId);
+    if (!generation || (generation.state !== 'complete' && generation.state !== 'partial')) {
+      return conflict('Adapter snapshot requires a completed generation.');
+    }
+    const generationMatches =
+      generation.workspaceId === snapshot.workspaceId &&
+      generation.repositoryId === snapshot.repositoryId &&
+      generation.configRevision === snapshot.configRevision &&
+      generation.registryRevision === snapshot.registryRevision;
+    if (!generationMatches) {
+      return conflict('Adapter snapshot is incompatible with its generation.');
+    }
+    if (snapshot.baseSnapshotHash === snapshot.outputHash) {
+      return conflict('Adapter snapshot cannot be its own base.');
+    }
+    if (snapshot.baseSnapshotHash) {
+      const base = this.#adapterSnapshots.get(
+        `${snapshot.workspaceId}|${snapshot.baseSnapshotHash}`,
+      );
+      if (!base || !this.#adapterSnapshotsCompatible(base, snapshot)) {
+        return conflict('Adapter snapshot base is missing or incompatible.');
+      }
+      if (generation.derivation && base.generationId !== generation.derivation.baseGenerationId) {
+        return conflict('Derived generation snapshot does not use its exact base generation.');
+      }
+    } else if (generation.derivation) {
+      return conflict('Derived generation snapshot requires its exact base snapshot.');
+    }
+    for (const entry of snapshot.entries) {
+      if (entry.kind === 'tombstone') continue;
+      const partition = this.#adapterPartitions.get(
+        `${snapshot.workspaceId}|${entry.partitionHash}`,
+      );
+      if (!partition || !this.#adapterPartitionCompatible(partition, snapshot)) {
+        return conflict('Adapter snapshot partition is missing or incompatible.');
+      }
+      if (partition.partitionKey !== entry.partitionKey) {
+        return conflict('Adapter snapshot partition key does not match its content.');
+      }
+    }
+    const pointer = this.#adapterSnapshotPointer(snapshot);
+    const existingPointer = this.#adapterSnapshotPointers.get(pointer);
+    if (existingPointer && existingPointer !== snapshot.outputHash) {
+      return conflict('Generation already has a different adapter snapshot.');
+    }
+    const key = `${snapshot.workspaceId}|${snapshot.outputHash}`;
+    const existing = this.#adapterSnapshots.get(key);
+    if (existing && canonicalJson(existing) !== canonicalJson(snapshot)) {
+      return conflict('Adapter snapshot hash was reused for different content.');
+    }
+    this.#adapterSnapshots.set(key, snapshot);
+    this.#adapterSnapshotPointers.set(pointer, snapshot.outputHash);
+    return portSuccess(snapshot.outputHash);
+  }
+
+  #adapterSnapshotPointer(query: AdapterSnapshotQuery): string {
+    return `${query.workspaceId}|${query.repositoryId}|${query.generationId}|${query.adapterId}`;
+  }
+
+  #adapterSnapshotsCompatible(
+    base: AdapterGenerationSnapshot,
+    head: AdapterGenerationSnapshot,
+  ): boolean {
+    return (
+      base.workspaceId === head.workspaceId &&
+      base.repositoryId === head.repositoryId &&
+      base.adapterId === head.adapterId &&
+      base.adapterVersion === head.adapterVersion &&
+      base.identityVersion === head.identityVersion &&
+      base.partitioningVersion === head.partitioningVersion &&
+      base.configRevision === head.configRevision &&
+      base.registryRevision === head.registryRevision
+    );
+  }
+
+  #adapterPartitionCompatible(
+    partition: AdapterSemanticPartition,
+    snapshot: AdapterGenerationSnapshot,
+  ): boolean {
+    return (
+      partition.workspaceId === snapshot.workspaceId &&
+      partition.repositoryId === snapshot.repositoryId &&
+      partition.adapterId === snapshot.adapterId &&
+      partition.adapterVersion === snapshot.adapterVersion &&
+      partition.identityVersion === snapshot.identityVersion &&
+      partition.partitioningVersion === snapshot.partitioningVersion &&
+      partition.configRevision === snapshot.configRevision &&
+      partition.registryRevision === snapshot.registryRevision
+    );
+  }
+
+  public async getAdapterSnapshot(
+    query: AdapterSnapshotQuery,
+  ): Promise<PortResult<AdapterGenerationSnapshot | null>> {
+    const hash = this.#adapterSnapshotPointers.get(this.#adapterSnapshotPointer(query));
+    return portSuccess(
+      hash ? (this.#adapterSnapshots.get(`${query.workspaceId}|${hash}`) ?? null) : null,
+    );
+  }
+
+  public async getAdapterSnapshotByHash(
+    workspaceId: WorkspaceId,
+    outputHash: ReturnType<typeof contentHash>,
+  ): Promise<PortResult<AdapterGenerationSnapshot | null>> {
+    return portSuccess(this.#adapterSnapshots.get(`${workspaceId}|${outputHash}`) ?? null);
+  }
+
+  #resolveAdapterSnapshot(
+    snapshot: AdapterGenerationSnapshot,
+    visited: Set<string>,
+  ): PortResult<Map<string, AdapterSemanticPartition>> {
+    if (visited.has(snapshot.outputHash)) {
+      return conflict('Adapter snapshot ancestry contains a cycle.');
+    }
+    visited.add(snapshot.outputHash);
+    let resolved = new Map<string, AdapterSemanticPartition>();
+    if (snapshot.baseSnapshotHash) {
+      const base = this.#adapterSnapshots.get(
+        `${snapshot.workspaceId}|${snapshot.baseSnapshotHash}`,
+      );
+      if (!base) return notFound('Adapter snapshot base');
+      const baseResult = this.#resolveAdapterSnapshot(base, visited);
+      if (!baseResult.ok) return baseResult;
+      resolved = new Map(baseResult.value);
+    }
+    visited.delete(snapshot.outputHash);
+    for (const entry of snapshot.entries) {
+      if (entry.kind === 'tombstone') {
+        resolved.delete(entry.partitionKey);
+        continue;
+      }
+      const partition = this.#adapterPartitions.get(
+        `${snapshot.workspaceId}|${entry.partitionHash}`,
+      );
+      if (!partition) return notFound('Adapter semantic partition');
+      resolved.set(entry.partitionKey, partition);
+    }
+    return portSuccess(resolved);
+  }
+
+  public async resolveAdapterPartitions(
+    query: AdapterSnapshotQuery,
+  ): Promise<PortResult<readonly AdapterSemanticPartition[]>> {
+    const snapshot = await this.getAdapterSnapshot(query);
+    if (!snapshot.ok) return snapshot;
+    if (!snapshot.value) return notFound('Adapter generation snapshot');
+    const resolved = this.#resolveAdapterSnapshot(snapshot.value, new Set());
+    return resolved.ok
+      ? portSuccess(
+          [...resolved.value.values()].sort((left, right) =>
+            left.partitionKey.localeCompare(right.partitionKey),
+          ),
+        )
+      : resolved;
   }
 }
 

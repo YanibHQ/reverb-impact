@@ -3,6 +3,7 @@ import { describe, it } from 'vitest';
 import {
   InMemoryEvidenceGraphStore,
   InMemoryGenerationStore,
+  runAdapterSnapshotStoreConformance,
   runEvidenceGraphStoreConformance,
   runGenerationStoreConformance,
   runReviewStoreConformance,
@@ -12,6 +13,15 @@ import type { EvidenceGraphStore, GenerationStore } from '@yanib/reverb-applicat
 describe('in-memory generation store conformance', () => {
   it('passes lifecycle, atomicity, selection, and overlay cases', async () => {
     await runGenerationStoreConformance(() => ({
+      store: new InMemoryGenerationStore(),
+      close() {},
+    }));
+  });
+});
+
+describe('in-memory adapter snapshot store conformance', () => {
+  it('passes immutable partition and derived snapshot cases', async () => {
+    await runAdapterSnapshotStoreConformance(() => ({
       store: new InMemoryGenerationStore(),
       close() {},
     }));

@@ -1,4 +1,5 @@
 export * from './canonical.js';
+export * from './adapter-snapshot.js';
 export * from './errors.js';
 export * from './finding.js';
 export * from './graph.js';
