@@ -8,4 +8,4 @@ Accepted ADRs are immutable. A new ADR supersedes an old decision and links it e
 - [0001 — Project constitution](0001-project-constitution.md)
 - [0002 — Phase 003 comparative gate](0002-phase-003-comparative-gate.md)
 - [0003 — Promotion interval and frozen replay](0003-promotion-interval.md)
-- [0004 — Fail-closed audit boundaries](0004-fail-closed-audit-boundaries.md)
+- [0006 — Fail-closed audit boundaries](0006-fail-closed-audit-boundaries.md)
