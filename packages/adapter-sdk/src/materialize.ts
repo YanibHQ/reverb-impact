@@ -137,29 +137,27 @@ export function materializeContractChanges(input: {
 }): readonly IndexedContractChange[] {
   return input.diffs
     .flatMap((diff) =>
-      diff.changes.map(
-        (change): IndexedContractChange => ({
-          workspaceId: input.workspaceId,
-          producerRepositoryId: input.producerRepositoryId,
-          baseGenerationId: input.baseGenerationId,
-          ...(input.headGenerationId === undefined
-            ? {}
-            : { headGenerationId: input.headGenerationId }),
-          baseSha: input.baseSha,
-          headSha: input.headSha,
-          contractKind: change.contractKind,
-          canonicalKey: change.canonicalKey,
-          changeKind: change.changeKind,
-          compatibility: change.compatibility,
-          activation: change.activation,
-          adapterId: diff.adapterId,
-          adapterVersion: diff.adapterVersion,
-          identityVersion: diff.identityVersion,
-          coverageState: diff.coverage.state,
-          coverageDependencies: change.coverageDependencies,
-          remedy: change.remedy,
-        }),
-      ),
+      diff.changes.map((change): IndexedContractChange => ({
+        workspaceId: input.workspaceId,
+        producerRepositoryId: input.producerRepositoryId,
+        baseGenerationId: input.baseGenerationId,
+        ...(input.headGenerationId === undefined
+          ? {}
+          : { headGenerationId: input.headGenerationId }),
+        baseSha: input.baseSha,
+        headSha: input.headSha,
+        contractKind: change.contractKind,
+        canonicalKey: change.canonicalKey,
+        changeKind: change.changeKind,
+        compatibility: change.compatibility,
+        activation: change.activation,
+        adapterId: diff.adapterId,
+        adapterVersion: diff.adapterVersion,
+        identityVersion: diff.identityVersion,
+        coverageState: diff.coverage.state,
+        coverageDependencies: change.coverageDependencies,
+        remedy: change.remedy,
+      })),
     )
     .sort((left, right) =>
       `${left.contractKind}\0${left.canonicalKey}`.localeCompare(
