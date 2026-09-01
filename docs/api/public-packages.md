@@ -49,6 +49,15 @@ the exact analyzed head. The producer participates in consumer selection through
 Reverb never substitutes the base or latest default-branch generation for same-repository
 references.
 
+## Derived pull-request generations
+
+`GenerationStore.deriveGeneration` atomically creates a non-selected logical head from a completed,
+compatible base generation and pull-request overlay. Its provenance is exposed as
+`RepositoryGeneration.derivation` with `baseGenerationId`, `overlayId`, and `base_overlay` storage
+mode. `listArtifacts` resolves the exact logical view from persisted metadata; it does not authorize
+provider source reads. Hosts remain responsible for supplying canonical coverage and artifact hashes
+produced by their bounded orchestration.
+
 ## GitHub hosted runtime
 
 `GitHubHostedRuntime` consumes the structural `GitHubHostedRuntimeStore` contract. A

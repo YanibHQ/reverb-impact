@@ -7,6 +7,12 @@ explicit and package breaking changes may occur in minor releases.
 
 ## Unreleased
 
+- Added immutable, non-selected derived-generation provenance over an exact base generation and
+  completed pull-request overlay, with logical artifact resolution that requires no provider source
+  reads or duplicated base artifact rows.
+- Added in-memory and SQLite generation-store conformance for base-plus-overlay derivation, SQLite
+  migration 006, and the optional canonical generation `derivation` envelope.
+
 ## 0.2.0 - 2026-08-31
 
 - Added exact same-repository producer-as-consumer analysis through a required, scope-validated

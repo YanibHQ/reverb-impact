@@ -113,6 +113,17 @@ export interface OverlaySummary {
   readonly resultHash: ContentHash;
 }
 
+export interface DeriveGeneration {
+  readonly generationId: GenerationId;
+  readonly baseGenerationId: GenerationId;
+  readonly overlayId: OverlayId;
+  readonly completedAt: Instant;
+  readonly coverage: readonly CoverageRecord[];
+  readonly diagnostics: readonly BoundedDiagnostic[];
+  readonly coverageHash: ContentHash;
+  readonly artifactResultHash: ContentHash;
+}
+
 export interface GenerationStore {
   beginGeneration(input: BeginGeneration): Promise<PortResult<GenerationLease>>;
   putArtifacts(lease: GenerationLease, batch: ArtifactBatch): Promise<PortResult<void>>;
@@ -123,6 +134,7 @@ export interface GenerationStore {
   failGeneration(lease: GenerationLease, failure: GenerationFailure): Promise<PortResult<void>>;
   expireLease(lease: GenerationLease, at: Instant): Promise<PortResult<void>>;
   getGeneration(id: GenerationId): Promise<PortResult<RepositoryGeneration>>;
+  deriveGeneration(input: DeriveGeneration): Promise<PortResult<RepositoryGeneration>>;
   selectGeneration(query: GenerationSelection): Promise<PortResult<GenerationSelectionResult>>;
   listArtifacts(generationId: GenerationId): Promise<PortResult<readonly FileArtifact[]>>;
   getGenerationCoverage(generationId: GenerationId): Promise<PortResult<readonly CoverageRecord[]>>;

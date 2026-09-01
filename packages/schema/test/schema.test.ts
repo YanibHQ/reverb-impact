@@ -43,6 +43,20 @@ describe('canonical foundation schemas', () => {
     );
   });
 
+  it('accepts immutable base-plus-overlay generation provenance', () => {
+    expect(() =>
+      validateWithSchema(repositoryGenerationSchema.$id, {
+        ...validGeneration,
+        selectable: false,
+        derivation: {
+          base_generation_id: 'gen_01990f64-0000-7000-8000-000000000002',
+          overlay_id: 'ovl_01990f64-0000-7000-8000-000000000001',
+          storage_mode: 'base_overlay',
+        },
+      }),
+    ).not.toThrow();
+  });
+
   it('rejects unsupported schema majors with a teaching code', () => {
     expect(() => assertSupportedSchemaVersion({ schema_version: '2.0' })).toThrowError(
       expect.objectContaining<Partial<SchemaValidationError>>({

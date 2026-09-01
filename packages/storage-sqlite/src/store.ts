@@ -13,6 +13,7 @@ import {
   generationId,
   generationLeaseId,
   instant,
+  materializeOverlayArtifacts,
   overlayId,
   registryRevision,
   repoPath,
@@ -60,6 +61,7 @@ import {
   type BeginOverlay,
   type CachedArtifact,
   type DefinitionQuery,
+  type DeriveGeneration,
   type EdgeQuery,
   type EvidenceGraphStore,
   type GenerationSelection,
@@ -73,7 +75,7 @@ import {
   type ReviewEvaluationStore,
 } from '@yanib/reverb-application';
 
-export const SQLITE_SCHEMA_VERSION = 5;
+export const SQLITE_SCHEMA_VERSION = 6;
 
 interface GenerationRow {
   generation_id: string;
@@ -90,6 +92,8 @@ interface GenerationRow {
   coverage_hash: string | null;
   artifact_result_hash: string | null;
   selectable: number;
+  base_generation_id: string | null;
+  overlay_id: string | null;
 }
 
 interface LeaseRow {
@@ -569,6 +573,14 @@ CREATE INDEX promotion_records_stratum_idx
   ON promotion_records (stratum_key, decided_at);
 `;
 
+const MIGRATION_006 = `
+ALTER TABLE generations ADD COLUMN base_generation_id TEXT;
+ALTER TABLE generations ADD COLUMN overlay_id TEXT;
+CREATE UNIQUE INDEX generations_overlay_derivation_idx
+  ON generations (workspace_id, overlay_id)
+  WHERE overlay_id IS NOT NULL;
+`;
+
 function infrastructureFailure(code: string, message: string, retryable = false): PortFailure {
   return { kind: 'infrastructure', code, safeMessage: message, retryable };
 }
@@ -609,6 +621,15 @@ function generationFromRow(row: GenerationRow): RepositoryGeneration {
       ? { artifactResultHash: contentHash(row.artifact_result_hash) }
       : {}),
     selectable: row.selectable === 1,
+    ...(row.base_generation_id && row.overlay_id
+      ? {
+          derivation: {
+            baseGenerationId: generationId(row.base_generation_id),
+            overlayId: overlayId(row.overlay_id),
+            storageMode: 'base_overlay' as const,
+          },
+        }
+      : {}),
   };
 }
 
@@ -729,6 +750,18 @@ export class SqliteStore
         this.#database
           .prepare('INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)')
           .run(5, new Date(0).toISOString());
+        return portSuccess(undefined);
+      });
+    }
+    const sixth = this.#database
+      .prepare('SELECT version FROM schema_migrations WHERE version = 6')
+      .get();
+    if (!sixth) {
+      this.#transaction<void>(() => {
+        this.#database.exec(MIGRATION_006);
+        this.#database
+          .prepare('INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)')
+          .run(6, new Date(0).toISOString());
         return portSuccess(undefined);
       });
     }
@@ -1010,6 +1043,99 @@ export class SqliteStore
     });
   }
 
+  public async deriveGeneration(
+    input: DeriveGeneration,
+  ): Promise<PortResult<RepositoryGeneration>> {
+    return this.#safe(() =>
+      this.#transaction(() => {
+        const existing = this.#generationRow(input.generationId);
+        if (existing) {
+          const sameDerivation =
+            existing.base_generation_id === input.baseGenerationId &&
+            existing.overlay_id === input.overlayId &&
+            existing.coverage_hash === input.coverageHash &&
+            existing.artifact_result_hash === input.artifactResultHash;
+          return sameDerivation
+            ? portSuccess(generationFromRow(existing))
+            : conflict('Generation ID was reused for a different derivation.');
+        }
+        if (input.generationId === input.baseGenerationId) {
+          return conflict('A derived generation cannot be its own base.');
+        }
+        const base = this.#generationRow(input.baseGenerationId);
+        const overlay = this.#overlayRow(input.overlayId);
+        if (!base || (base.state !== 'complete' && base.state !== 'partial')) {
+          return conflict('Derived generation requires a completed base generation.');
+        }
+        if (!overlay || (overlay.state !== 'complete' && overlay.state !== 'partial')) {
+          return conflict('Derived generation requires a completed overlay.');
+        }
+        const compatible =
+          overlay.base_generation_id === base.generation_id &&
+          overlay.workspace_id === base.workspace_id &&
+          overlay.repository_id === base.repository_id &&
+          overlay.base_sha === base.commit_sha &&
+          overlay.indexer_bundle_version === base.indexer_bundle_version &&
+          overlay.config_revision === base.config_revision &&
+          overlay.registry_revision === base.registry_revision;
+        if (!compatible) {
+          return conflict('Overlay is incompatible with its requested base generation.');
+        }
+        const state =
+          base.state === 'partial' || overlay.state === 'partial' ? 'partial' : 'complete';
+        this.#database
+          .prepare(
+            `INSERT INTO generations(
+              generation_id, workspace_id, repository_id, commit_sha, tree_hash,
+              indexer_bundle_version, config_revision, registry_revision, state, started_at,
+              completed_at, coverage_hash, artifact_result_hash, selectable,
+              base_generation_id, overlay_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+          )
+          .run(
+            input.generationId,
+            base.workspace_id,
+            base.repository_id,
+            overlay.head_sha,
+            overlay.head_tree_hash,
+            overlay.indexer_bundle_version,
+            overlay.config_revision,
+            overlay.registry_revision,
+            state,
+            overlay.started_at,
+            input.completedAt,
+            input.coverageHash,
+            input.artifactResultHash,
+            base.generation_id,
+            overlay.overlay_id,
+          );
+        const insertDiagnostic = this.#database.prepare(
+          'INSERT INTO artifact_diagnostics(workspace_id, generation_id, sequence, diagnostic_json) VALUES (?, ?, ?, ?)',
+        );
+        input.diagnostics.forEach((diagnostic, sequence) =>
+          insertDiagnostic.run(
+            base.workspace_id,
+            input.generationId,
+            sequence,
+            JSON.stringify(diagnostic),
+          ),
+        );
+        const insertCoverage = this.#database.prepare(
+          'INSERT INTO coverage_records(workspace_id, generation_id, sequence, coverage_json) VALUES (?, ?, ?, ?)',
+        );
+        input.coverage.forEach((coverage, sequence) =>
+          insertCoverage.run(
+            base.workspace_id,
+            input.generationId,
+            sequence,
+            JSON.stringify(coverage),
+          ),
+        );
+        return portSuccess(generationFromRow(this.#generationRow(input.generationId)!));
+      }),
+    );
+  }
+
   public async selectGeneration(
     query: GenerationSelection,
   ): Promise<PortResult<GenerationSelectionResult>> {
@@ -1063,14 +1189,15 @@ export class SqliteStore
     });
   }
 
-  public async listArtifacts(
+  #listArtifacts(
     generation: GenerationId,
-  ): Promise<PortResult<readonly FileArtifact[]>> {
-    return this.#safe(() => {
-      const row = this.#generationRow(generation);
-      if (!row || (row.state !== 'complete' && row.state !== 'partial')) {
-        return notFound('Completed generation artifacts');
-      }
+    visited: Set<GenerationId>,
+  ): PortResult<readonly FileArtifact[]> {
+    const row = this.#generationRow(generation);
+    if (!row || (row.state !== 'complete' && row.state !== 'partial')) {
+      return notFound('Completed generation artifacts');
+    }
+    if (!row.base_generation_id && !row.overlay_id) {
       const rows = this.#database
         .prepare(
           'SELECT * FROM file_artifacts WHERE workspace_id = ? AND generation_id = ? ORDER BY path',
@@ -1097,7 +1224,49 @@ export class SqliteStore
           ),
         ),
       );
-    });
+    }
+    if (!row.base_generation_id || !row.overlay_id) {
+      return portFailure(
+        infrastructureFailure(
+          'invalid_generation_derivation',
+          'Derived generation provenance is incomplete.',
+        ),
+      );
+    }
+    if (visited.has(generation)) {
+      return portFailure(
+        infrastructureFailure(
+          'generation_derivation_cycle',
+          'Derived generation ancestry contains a cycle.',
+        ),
+      );
+    }
+    visited.add(generation);
+    const base = this.#listArtifacts(generationId(row.base_generation_id), visited);
+    visited.delete(generation);
+    if (!base.ok) return base;
+    const overlay = this.#overlayRow(overlayId(row.overlay_id));
+    if (!overlay || (overlay.state !== 'complete' && overlay.state !== 'partial')) {
+      return notFound('Completed derived generation overlay');
+    }
+    const entries = this.#database
+      .prepare(
+        'SELECT entry_json FROM overlay_entries WHERE workspace_id = ? AND overlay_id = ? ORDER BY path',
+      )
+      .all(overlay.workspace_id, overlay.overlay_id) as unknown as { entry_json: string }[];
+    return portSuccess(
+      materializeOverlayArtifacts(
+        generation,
+        base.value,
+        entries.map((entry) => JSON.parse(entry.entry_json) as OverlayEntry),
+      ),
+    );
+  }
+
+  public async listArtifacts(
+    generation: GenerationId,
+  ): Promise<PortResult<readonly FileArtifact[]>> {
+    return this.#safe(() => this.#listArtifacts(generation, new Set()));
   }
 
   public async getGenerationCoverage(

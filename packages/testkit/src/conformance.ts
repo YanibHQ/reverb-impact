@@ -234,8 +234,22 @@ export async function runGenerationStoreConformance(
         path: repoPath('src/deleted.ts'),
         kind: 'tombstone' as const,
       };
+      const { generationId: _generationId, ...replacementArtifact } = {
+        ...artifact(base.generationId),
+        sourceBlobId: 'b'.repeat(40),
+        contentHash: contentHash(
+          'sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+        ),
+      };
+      void _generationId;
+      const replacement = {
+        overlayId: id,
+        path: repoPath('src/index.ts'),
+        kind: 'replacement' as const,
+        artifact: replacementArtifact,
+      };
       assert.equal(
-        (await handle.store.putOverlayEntries(overlayLease.value, id, [tombstone])).ok,
+        (await handle.store.putOverlayEntries(overlayLease.value, id, [tombstone, replacement])).ok,
         true,
       );
       assert.equal((await handle.store.listOverlayEntries(id)).ok, false);
@@ -253,7 +267,51 @@ export async function runGenerationStoreConformance(
       );
       const entries = await handle.store.listOverlayEntries(id);
       assert.equal(entries.ok, true);
-      if (entries.ok) assert.deepEqual(entries.value, [tombstone]);
+      if (entries.ok) assert.deepEqual(entries.value, [tombstone, replacement]);
+
+      const derivedId = generationId('gen_01990f64-0000-7000-8000-000000000040');
+      const derivation = {
+        generationId: derivedId,
+        baseGenerationId: base.generationId,
+        overlayId: id,
+        completedAt: CONFORMANCE_FIXTURE.later,
+        coverage: [],
+        diagnostics: [],
+        coverageHash: contentHash(
+          'sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+        ),
+        artifactResultHash: contentHash(
+          'sha256:0101010101010101010101010101010101010101010101010101010101010101',
+        ),
+      };
+      const derived = await handle.store.deriveGeneration(derivation);
+      assert.equal(derived.ok, true);
+      if (!derived.ok) throw new Error('Fixture derived generation was not created.');
+      assert.equal(derived.value.selectable, false);
+      assert.equal(derived.value.commitSha, commitSha('e'.repeat(40)));
+      assert.deepEqual(derived.value.derivation, {
+        baseGenerationId: base.generationId,
+        overlayId: id,
+        storageMode: 'base_overlay',
+      });
+      const logicalArtifacts = await handle.store.listArtifacts(derivedId);
+      assert.equal(logicalArtifacts.ok, true);
+      if (logicalArtifacts.ok) {
+        assert.equal(logicalArtifacts.value.length, 1);
+        assert.equal(logicalArtifacts.value[0]?.generationId, derivedId);
+        assert.equal(logicalArtifacts.value[0]?.sourceBlobId, 'b'.repeat(40));
+      }
+      const retry = await handle.store.deriveGeneration(derivation);
+      assert.equal(retry.ok, true);
+      const selected = await handle.store.selectGeneration({
+        workspaceId: CONFORMANCE_FIXTURE.workspaceId,
+        repositoryId: CONFORMANCE_FIXTURE.repositoryId,
+        allowPartial: true,
+      });
+      assert.equal(selected.ok, true);
+      if (selected.ok && selected.value.state === 'selected') {
+        assert.equal(selected.value.generation.id, base.generationId);
+      }
     } finally {
       await handle.close();
     }
