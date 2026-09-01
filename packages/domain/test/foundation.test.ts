@@ -140,6 +140,28 @@ describe('canonical hashing', () => {
     cyclic.self = cyclic;
     expect(() => canonicalJson(cyclic)).toThrowError(ReverbError);
   });
+
+  it('preserves every valid JSON object key without identity collisions', () => {
+    const value = JSON.parse('{"constructor":"ordinary","__proto__":{"polluted":true}}') as Record<
+      string,
+      unknown
+    >;
+    expect(canonicalJson(value)).toBe('{"__proto__":{"polluted":true},"constructor":"ordinary"}');
+    expect(hashCanonical(value)).not.toBe(hashCanonical({}));
+  });
+
+  it('rejects non-JSON object types and accepts null-prototype records', () => {
+    for (const value of [new Date(0), new Map([['key', 'value']]), new Set([1]), /value/]) {
+      expect(() => canonicalJson(value)).toThrowError(
+        expect.objectContaining<Partial<ReverbError>>({ code: 'invalid_schema' }),
+      );
+    }
+
+    const record = Object.create(null) as Record<string, unknown>;
+    record.z = 1;
+    record.a = 2;
+    expect(canonicalJson(record)).toBe('{"a":2,"z":1}');
+  });
 });
 
 describe('registry revisions', () => {
