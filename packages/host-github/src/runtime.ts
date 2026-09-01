@@ -12,13 +12,22 @@ import type { CheckWriteResult, GitHubCheckWriter } from './check-writer.js';
 import type { HostedOperationalControls } from './controls.js';
 import type { AuthorizedReviewService } from './detail.js';
 
-export type GitHubHostedJobKind =
-  | 'index_generation'
-  | 'create_overlay'
-  | 'analyze_pull_request'
-  | 'purge_repository'
-  | 'reconcile_provider'
-  | 'record_review';
+export const GITHUB_HOSTED_JOB_KINDS = [
+  'index_generation',
+  'create_overlay',
+  'analyze_pull_request',
+  'purge_repository',
+  'reconcile_provider',
+  'record_review',
+] as const;
+
+export type GitHubHostedJobKind = (typeof GITHUB_HOSTED_JOB_KINDS)[number];
+
+const GITHUB_HOSTED_JOB_KIND_SET: ReadonlySet<string> = new Set(GITHUB_HOSTED_JOB_KINDS);
+
+export function isGitHubHostedJobKind(kind: string): kind is GitHubHostedJobKind {
+  return GITHUB_HOSTED_JOB_KIND_SET.has(kind);
+}
 
 export interface HostedWebhookClaim {
   readonly workspaceId: WorkspaceId;
@@ -451,7 +460,7 @@ export class GitHubHostedRuntime {
     if (this.#controls.snapshot().readDisabled) return { state: 'disabled' };
     const claim = await this.#store.claimJob(input);
     if (claim === null) return { state: 'idle' };
-    const handler = this.#handlers[claim.kind as GitHubHostedJobKind];
+    const handler = isGitHubHostedJobKind(claim.kind) ? this.#handlers[claim.kind] : undefined;
     try {
       if (handler === undefined) {
         throw new HostedRuntimeFailure('unsupported_job_kind', false);
@@ -617,7 +626,7 @@ export class GitHubCheckDeliveryAdapter {
       reauthorize: () => this.authority.reauthorize(envelope),
       currentHead: () => this.authority.currentHead(envelope),
     });
-    if (result.state === 'delivered' && result.externalId !== undefined) {
+    if (result.state === 'delivered') {
       return { state: 'delivered', providerExternalId: result.externalId };
     }
     if (result.state === 'superseded') return { state: 'superseded' };

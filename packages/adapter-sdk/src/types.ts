@@ -100,11 +100,8 @@ export interface ContractDefinition {
   readonly evidenceStratum: string;
 }
 
-export interface ContractReference {
+export interface ContractReferenceBase {
   readonly contractKind: ContractKind;
-  readonly canonicalKey?: string;
-  readonly unresolvedPattern?: string;
-  readonly unresolvedReason?: string;
   readonly semanticOwner?: string;
   readonly path: RepoPath;
   readonly range?: SourceRange;
@@ -116,6 +113,20 @@ export interface ContractReference {
   readonly evidenceStratum: string;
   readonly activation: ActivationTiming;
 }
+
+export interface ResolvedContractReference extends ContractReferenceBase {
+  readonly canonicalKey: string;
+  readonly unresolvedPattern?: never;
+  readonly unresolvedReason?: never;
+}
+
+export interface UnresolvedContractReference extends ContractReferenceBase {
+  readonly canonicalKey?: never;
+  readonly unresolvedPattern: string;
+  readonly unresolvedReason: string;
+}
+
+export type ContractReference = ResolvedContractReference | UnresolvedContractReference;
 
 export interface AdapterLimitation {
   readonly code: string;
