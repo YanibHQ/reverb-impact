@@ -147,7 +147,7 @@ The graph is a projection over immutable generations, not a mutable oracle. “C
 | --- | --- | --- |
 | [001 — Repository index](phases/001-repository-index/) | Ports, immutable generations, file cache, coverage, local SQLite store | Reproducible index; incremental result equals clean rebuild |
 | [002 — Contract change detection](phases/002-contract-change-detection/) | Adapter SDK, canonical keys, initial adapters, compatibility and activation semantics | Stable base/head changes across three adapters |
-| [003 — Cross-repo impact graph](phases/003-cross-repo-impact-graph/) **Implemented locally** | Workspace registry, definitions/references, joins, PR overlays, evidence | Real producer-consumer pairs resolve with exact SHAs |
+| [003 — Cross-repo impact graph](phases/003-cross-repo-impact-graph/) **Semantic slice implemented; incremental host gate open** | Workspace registry, definitions/references, joins, PR overlays, evidence | Real producer-consumer pairs resolve with exact SHAs; hosted PR execution also requires ADR 0006 |
 | [004 — Precision and review](phases/004-precision-and-review/) | Labels, evaluation, calibration, abstention, suppressions, policy simulation | One evidence class clears its human-labelled promotion threshold |
 | [005 — Delivery surfaces](phases/005-delivery-surfaces/) | CLI preview, API, GitHub App, disclosure-safe advisory checks | Shadow rollout meets latency, noise, disclosure, and rollback gates |
 | [006 — Host adapters](phases/006-host-adapters/) | Stable packages, Postgres adapter, second-host proof, Yanib guide | Two hosts pass one conformance suite |

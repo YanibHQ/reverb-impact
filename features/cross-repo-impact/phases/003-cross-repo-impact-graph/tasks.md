@@ -1,6 +1,6 @@
 # Phase 003 Tasks
 
-**Status:** Implemented and verified locally; all findings remain preview-only
+**Status:** Semantic vertical slice verified locally; index-first hosted PR path remains open
 
 ## A. Registry
 
@@ -32,7 +32,7 @@
 
 ## E. PR analysis
 
-- [x] Base generation + head overlay orchestration
+- [ ] Exact indexed base + changed-file overlay + delta-backed logical head orchestration without full source reconstruction
 - [x] Contract diff, join, coverage, persist workflow
 - [x] Force-push supersession and actual merge-tree semantics
 - [x] Fork/untrusted input behavior
@@ -58,6 +58,7 @@
 - [x] `pnpm test:integration --filter multi-repo`
 - [x] `pnpm test:conformance --host local`
 - [x] `pnpm benchmark --scenario pr-overlay`
+- [ ] Source-budget benchmark proving changed-only producer reads and zero consumer reads
 - [x] comparative report and decision linked
 
 ## Exit review
@@ -67,3 +68,4 @@
 - [x] Location-only move preserves fingerprint
 - [x] Stale/failed/unauthorized never means unaffected
 - [x] No external delivery exists
+- [ ] Incremental adapter snapshots equal clean rebuilds across TypeScript re-export, OpenAPI local-ref, and Protobuf import invalidation fixtures

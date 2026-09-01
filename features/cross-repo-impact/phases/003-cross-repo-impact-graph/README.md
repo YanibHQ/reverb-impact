@@ -1,6 +1,6 @@
 # Phase 003 — Cross-Repository Impact Graph
 
-**Status:** Implemented and verified locally; preview-only and uncalibrated  
+**Status:** Semantic vertical slice verified locally; index-first hosted execution remains open
 **Depends on:** [001](../001-repository-index/), [002](../002-contract-change-detection/)  
 **Produces:** workspace joins, temporal edges, exact PR analysis, candidate findings
 
@@ -32,6 +32,12 @@ Join changed producer contracts to real consumer references across explicitly ad
 - benchmark review records why Reverb continues, interoperates, repositions, or stops.
 
 No external PR check is shipped in this phase.
+
+The v0.2 local path proves exact identities, joins, coverage, and output semantics. It does not yet
+persist adapter partition state, so a host may recreate whole base/head adapter input. Hosted PR
+execution additionally requires [ADR 0006](../../../../docs/adr/0006-index-first-pr-overlays.md):
+delta-backed logical heads, persistent semantic snapshots, changed-only producer reads, zero consumer
+source reads, and clean/incremental canonical equivalence.
 
 ## What happens if we skip this
 

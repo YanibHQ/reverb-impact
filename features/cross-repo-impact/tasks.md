@@ -113,12 +113,14 @@ Detailed tasks: [phases/001-repository-index/tasks.md](phases/001-repository-ind
 - [x] Atomic complete/partial/failed generation transitions
 - [x] Coverage/diagnostic aggregation
 - [x] Incremental content reuse and clean-rebuild equivalence
+- [ ] Persist adapter-owned semantic partitions/snapshots so incremental PR analysis does not recreate unchanged extraction input
 
 ### 1F. Overlay primitives
 
 - [x] Complete diff manifest for add/modify/delete/rename/submodule/binary cases
 - [x] Overlay lookup semantics and tombstones
 - [x] Base/head/tree/config/bundle identity and supersession key
+- [ ] Derive a non-selected logical head generation from base + overlay with delta-backed artifact resolution
 
 ### 1G. Security/fault verification
 
@@ -199,10 +201,15 @@ Detailed tasks: [phases/003-cross-repo-impact-graph/tasks.md](phases/003-cross-r
 
 ### 3E. PR orchestration
 
-- [x] exact base generation selection/build and head overlay
+- [ ] exact indexed base selection, changed-file head overlay, and derived head generation without full base/head source reconstruction
 - [x] consumer generation snapshot and on-demand refresh budget
 - [x] force-push supersession and actual-merge-SHA handling
 - [x] result persistence before external effects
+
+The v0.2 local semantic path proves exact identities and joins, but it does not satisfy the hosted
+source-cost gate in [ADR 0006](../../docs/adr/0006-index-first-pr-overlays.md). Phase 003 is not
+incrementally complete until adapters persist partition state and host conformance proves changed-only
+producer reads plus zero consumer reads.
 
 ### 3F. Findings
 
