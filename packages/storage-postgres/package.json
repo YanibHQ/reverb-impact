@@ -31,7 +31,6 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@yanib/reverb-application": "workspace:*",
     "@yanib/reverb-domain": "workspace:*",
     "pg": "8.23.0"
   },

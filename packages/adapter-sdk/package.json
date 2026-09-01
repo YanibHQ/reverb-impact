@@ -31,8 +31,7 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@yanib/reverb-domain": "workspace:*",
-    "@yanib/reverb-schema": "workspace:*"
+    "@yanib/reverb-domain": "workspace:*"
   },
   "publishConfig": {
     "access": "public",
