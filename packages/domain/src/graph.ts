@@ -157,16 +157,51 @@ export interface EvidenceEdge {
   readonly reference: IndexedContractReference;
 }
 
-export interface ConsumerGenerationSelection {
+interface ConsumerGenerationSelectionBase {
   readonly repositoryId: RepositoryStableId;
-  readonly state: ConsumerSelectionState;
-  readonly generationId?: GenerationId;
-  readonly commitSha?: CommitSha;
-  readonly selectedAt?: Instant;
-  readonly freshnessAgeMs?: number;
-  readonly coverageState?: 'complete' | 'partial';
-  readonly reason?: string;
 }
+
+type SelectedConsumerGenerationSelection<
+  State extends Extract<ConsumerSelectionState, 'current' | 'stale'>,
+> = ConsumerGenerationSelectionBase & {
+  readonly state: State;
+  readonly generationId: GenerationId;
+  readonly commitSha: CommitSha;
+  readonly selectedAt: Instant;
+  readonly freshnessAgeMs: number;
+  readonly coverageState: 'complete' | 'partial';
+  readonly reason?: never;
+};
+
+type UnavailableConsumerGenerationSelection<
+  State extends Extract<ConsumerSelectionState, 'unauthorized' | 'failed' | 'not_indexed'>,
+> = ConsumerGenerationSelectionBase & {
+  readonly state: State;
+  readonly generationId?: never;
+  readonly commitSha?: never;
+  readonly selectedAt?: never;
+  readonly freshnessAgeMs?: never;
+  readonly coverageState?: never;
+  readonly reason: string;
+};
+
+type UnsupportedConsumerGenerationSelection = ConsumerGenerationSelectionBase & {
+  readonly state: 'unsupported';
+  readonly generationId: GenerationId;
+  readonly commitSha: CommitSha;
+  readonly selectedAt?: Instant;
+  readonly freshnessAgeMs?: never;
+  readonly coverageState?: never;
+  readonly reason: string;
+};
+
+export type ConsumerGenerationSelection =
+  | SelectedConsumerGenerationSelection<'current'>
+  | SelectedConsumerGenerationSelection<'stale'>
+  | UnsupportedConsumerGenerationSelection
+  | UnavailableConsumerGenerationSelection<'unauthorized'>
+  | UnavailableConsumerGenerationSelection<'failed'>
+  | UnavailableConsumerGenerationSelection<'not_indexed'>;
 
 export interface JoinDiagnostic {
   readonly code: 'registry_ambiguity' | 'registry_contradiction' | 'unresolved_reference';

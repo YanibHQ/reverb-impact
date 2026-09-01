@@ -46,12 +46,26 @@ export interface DifferExitMap {
   readonly unknown: readonly number[];
 }
 
-export interface DeclaredDifferResult {
-  readonly state: 'compatible' | 'breaking' | 'unknown' | 'tool_failure';
+interface DeclaredDifferResultBase {
   readonly stdout: Uint8Array;
-  readonly failureCode?: string;
   readonly metadata: DifferMetadata;
 }
+
+type SuccessfulDifferState = 'compatible' | 'breaking' | 'unknown';
+
+type SuccessfulDifferResult = {
+  [State in SuccessfulDifferState]: DeclaredDifferResultBase & {
+    readonly state: State;
+    readonly failureCode?: never;
+  };
+}[SuccessfulDifferState];
+
+export type DeclaredDifferResult =
+  | SuccessfulDifferResult
+  | (DeclaredDifferResultBase & {
+      readonly state: 'tool_failure';
+      readonly failureCode: string;
+    });
 
 const INPUT_REF = /^blob:sha256:[0-9a-f]{64}$/;
 

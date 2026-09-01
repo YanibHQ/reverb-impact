@@ -25,17 +25,28 @@ export interface GitHubChecksClient {
   }): Promise<{ readonly externalId: string }>;
 }
 
-export interface CheckWriteResult {
-  readonly state:
-    | 'delivered'
-    | 'shadow'
-    | 'disabled'
-    | 'unauthorized'
-    | 'superseded'
-    | 'not_eligible';
-  readonly externalId?: string;
-  readonly requests: number;
-}
+type CheckWriteNonDeliveryState =
+  | 'shadow'
+  | 'disabled'
+  | 'unauthorized'
+  | 'superseded'
+  | 'not_eligible';
+
+type CheckWriteNonDeliveryResult = {
+  [State in CheckWriteNonDeliveryState]: {
+    readonly state: State;
+    readonly externalId?: never;
+    readonly requests: number;
+  };
+}[CheckWriteNonDeliveryState];
+
+export type CheckWriteResult =
+  | {
+      readonly state: 'delivered';
+      readonly externalId: string;
+      readonly requests: number;
+    }
+  | CheckWriteNonDeliveryResult;
 
 function chunks<Value>(values: readonly Value[], size: number): readonly (readonly Value[])[] {
   if (values.length === 0) return [[]];
