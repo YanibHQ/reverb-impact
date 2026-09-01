@@ -71,9 +71,6 @@ importers:
       '@yanib/reverb-domain':
         specifier: workspace:*
         version: link:../domain
-      '@yanib/reverb-schema':
-        specifier: workspace:*
-        version: link:../schema
 
   packages/adapter-typescript:
     dependencies:
@@ -161,9 +158,6 @@ importers:
 
   packages/storage-postgres:
     dependencies:
-      '@yanib/reverb-application':
-        specifier: workspace:*
-        version: link:../application
       '@yanib/reverb-domain':
         specifier: workspace:*
         version: link:../domain
