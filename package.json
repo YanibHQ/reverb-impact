@@ -17,10 +17,11 @@
   },
   "scripts": {
     "build": "tsc -b",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "lint": "eslint . && node tools/check-boundaries.mjs",
-    "typecheck": "tsc -b --pretty false",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "lint": "oxlint . && node tools/check-boundaries.mjs",
+    "typecheck": "tsc -b --pretty false && pnpm typecheck:types",
+    "typecheck:types": "tsc -p type-tests/tsconfig.json --pretty false",
     "test": "vitest run --passWithNoTests",
     "test:integration": "vitest run --config vitest.integration.config.ts --passWithNoTests",
     "test:conformance": "vitest run --config vitest.conformance.config.ts --passWithNoTests",
@@ -52,15 +53,13 @@
     "ci": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm api:check && pnpm hosts:check && pnpm compatibility:check && pnpm test && pnpm test:integration && pnpm test:conformance && pnpm test:adversarial && pnpm test:migrations && pnpm schema:check && pnpm adapters:admission:check && pnpm docs:check && pnpm licenses:check"
   },
   "devDependencies": {
-    "@eslint/js": "9.34.0",
     "@types/node": "24.3.0",
     "@vitest/coverage-v8": "3.2.4",
-    "eslint": "9.34.0",
     "fast-check": "4.3.0",
-    "prettier": "3.6.2",
+    "oxfmt": "0.65.0",
+    "oxlint": "1.80.0",
     "tsx": "4.20.5",
     "typescript": "5.9.2",
-    "typescript-eslint": "8.41.0",
     "vitest": "3.2.4"
   }
 }

@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
-import { format } from 'prettier';
+import { format } from 'oxfmt';
 
 import { FOUNDATION_SCHEMAS } from '../packages/schema/src/foundation.js';
 
@@ -29,8 +29,7 @@ if (!process.argv.includes('--write') && !process.argv.includes('--check')) {
   let stale = false;
   for (const output of outputs) {
     const target = resolve(root, 'schemas', output.file);
-    const serialized = await format(JSON.stringify(output.schema), {
-      parser: 'json',
+    const { code: serialized } = await format(output.file, JSON.stringify(output.schema), {
       printWidth: 100,
     });
     if (process.argv.includes('--write')) {
