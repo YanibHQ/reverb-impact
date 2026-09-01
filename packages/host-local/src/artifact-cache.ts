@@ -26,6 +26,7 @@ function canonicalKey(key: ArtifactCacheKey): ArtifactCacheKey {
   return {
     workspaceId: workspaceId(key.workspaceId),
     sourceBlobId: key.sourceBlobId,
+    contextHash: contentHash(key.contextHash),
     indexerBundleVersion: key.indexerBundleVersion,
     parserId: adapterId(key.parserId),
     parserVersion: key.parserVersion,

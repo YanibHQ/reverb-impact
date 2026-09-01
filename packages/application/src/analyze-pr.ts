@@ -289,6 +289,7 @@ export class AnalyzePullRequest {
       base.value.workspaceId !== input.workspaceId ||
       base.value.repositoryId !== input.producerRepositoryId ||
       base.value.commitSha !== input.pullRequest.baseSha ||
+      base.value.registryRevision !== input.registryRevision ||
       (base.value.state !== 'complete' && base.value.state !== 'partial')
     ) {
       return invalid(
@@ -299,9 +300,12 @@ export class AnalyzePullRequest {
     const overlay = await this.dependencies.generations.getOverlay(input.overlayId);
     if (!overlay.ok) return propagated(overlay.failure);
     if (
+      overlay.value.workspaceId !== input.workspaceId ||
+      overlay.value.repositoryId !== input.producerRepositoryId ||
       overlay.value.baseGenerationId !== input.baseGenerationId ||
       overlay.value.baseSha !== input.pullRequest.baseSha ||
       overlay.value.headSha !== input.pullRequest.headSha ||
+      overlay.value.registryRevision !== input.registryRevision ||
       (overlay.value.state !== 'complete' && overlay.value.state !== 'partial')
     ) {
       return invalid('overlay_mismatch', 'Analysis requires the exact producer head overlay.');
@@ -336,6 +340,29 @@ export class AnalyzePullRequest {
       input.registryRevision,
     );
     if (!registry.ok) return propagated(registry.failure);
+    if (
+      registry.value.revision.workspaceId !== input.workspaceId ||
+      registry.value.revision.revision !== input.registryRevision
+    ) {
+      return invalid(
+        'registry_scope_mismatch',
+        'Workspace registry does not match the requested analysis revision.',
+      );
+    }
+    if (
+      input.producerDefinitions.some(
+        (definition) =>
+          definition.workspaceId !== input.workspaceId ||
+          definition.repositoryId !== input.producerRepositoryId ||
+          definition.generationId !== input.baseGenerationId ||
+          definition.commitSha !== input.pullRequest.baseSha,
+      )
+    ) {
+      return invalid(
+        'definition_scope_mismatch',
+        'Producer definitions do not match the exact base generation.',
+      );
+    }
     if (
       input.changes.some(
         (change) =>

@@ -49,6 +49,12 @@ paths:
     expect(result.definitions).toEqual([]);
   });
 
+  it('fails malformed probable JSON OpenAPI instead of treating it as unsupported', async () => {
+    const result = await extract('{"openapi":"3.1.0","paths":');
+    expect(result.coverage).toMatchObject({ state: 'failed', failedArtifacts: 1 });
+    expect(result.definitions).toEqual([]);
+  });
+
   it('rejects YAML alias expansion', async () => {
     const result = await extract(`
 openapi: 3.1.0

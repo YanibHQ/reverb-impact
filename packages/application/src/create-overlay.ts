@@ -81,8 +81,11 @@ export class CreatePullRequestOverlay {
     const base = await this.dependencies.store.getGeneration(request.baseGenerationId);
     if (!base.ok) return propagated(base.failure);
     if (
+      base.value.workspaceId !== request.workspaceId ||
       base.value.commitSha !== request.baseSha ||
       base.value.repositoryId !== request.repositoryId ||
+      base.value.indexerBundleVersion !== request.indexerBundleVersion ||
+      base.value.configRevision !== request.configRevision ||
       (base.value.state !== 'complete' && base.value.state !== 'partial')
     ) {
       return portFailure({
@@ -97,7 +100,7 @@ export class CreatePullRequestOverlay {
       request.headSha,
     );
     if (!head.ok) return propagated(head.failure);
-    if (head.value.sha !== request.headSha) {
+    if (head.value.repositoryId !== request.repositoryId || head.value.sha !== request.headSha) {
       return portFailure({
         kind: 'incomplete_provider_data',
         code: 'head_commit_mismatch',
@@ -111,6 +114,18 @@ export class CreatePullRequestOverlay {
       request.headSha,
     );
     if (!diff.ok) return propagated(diff.failure);
+    if (
+      diff.value.repositoryId !== request.repositoryId ||
+      diff.value.baseSha !== request.baseSha ||
+      diff.value.headSha !== request.headSha
+    ) {
+      return portFailure({
+        kind: 'incomplete_provider_data',
+        code: 'diff_scope_mismatch',
+        safeMessage: 'Source reader returned a diff outside the requested exact commits.',
+        retryable: false,
+      });
+    }
     const overlay = {
       id: request.overlayId,
       workspaceId: request.workspaceId,
@@ -147,6 +162,18 @@ export class CreatePullRequestOverlay {
     const maximumFileBytes = request.maximumFileBytes ?? 2 * 1024 * 1024;
     const headTree = await this.dependencies.reader.listTree(request.repositoryId, request.headSha);
     if (!headTree.ok) return fail(headTree.failure);
+    if (
+      headTree.value.repositoryId !== request.repositoryId ||
+      headTree.value.commitSha !== request.headSha ||
+      headTree.value.treeHash !== head.value.treeHash
+    ) {
+      return fail({
+        kind: 'incomplete_provider_data',
+        code: 'tree_scope_mismatch',
+        safeMessage: 'Source reader returned a tree outside the requested exact head.',
+        retryable: false,
+      });
+    }
     const headEntries = new Map(headTree.value.entries.map((entry) => [entry.path, entry]));
     const entries: OverlayEntry[] = [];
     const diagnostics: BoundedDiagnostic[] = [
@@ -223,6 +250,14 @@ export class CreatePullRequestOverlay {
           partial = true;
           sourceFailed = true;
         } else {
+          if (blob.value.path !== change.path) {
+            return fail({
+              kind: 'incomplete_provider_data',
+              code: 'blob_scope_mismatch',
+              safeMessage: 'Source reader returned a blob outside the requested path.',
+              retryable: false,
+            });
+          }
           bytes = blob.value.bytes;
           partial ||= !blob.value.complete;
           sourceFailed = !blob.value.complete;

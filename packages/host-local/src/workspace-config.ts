@@ -203,6 +203,7 @@ export class LocalWorkspaceConfig {
       throw new Error('A Reverb workspace already exists at this path.');
     } catch (error) {
       if (error instanceof Error && error.message.startsWith('A Reverb workspace')) throw error;
+      if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
     }
     await mkdir(resolve(metadataRoot, 'registry'), { recursive: true, mode: 0o700 });
     await mkdir(resolve(metadataRoot, 'objects'), { recursive: true, mode: 0o700 });

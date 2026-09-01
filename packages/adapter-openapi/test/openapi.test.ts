@@ -77,6 +77,29 @@ function sandbox(exitCode: number): AdapterSandboxRunner {
 }
 
 describe('OpenAPI adapter', () => {
+  it('extracts operations from local path-item references', async () => {
+    const result = await openApiAdapter.extract(
+      request(`
+openapi: 3.1.0
+info: { title: Referenced paths, version: 1 }
+paths:
+  /pets:
+    $ref: '#/components/pathItems/Pets'
+components:
+  pathItems:
+    Pets:
+      get:
+        operationId: listPets
+        responses: { '200': { description: ok } }
+`),
+    );
+
+    expect(result.coverage.state).toBe('complete');
+    expect(result.definitions).toContainEqual(
+      expect.objectContaining({ canonicalKey: openApiOperationKey('svc.petstore', 'listPets') }),
+    );
+  });
+
   it('discovers by content, resolves local refs, and maps generated clients to exact identity', async () => {
     const result = await openApiAdapter.extract(request(base));
     expect(result.coverage).toMatchObject({ state: 'complete', eligibleArtifacts: 1 });

@@ -67,20 +67,32 @@ function sandboxFrom(context: Readonly<Record<string, unknown>>): AdapterSandbox
 }
 
 function sourceFingerprint(request: ExtractRequest): ContentHash {
-  const referenceIdentity = generatedReferences(request).map((reference) => ({
-    contractKind: reference.contractKind,
-    canonicalKey: reference.canonicalKey ?? null,
-    unresolvedPattern: reference.unresolvedPattern ?? null,
-    path: reference.path,
-    contentHash: reference.contentHash,
-  }));
+  const referenceIdentity = generatedReferences(request)
+    .map((reference) => ({
+      contractKind: reference.contractKind,
+      canonicalKey: reference.canonicalKey ?? null,
+      unresolvedPattern: reference.unresolvedPattern ?? null,
+      path: reference.path,
+      contentHash: reference.contentHash,
+    }))
+    .sort((left, right) =>
+      `${left.contractKind}\0${left.canonicalKey ?? left.unresolvedPattern}\0${left.path}`.localeCompare(
+        `${right.contractKind}\0${right.canonicalKey ?? right.unresolvedPattern}\0${right.path}`,
+      ),
+    );
   return contentHash(
     hashCanonical({
-      artifacts: request.artifacts.map(({ path, contentHash: hash, classification }) => ({
-        path,
-        contentHash: hash,
-        classification,
-      })),
+      artifacts: request.artifacts
+        .map(({ path, contentHash: hash, classification }) => ({
+          path,
+          contentHash: hash,
+          classification,
+        }))
+        .sort((left, right) =>
+          `${left.path}\0${left.contentHash}\0${left.classification}`.localeCompare(
+            `${right.path}\0${right.contentHash}\0${right.classification}`,
+          ),
+        ),
       generatedStubBindings: referenceIdentity,
     }),
   );

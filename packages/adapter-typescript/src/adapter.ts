@@ -217,7 +217,7 @@ function resolvePublicSymbols(
     if (module === undefined) return { symbols: [], unresolved: 1 };
     const nextSeen = new Set(seen).add(path);
     const symbols = [...module.symbols];
-    let unresolved = 0;
+    let unresolved = module.unresolvedExports;
     for (const reExport of module.reExports) {
       const targetPath = resolveRelativeModule(path, reExport.source, available);
       if (targetPath === undefined) {
@@ -352,11 +352,17 @@ function sourceFingerprint(request: ExtractRequest, registry: string): ContentHa
   return contentHash(
     hashCanonical({
       registry,
-      artifacts: request.artifacts.map(({ path, contentHash: hash, classification }) => ({
-        path,
-        contentHash: hash,
-        classification,
-      })),
+      artifacts: request.artifacts
+        .map(({ path, contentHash: hash, classification }) => ({
+          path,
+          contentHash: hash,
+          classification,
+        }))
+        .sort((left, right) =>
+          `${left.path}\0${left.contentHash}\0${left.classification}`.localeCompare(
+            `${right.path}\0${right.contentHash}\0${right.classification}`,
+          ),
+        ),
       entrypoints: safeEntrypoints,
       lockedPackages: [...lockedPackages(request.context)].sort(),
     }),

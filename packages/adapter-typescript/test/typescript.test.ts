@@ -58,6 +58,30 @@ async function extract(artifacts: readonly ArtifactInput[]) {
 }
 
 describe('TypeScript/npm adapter', () => {
+  it('extracts local export lists and default export assignments', async () => {
+    const result = await extract([
+      artifact('package.json', JSON.stringify({ name: '@acme/pets', exports: './dist/index.js' })),
+      artifact(
+        'src/index.ts',
+        `
+const count = 1;
+interface Model { id: string }
+const client = { count };
+export { count as total };
+export type { Model };
+export default client;
+`,
+      ),
+    ]);
+
+    expect(result.coverage.state).toBe('complete');
+    expect(result.definitions.map((value) => value.canonicalKey)).toEqual([
+      typeScriptSymbolKey('npm', '@acme/pets', '.', 'type', 'Model'),
+      typeScriptSymbolKey('npm', '@acme/pets', '.', 'value', 'default'),
+      typeScriptSymbolKey('npm', '@acme/pets', '.', 'value', 'total'),
+    ]);
+  });
+
   it('extracts barrel re-exports, subpaths, type/value spaces, and locked imports', async () => {
     const result = await extract(
       producer(`

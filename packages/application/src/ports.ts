@@ -424,6 +424,8 @@ export interface ArtifactBlobStore {
 export interface ArtifactCacheKey {
   readonly workspaceId: WorkspaceId;
   readonly sourceBlobId: string;
+  /** Hash of path- and source-bound classification inputs outside the blob contents. */
+  readonly contextHash: ContentHash;
   readonly indexerBundleVersion: string;
   readonly parserId: string;
   readonly parserVersion: string;

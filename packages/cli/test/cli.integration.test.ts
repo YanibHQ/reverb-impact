@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process';
 import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
-import { resolve } from 'node:path';
+import { basename, resolve } from 'node:path';
 import { promisify } from 'node:util';
 
 import {
@@ -161,7 +161,7 @@ describe('local CLI workflow', () => {
         producer,
         'analyze',
         '--repo',
-        producer.split('/').at(-1)!,
+        basename(producer),
         '--base',
         base,
         '--head',

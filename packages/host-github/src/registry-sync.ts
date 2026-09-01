@@ -62,6 +62,14 @@ export function syncGitHubRepositorySelection(input: {
       });
     }
   }
+  const retainedRepositoryIds = new Set(repositories.map((repository) => repository.repositoryId));
+  const services = (input.previous?.services ?? []).filter((service) =>
+    retainedRepositoryIds.has(service.repositoryId),
+  );
+  const retainedServiceIds = new Set(services.map((service) => service.id));
+  const aliases = (input.previous?.aliases ?? []).filter((alias) =>
+    retainedServiceIds.has(alias.serviceId),
+  );
   return createRegistrySnapshot({
     workspaceId: input.workspaceId,
     sequence: (input.previous?.revision.sequence ?? 0) + 1,
@@ -70,8 +78,8 @@ export function syncGitHubRepositorySelection(input: {
     source: 'github-installation-reconciliation',
     reason: 'selected_repository_scope_sync',
     repositories,
-    services: input.previous?.services ?? [],
-    aliases: input.previous?.aliases ?? [],
+    services,
+    aliases,
     consents,
     extensions: {
       provider: 'github',

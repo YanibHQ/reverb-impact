@@ -11,6 +11,7 @@ import {
   type Instant,
   type RegistryRevision,
   type RepositoryStableId,
+  type TreeEntry,
   type WorkspaceId,
 } from '@yanib/reverb-domain';
 
@@ -98,6 +99,35 @@ function semanticArtifact(artifact: FileArtifact): Readonly<Record<string, unkno
   };
 }
 
+function artifactContextHash(entry: TreeEntry, maximumFileBytes: number) {
+  return contentHash(
+    hashCanonical({
+      path: entry.path,
+      kind: entry.kind,
+      mode: entry.mode,
+      size: entry.size ?? null,
+      maximumFileBytes,
+    }),
+  );
+}
+
+function previousArtifactMatches(
+  artifact: FileArtifact,
+  entry: TreeEntry,
+  maximumFileBytes: number,
+): boolean {
+  if (artifact.path !== entry.path || artifact.sourceBlobId !== entry.objectId) return false;
+  if (entry.size !== undefined && artifact.size !== entry.size) return false;
+  if (entry.kind === 'symlink') return artifact.classification === 'symlink';
+  if (entry.kind === 'submodule') return artifact.classification === 'submodule';
+  if (artifact.classification === 'symlink' || artifact.classification === 'submodule')
+    return false;
+  const oversized = entry.size !== undefined && entry.size > maximumFileBytes;
+  return oversized
+    ? artifact.classification === 'oversized'
+    : artifact.classification !== 'oversized';
+}
+
 export class IndexRepositoryGeneration {
   public constructor(private readonly dependencies: IndexGenerationDependencies) {}
 
@@ -110,7 +140,10 @@ export class IndexRepositoryGeneration {
       request.commitSha,
     );
     if (!resolved.ok) return propagated(resolved);
-    if (resolved.value.sha !== request.commitSha) {
+    if (
+      resolved.value.repositoryId !== request.repositoryId ||
+      resolved.value.sha !== request.commitSha
+    ) {
       return portFailure({
         kind: 'incomplete_provider_data',
         code: 'commit_mismatch',
@@ -188,7 +221,20 @@ export class IndexRepositoryGeneration {
     };
     const tree = await this.dependencies.reader.listTree(request.repositoryId, request.commitSha);
     if (!tree.ok) return fail(tree.failure);
+    if (
+      tree.value.repositoryId !== request.repositoryId ||
+      tree.value.commitSha !== request.commitSha ||
+      tree.value.treeHash !== resolved.value.treeHash
+    ) {
+      return fail({
+        kind: 'incomplete_provider_data',
+        code: 'tree_scope_mismatch',
+        safeMessage: 'Source reader returned a tree outside the requested exact commit.',
+        retryable: false,
+      });
+    }
 
+    const maximumFileBytes = request.maximumFileBytes ?? 2 * 1024 * 1024;
     const previousByBlob = new Map<string, FileArtifact>();
     if (request.previousGenerationId) {
       const previousGeneration = await this.dependencies.store.getGeneration(
@@ -203,13 +249,13 @@ export class IndexRepositoryGeneration {
       ) {
         const previous = await this.dependencies.store.listArtifacts(request.previousGenerationId);
         if (previous.ok) {
-          for (const artifact of previous.value)
-            previousByBlob.set(artifact.sourceBlobId, artifact);
+          for (const artifact of previous.value) {
+            previousByBlob.set(`${artifact.sourceBlobId}\0${artifact.path}`, artifact);
+          }
         }
       }
     }
 
-    const maximumFileBytes = request.maximumFileBytes ?? 2 * 1024 * 1024;
     const artifacts: FileArtifact[] = [];
     const diagnostics: BoundedDiagnostic[] = [];
     let reusedArtifactCount = 0;
@@ -232,9 +278,10 @@ export class IndexRepositoryGeneration {
         }
       }
 
-      const previous = previousByBlob.get(entry.objectId);
+      const previous = previousByBlob.get(`${entry.objectId}\0${entry.path}`);
       if (
         previous &&
+        previousArtifactMatches(previous, entry, maximumFileBytes) &&
         previous.parserId === FOUNDATION_PARSER_ID &&
         previous.parserVersion === FOUNDATION_PARSER_VERSION &&
         previous.configRevision === request.configRevision
@@ -256,6 +303,7 @@ export class IndexRepositoryGeneration {
       const cacheKey = {
         workspaceId: request.workspaceId,
         sourceBlobId: entry.objectId,
+        contextHash: artifactContextHash(entry, maximumFileBytes),
         indexerBundleVersion: request.indexerBundleVersion,
         parserId: FOUNDATION_PARSER_ID,
         parserVersion: FOUNDATION_PARSER_VERSION,
@@ -291,6 +339,14 @@ export class IndexRepositoryGeneration {
           maximumFileBytes,
         );
         if (blob.ok) {
+          if (blob.value.path !== entry.path) {
+            return fail({
+              kind: 'incomplete_provider_data',
+              code: 'blob_scope_mismatch',
+              safeMessage: 'Source reader returned a blob outside the requested path.',
+              retryable: false,
+            });
+          }
           bytes = blob.value.bytes;
           sourceIncomplete = !blob.value.complete;
           fileSourceFailed = !blob.value.complete;

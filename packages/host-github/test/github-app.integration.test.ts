@@ -41,6 +41,7 @@ import {
   GITHUB_APP_MANIFEST,
   GitHubCheckWriter,
   GitHubExactRepositoryReader,
+  GitHubAuthorization,
   GitHubWebhookReceiver,
   HostedOperationalControls,
   reconcileGitHubState,
@@ -366,9 +367,34 @@ describe('GitHub reference host integration', () => {
     expect(snapshot.consents.find((value) => value.action === 'consumer.write')?.decision).toBe(
       'deny',
     );
+    const previousWithService = {
+      ...snapshot,
+      services: [
+        {
+          id: 'payments',
+          repositoryId: producer,
+          rootPath: repoPath('services/payments'),
+          environment: 'production',
+          owner: 'payments',
+          validFrom: now,
+        },
+      ],
+      aliases: [
+        {
+          serviceId: 'payments',
+          kind: 'base_token' as const,
+          value: 'payments',
+          environment: 'production',
+          provenance: 'operator' as const,
+          source: 'test',
+          owner: 'payments',
+          validFrom: now,
+        },
+      ],
+    };
     const removed = syncGitHubRepositorySelection({
       workspaceId: workspace,
-      previous: snapshot,
+      previous: previousWithService,
       repositories: [{ ...repository, selected: false }],
       repositorySelection: 'selected',
       organizationWideOptIn: false,
@@ -378,6 +404,8 @@ describe('GitHub reference host integration', () => {
       consentRevision: 'consent-2',
     });
     expect(removed.repositories).toEqual([]);
+    expect(removed.services).toEqual([]);
+    expect(removed.aliases).toEqual([]);
     const reinstalled = syncGitHubRepositorySelection({
       workspaceId: workspace,
       previous: removed,
@@ -391,6 +419,59 @@ describe('GitHub reference host integration', () => {
     });
     expect(reinstalled.repositories[0]?.repositoryId).toBe(snapshot.repositories[0]?.repositoryId);
     expect(reinstalled.revision.sequence).toBe(3);
+  });
+
+  it('denies evidence use when the current provider read grant is gone', async () => {
+    const snapshot = syncGitHubRepositorySelection({
+      workspaceId: workspace,
+      repositories: [
+        {
+          id: 101,
+          name: 'producer',
+          defaultBranch: 'main',
+          selected: true,
+          visibility: 'private',
+          collections: ['payments'],
+          grants: { 'evidence.consume': 'allow' },
+        },
+      ],
+      repositorySelection: 'selected',
+      organizationWideOptIn: false,
+      installationId: 44,
+      createdAt: now,
+      actor: 'admin',
+      consentRevision: 'consent-provider-revoked',
+    });
+    const authorization = new GitHubAuthorization(
+      {
+        async current() {
+          return snapshot;
+        },
+      },
+      {
+        async current() {
+          return {
+            appCanRead: false,
+            appCanWriteChecks: false,
+            wholeAudienceSafeFields: [],
+            viewerCanRead: false,
+            authorizationRevision: 'provider-revoked',
+          };
+        },
+      },
+    );
+    authorization.bindRepository(workspace, producer);
+
+    await expect(
+      authorization.authorizeRepositoryUse(
+        { kind: 'user', id: 'admin' },
+        'evidence.consume',
+        producer,
+      ),
+    ).resolves.toMatchObject({
+      ok: true,
+      value: { allowed: false, reason: 'current_provider_grant_denied' },
+    });
   });
 
   it('omits private consumer canaries from static output but permits viewer-authorized detail', () => {
@@ -498,6 +579,19 @@ describe('GitHub reference host integration', () => {
         ],
       ).map((value) => value.kind),
     ).toEqual(['analyze_pull_request', 'index_default_branch']);
+    expect(
+      reconcileGitHubState(
+        [],
+        [
+          {
+            repositoryId: producer,
+            selected: true,
+            defaultBranchHead: headSha,
+            pullRequestHeads: { 7: headSha },
+          },
+        ],
+      ),
+    ).toEqual([{ kind: 'purge_repository', repositoryId: producer }]);
   });
 
   it('stays shadow/no-write without a promotion and writes only the current advisory head', async () => {

@@ -1,13 +1,14 @@
-import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 
+import { pnpmExecFileSync } from './run-pnpm.mjs';
+
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const workspaceManifest = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'));
 const listed = JSON.parse(
-  execFileSync('pnpm', ['list', '--recursive', '--prod', '--depth', 'Infinity', '--json'], {
+  pnpmExecFileSync(['list', '--recursive', '--prod', '--depth', 'Infinity', '--json'], {
     cwd: root,
     encoding: 'utf8',
   }),

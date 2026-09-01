@@ -480,7 +480,7 @@ export class InMemoryArtifactCache implements ArtifactCachePort {
   readonly #values = new Map<string, CachedArtifact>();
 
   static key(key: ArtifactCacheKey): string {
-    return `${key.workspaceId}|${key.sourceBlobId}|${key.indexerBundleVersion}|${key.parserId}|${key.parserVersion}|${key.configRevision}`;
+    return `${key.workspaceId}|${key.sourceBlobId}|${key.contextHash}|${key.indexerBundleVersion}|${key.parserId}|${key.parserVersion}|${key.configRevision}`;
   }
 
   public async get(key: ArtifactCacheKey): Promise<PortResult<CachedArtifact | null>> {

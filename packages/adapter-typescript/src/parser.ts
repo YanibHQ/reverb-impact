@@ -43,6 +43,7 @@ export interface ParsedTypeScriptModule {
   readonly reExports: readonly ReExport[];
   readonly imports: readonly ParsedImport[];
   readonly parseErrors: number;
+  readonly unresolvedExports: number;
 }
 
 function range(source: ts.SourceFile, node: ts.Node): SourceRange {
@@ -97,7 +98,6 @@ function declarationSymbol(
   source: ts.SourceFile,
   artifact: ArtifactInput,
 ): readonly ParsedSymbol[] {
-  if (!isExported(statement)) return [];
   const exportedName = isDefault(statement) ? 'default' : undefined;
   if (ts.isFunctionDeclaration(statement)) {
     const name = exportedName ?? statement.name?.text;
@@ -117,7 +117,7 @@ function declarationSymbol(
   if (ts.isInterfaceDeclaration(statement) || ts.isTypeAliasDeclaration(statement)) {
     return [
       {
-        name: statement.name.text,
+        name: exportedName ?? statement.name.text,
         space: 'type',
         declarationKind: ts.isInterfaceDeclaration(statement) ? 'interface' : 'type_alias',
         shape: { declaration: normalizedText(statement, source) },
@@ -159,7 +159,7 @@ function declarationSymbol(
   }
   if (ts.isEnumDeclaration(statement)) {
     const common = {
-      name: statement.name.text,
+      name: exportedName ?? statement.name.text,
       declarationKind: 'enum',
       shape: { declaration: normalizedText(statement, source) },
       range: range(source, statement),
@@ -290,10 +290,14 @@ export function parseTypeScriptModule(
           ? ts.ScriptKind.JS
           : ts.ScriptKind.TS,
   );
+  const declarations = source.statements.flatMap((statement) =>
+    declarationSymbol(statement, source, artifact),
+  );
   const symbols: ParsedSymbol[] = [];
   const reExports: ReExport[] = [];
+  let unresolvedExports = 0;
   for (const statement of source.statements) {
-    symbols.push(...declarationSymbol(statement, source, artifact));
+    if (isExported(statement)) symbols.push(...declarationSymbol(statement, source, artifact));
     if (
       ts.isExportDeclaration(statement) &&
       statement.moduleSpecifier !== undefined &&
@@ -323,6 +327,62 @@ export function parseTypeScriptModule(
           });
         }
       }
+    } else if (
+      ts.isExportDeclaration(statement) &&
+      statement.moduleSpecifier === undefined &&
+      statement.exportClause !== undefined &&
+      ts.isNamedExports(statement.exportClause)
+    ) {
+      for (const element of statement.exportClause.elements) {
+        const imported = element.propertyName?.text ?? element.name.text;
+        const typeOnly = statement.isTypeOnly || element.isTypeOnly;
+        const selected = declarations.filter(
+          (symbol) => symbol.name === imported && (!typeOnly || symbol.space === 'type'),
+        );
+        if (selected.length === 0) unresolvedExports += 1;
+        for (const symbol of selected) {
+          symbols.push({
+            ...symbol,
+            name: element.name.text,
+            ...(typeOnly ? { space: 'type' as const } : {}),
+            range: range(source, element),
+            path: artifact.path,
+            contentHash: artifact.contentHash,
+          });
+        }
+      }
+    } else if (ts.isExportAssignment(statement)) {
+      if (statement.isExportEquals) {
+        unresolvedExports += 1;
+      } else {
+        const exportedIdentifier = ts.isIdentifier(statement.expression)
+          ? statement.expression.text
+          : undefined;
+        const selected = exportedIdentifier
+          ? declarations.filter((symbol) => symbol.name === exportedIdentifier)
+          : [];
+        if (selected.length === 0) {
+          symbols.push({
+            name: 'default',
+            space: 'value',
+            declarationKind: 'default_expression',
+            shape: { expression: normalizedText(statement.expression, source) },
+            range: range(source, statement),
+            path: artifact.path,
+            contentHash: artifact.contentHash,
+          });
+        } else {
+          symbols.push(
+            ...selected.map((symbol) => ({
+              ...symbol,
+              name: 'default',
+              range: range(source, statement),
+              path: artifact.path,
+              contentHash: artifact.contentHash,
+            })),
+          );
+        }
+      }
     }
   }
   return {
@@ -332,6 +392,7 @@ export function parseTypeScriptModule(
     imports: externalImports(source),
     parseErrors: (source as ts.SourceFile & { readonly parseDiagnostics: readonly ts.Diagnostic[] })
       .parseDiagnostics.length,
+    unresolvedExports,
   };
 }
 

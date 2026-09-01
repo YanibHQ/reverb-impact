@@ -16,12 +16,22 @@ export async function verifyExtractionDeterminism(
   validateAdapterManifest(adapter.manifest);
   const first = await adapter.extract(request);
   const second = await adapter.extract(request);
+  const reordered = await adapter.extract({
+    ...request,
+    artifacts: [...request.artifacts].reverse(),
+  });
   const firstJson = canonicalJson(first);
   const secondJson = canonicalJson(second);
-  if (firstJson !== secondJson || first.outputHash !== second.outputHash) {
+  const reorderedJson = canonicalJson(reordered);
+  if (
+    firstJson !== secondJson ||
+    firstJson !== reorderedJson ||
+    first.outputHash !== second.outputHash ||
+    first.outputHash !== reordered.outputHash
+  ) {
     throw new AdapterValidationError(
       'nondeterministic_output',
-      'Repeated extraction produced different canonical output.',
+      'Repeated or reordered extraction produced different canonical output.',
     );
   }
   const byteLength = Buffer.byteLength(firstJson);

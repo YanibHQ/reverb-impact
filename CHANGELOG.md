@@ -7,6 +7,15 @@ explicit and package breaking changes may occur in minor releases.
 
 ## Unreleased
 
+- Fixed path-sensitive artifact-cache collisions and added exact workspace/repository/revision and
+  Git-response scope checks for indexing, overlays, and pull-request analysis.
+- Fixed GitHub authorization and reconciliation after provider access changes, including dependent
+  service/alias pruning and purge work for repositories omitted from provider scope.
+- Added supported TypeScript local/default export extraction, OpenAPI path-item reference
+  resolution, order-independent adapter fingerprints, and fail-closed malformed JSON detection.
+- Fixed Windows quality and release verification for path boundaries, line endings, pnpm child
+  processes, CLI fixtures, and tar archive paths.
+
 ## 0.2.0 - 2026-08-31
 
 - Added exact same-repository producer-as-consumer analysis through a required, scope-validated

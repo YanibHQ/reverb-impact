@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { promisify } from 'node:util';
@@ -70,6 +70,48 @@ function id(prefix: 'gen' | 'lea' | 'ovl', sequence: number): string {
 }
 
 describe('generation and overlay orchestration', () => {
+  it('keeps path-sensitive classifications separate for identical Git blobs', async () => {
+    const identical = 'export const copied = true;\n';
+    await mkdir(resolve(root, 'vendor'), { recursive: true });
+    await writeFile(resolve(root, 'source.ts'), identical);
+    await writeFile(resolve(root, 'vendor/source.ts'), identical);
+    await git('add', '--all');
+    await git('commit', '-m', 'identical blobs in distinct classifications');
+    const exactSha = commitSha(await git('rev-parse', 'HEAD'));
+
+    const store = new InMemoryGenerationStore();
+    const indexed = await new IndexRepositoryGeneration({
+      reader: source(),
+      store,
+      cache: new InMemoryArtifactCache(),
+      clock: new FakeClock(now),
+      telemetry: new MemoryTelemetry(),
+    }).execute({
+      generationId: generationId(id('gen', 4)),
+      leaseId: generationLeaseId(id('lea', 4)),
+      leaseExpiresAt: expires,
+      workspaceId: workspace,
+      registryRevision: registry,
+      repositoryId: repository,
+      commitSha: exactSha,
+      configRevision: config,
+      indexerBundleVersion: 'foundation-1.0.0',
+    });
+    expect(indexed.ok).toBe(true);
+    if (!indexed.ok) return;
+
+    const artifacts = await store.listArtifacts(indexed.value.generationId);
+    expect(artifacts.ok).toBe(true);
+    if (!artifacts.ok) return;
+    expect(artifacts.value).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: 'source.ts', classification: 'source' }),
+        expect.objectContaining({ path: 'vendor/source.ts', classification: 'vendored' }),
+      ]),
+    );
+    expect(new Set(artifacts.value.map((artifact) => artifact.sourceBlobId)).size).toBe(1);
+  });
+
   it('makes incremental and clean rebuilds semantically identical', async () => {
     await writeFile(resolve(root, 'changed.ts'), 'export const value = 1;\n');
     await writeFile(resolve(root, 'unchanged.ts'), 'export const stable = true;\n');
@@ -101,6 +143,45 @@ describe('generation and overlay orchestration', () => {
     });
     expect(base.ok).toBe(true);
     if (!base.ok) return;
+
+    const overlayBuilder = new CreatePullRequestOverlay({
+      reader,
+      store: incrementalStore,
+      clock: new FakeClock(now),
+      telemetry: new MemoryTelemetry(),
+    });
+    const overlayRequest = {
+      overlayId: overlayId(id('ovl', 5)),
+      leaseId: generationLeaseId(id('lea', 5)),
+      leaseExpiresAt: expires,
+      workspaceId: workspace,
+      registryRevision: registry,
+      repositoryId: repository,
+      baseGenerationId: base.value.generationId,
+      baseSha,
+      headSha: baseSha,
+      configRevision: config,
+      indexerBundleVersion: 'foundation-1.0.0',
+      supersessionKey: contentHash(`sha256:${'5'.repeat(64)}`),
+    } as const;
+    const crossWorkspace = await overlayBuilder.execute({
+      ...overlayRequest,
+      workspaceId: workspaceId('wsp_01990f64-0000-7000-8000-000000000099'),
+    });
+    expect(crossWorkspace).toMatchObject({
+      ok: false,
+      failure: { code: 'base_generation_mismatch' },
+    });
+    const incompatibleConfig = await overlayBuilder.execute({
+      ...overlayRequest,
+      overlayId: overlayId(id('ovl', 6)),
+      leaseId: generationLeaseId(id('lea', 6)),
+      configRevision: configRevision(`cfg_sha256:${'6'.repeat(64)}`),
+    });
+    expect(incompatibleConfig).toMatchObject({
+      ok: false,
+      failure: { code: 'base_generation_mismatch' },
+    });
 
     await writeFile(resolve(root, 'changed.ts'), 'export const value = 2;\n');
     await git('add', '--all');

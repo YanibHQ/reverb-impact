@@ -28,7 +28,7 @@ import {
 
 import { openApiFallbackKey, openApiOperationKey } from './identity.js';
 import { OPENAPI_ADAPTER_MANIFEST } from './manifest.js';
-import { isRecord, parseOpenApiDocument } from './parser.js';
+import { isRecord, parseOpenApiDocument, resolveLocalReference } from './parser.js';
 
 const METHODS = ['delete', 'get', 'head', 'options', 'patch', 'post', 'put', 'trace'] as const;
 const decoder = new TextDecoder('utf-8', { fatal: true });
@@ -169,11 +169,17 @@ function references(
 function sourceFingerprint(request: ExtractRequest): ContentHash {
   return contentHash(
     hashCanonical({
-      artifacts: request.artifacts.map(({ path, contentHash: hash, classification }) => ({
-        path,
-        contentHash: hash,
-        classification,
-      })),
+      artifacts: request.artifacts
+        .map(({ path, contentHash: hash, classification }) => ({
+          path,
+          contentHash: hash,
+          classification,
+        }))
+        .sort((left, right) =>
+          `${left.path}\0${left.contentHash}\0${left.classification}`.localeCompare(
+            `${right.path}\0${right.contentHash}\0${right.classification}`,
+          ),
+        ),
       serviceId: contextString(request.context, 'serviceId') ?? null,
       clientBindings: clientBindings(request.context),
     }),
@@ -219,6 +225,20 @@ function uniqueDefinitions(values: readonly ContractDefinition[]): {
     }
   }
   return { definitions: [...unique.values()], ambiguousKeys };
+}
+
+function resolvePathItem(
+  document: Readonly<Record<string, unknown>>,
+  value: unknown,
+): Readonly<Record<string, unknown>> | undefined {
+  let current = value;
+  const seen = new Set<string>();
+  while (isRecord(current) && typeof current.$ref === 'string') {
+    if (seen.has(current.$ref)) return undefined;
+    seen.add(current.$ref);
+    current = resolveLocalReference(document, current.$ref);
+  }
+  return isRecord(current) ? current : undefined;
 }
 
 function diffCoverage(
@@ -283,7 +303,7 @@ export class OpenApiContractAdapter implements ContractAdapter {
       } catch {
         continue;
       }
-      const probable = /(?:^|\n)\s*["']?openapi["']?\s*:/.test(text);
+      const probable = /(?:^|[\n{,])\s*["']?openapi["']?\s*:/.test(text);
       if (artifact.bytes.byteLength > manifest.resourceBudget.maximumInputBytes) {
         if (probable) {
           eligible += 1;
@@ -330,8 +350,12 @@ export class OpenApiContractAdapter implements ContractAdapter {
         }
         const paths = parsed.document.paths as Readonly<Record<string, unknown>>;
         for (const path of Object.keys(paths).sort()) {
-          const pathItem = paths[path];
-          if (!isRecord(pathItem)) continue;
+          const pathItem = resolvePathItem(parsed.document, paths[path]);
+          if (pathItem === undefined) {
+            partial = true;
+            limitations.push({ code: 'unresolved_local_ref', scope: artifact.path });
+            continue;
+          }
           for (const method of METHODS) {
             const operation = pathItem[method];
             if (!isRecord(operation)) continue;

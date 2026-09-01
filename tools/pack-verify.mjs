@@ -4,6 +4,8 @@ import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 
+import { pnpmExecFileSync } from './run-pnpm.mjs';
+
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const destination = resolve(root, 'artifacts/packages');
 const workspaceManifest = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'));
@@ -13,8 +15,7 @@ const packageDirectories = (
 await rm(destination, { recursive: true, force: true });
 await mkdir(destination, { recursive: true });
 
-execFileSync(
-  'pnpm',
+pnpmExecFileSync(
   ['--recursive', '--filter', './packages/**', 'pack', '--pack-destination', destination],
   { cwd: root, stdio: 'inherit' },
 );
@@ -29,8 +30,8 @@ if (archives.length !== packageDirectories.length) {
 
 const checksums = [];
 for (const archive of archives) {
-  const listing = execFileSync('tar', ['-tzf', resolve(destination, archive)], {
-    cwd: root,
+  const listing = execFileSync('tar', ['-tzf', archive], {
+    cwd: destination,
     encoding: 'utf8',
   });
   const entries = listing.split('\n');
@@ -41,8 +42,8 @@ for (const archive of archives) {
     if (!entries.includes(required)) throw new Error(`${archive} is missing ${required}.`);
   }
   const packedManifest = JSON.parse(
-    execFileSync('tar', ['-xOf', resolve(destination, archive), 'package/package.json'], {
-      cwd: root,
+    execFileSync('tar', ['-xOf', archive, 'package/package.json'], {
+      cwd: destination,
       encoding: 'utf8',
     }),
   );

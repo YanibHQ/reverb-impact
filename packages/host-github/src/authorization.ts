@@ -88,11 +88,9 @@ export class GitHubAuthorization implements AuthorizationPort {
     const providerAllows =
       action === 'producer_check.write'
         ? provider.appCanWriteChecks
-        : action === 'source.read'
-          ? provider.appCanRead
-          : action === 'consumer.write'
-            ? false
-            : true;
+        : action === 'consumer.write'
+          ? false
+          : provider.appCanRead;
     const allowed = Boolean(membership?.selected) && consent === 'allow' && providerAllows;
     return portSuccess({
       allowed,
