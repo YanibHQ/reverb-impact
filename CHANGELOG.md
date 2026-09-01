@@ -7,6 +7,10 @@ explicit and package breaking changes may occur in minor releases.
 
 ## Unreleased
 
+- Added workspace-scoped, content-addressed adapter semantic partitions and immutable generation
+  snapshot manifests with base-plus-delta resolution, compatibility validation, and shared
+  in-memory/SQLite conformance.
+- Added SQLite migration 007 for adapter partitions and generation snapshots.
 - Added immutable, non-selected derived-generation provenance over an exact base generation and
   completed pull-request overlay, with logical artifact resolution that requires no provider source
   reads or duplicated base artifact rows.

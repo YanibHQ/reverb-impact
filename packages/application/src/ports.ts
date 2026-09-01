@@ -1,6 +1,9 @@
 import type {
   AnalysisId,
   AnalysisResult,
+  AdapterGenerationSnapshot,
+  AdapterId,
+  AdapterSemanticPartition,
   ArtifactBatch,
   BeginGeneration,
   BlobResult,
@@ -159,6 +162,32 @@ export interface GenerationStore {
   ): Promise<PortResult<void>>;
   getOverlay(id: OverlayId): Promise<PortResult<PullRequestOverlay>>;
   listOverlayEntries(id: OverlayId): Promise<PortResult<readonly OverlayEntry[]>>;
+}
+
+export interface AdapterSnapshotQuery {
+  readonly workspaceId: WorkspaceId;
+  readonly repositoryId: RepositoryStableId;
+  readonly generationId: GenerationId;
+  readonly adapterId: AdapterId;
+}
+
+export interface AdapterSnapshotStore {
+  putAdapterPartition(partition: AdapterSemanticPartition): Promise<PortResult<ContentHash>>;
+  getAdapterPartition(
+    workspaceId: WorkspaceId,
+    outputHash: ContentHash,
+  ): Promise<PortResult<AdapterSemanticPartition | null>>;
+  putAdapterSnapshot(snapshot: AdapterGenerationSnapshot): Promise<PortResult<ContentHash>>;
+  getAdapterSnapshot(
+    query: AdapterSnapshotQuery,
+  ): Promise<PortResult<AdapterGenerationSnapshot | null>>;
+  getAdapterSnapshotByHash(
+    workspaceId: WorkspaceId,
+    outputHash: ContentHash,
+  ): Promise<PortResult<AdapterGenerationSnapshot | null>>;
+  resolveAdapterPartitions(
+    query: AdapterSnapshotQuery,
+  ): Promise<PortResult<readonly AdapterSemanticPartition[]>>;
 }
 
 export interface CanonicalRecord {

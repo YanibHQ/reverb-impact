@@ -1,5 +1,7 @@
 import {
   adapterManifestSchema,
+  adapterGenerationSnapshotSchema,
+  adapterSemanticPartitionSchema,
   analysisResultSchema,
   assertSupportedSchemaVersion,
   evidenceEdgeSchema,
@@ -99,6 +101,51 @@ describe('canonical foundation schemas', () => {
         expect.objectContaining<Partial<SchemaValidationError>>({ code: 'invalid_schema' }),
       );
     }
+  });
+
+  it('validates adapter partition and generation snapshot envelopes', () => {
+    const common = {
+      workspace_id: 'wsp_01990f64-0000-7000-8000-000000000001',
+      repository_id:
+        'local:sha256:1111111111111111111111111111111111111111111111111111111111111111',
+      adapter_id: 'reverb.snapshot-test',
+      adapter_version: '1.0.0',
+      identity_version: 1,
+      partitioning_version: 1,
+      config_revision:
+        'cfg_sha256:2222222222222222222222222222222222222222222222222222222222222222',
+      registry_revision:
+        'reg_sha256:3333333333333333333333333333333333333333333333333333333333333333',
+    };
+    expect(() =>
+      validateWithSchema(adapterSemanticPartitionSchema.$id, {
+        schema: 'reverb.adapter-semantic-partition',
+        schema_version: '1.0',
+        ...common,
+        partition_key: 'package:fixture',
+        owned_paths: ['src/index.ts'],
+        dependency_keys: [],
+        payload: {},
+        output_hash: `sha256:${'4'.repeat(64)}`,
+      }),
+    ).not.toThrow();
+    expect(() =>
+      validateWithSchema(adapterGenerationSnapshotSchema.$id, {
+        schema: 'reverb.adapter-generation-snapshot',
+        schema_version: '1.0',
+        ...common,
+        generation_id: 'gen_01990f64-0000-7000-8000-000000000001',
+        state: 'complete',
+        entries: [
+          {
+            kind: 'replacement',
+            partition_key: 'package:fixture',
+            partition_hash: `sha256:${'4'.repeat(64)}`,
+          },
+        ],
+        output_hash: `sha256:${'5'.repeat(64)}`,
+      }),
+    ).not.toThrow();
   });
 
   it('publishes the pre-v1 current/previous-major compatibility disposition', () => {
