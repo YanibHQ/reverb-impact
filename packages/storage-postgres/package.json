@@ -32,10 +32,8 @@
   },
   "dependencies": {
     "@yanib/reverb-domain": "workspace:*",
+    "@types/pg": "8.23.1",
     "pg": "8.23.0"
-  },
-  "devDependencies": {
-    "@types/pg": "8.23.1"
   },
   "publishConfig": {
     "access": "public",

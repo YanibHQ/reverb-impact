@@ -7,8 +7,19 @@
     "declarationMap": false,
     "noEmit": true,
     "paths": {
+      "@yanib/reverb-adapter-openapi": ["packages/adapter-openapi/src/index.ts"],
+      "@yanib/reverb-adapter-protobuf": ["packages/adapter-protobuf/src/index.ts"],
+      "@yanib/reverb-adapter-sdk": ["packages/adapter-sdk/src/index.ts"],
+      "@yanib/reverb-adapter-typescript": ["packages/adapter-typescript/src/index.ts"],
       "@yanib/reverb-application": ["packages/application/src/index.ts"],
-      "@yanib/reverb-domain": ["packages/domain/src/index.ts"]
+      "@yanib/reverb-domain": ["packages/domain/src/index.ts"],
+      "@yanib/reverb-host-github": ["packages/host-github/src/index.ts"],
+      "@yanib/reverb-host-local": ["packages/host-local/src/index.ts"],
+      "@yanib/reverb-schema": ["packages/schema/src/index.ts"],
+      "@yanib/reverb-storage-postgres": ["packages/storage-postgres/src/index.ts"],
+      "@yanib/reverb-storage-sqlite": ["packages/storage-sqlite/src/index.ts"],
+      "@yanib/reverb-testkit": ["packages/testkit/src/index.ts"],
+      "reverb-impact": ["packages/cli/src/index.ts"]
     },
     "sourceMap": false
   },

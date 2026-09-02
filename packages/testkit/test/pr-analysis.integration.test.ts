@@ -2,6 +2,7 @@ import {
   adapterId,
   analysisId,
   analysisSupersessionKey,
+  canonicalJson,
   commitSha,
   configRevision,
   contentHash,
@@ -445,6 +446,9 @@ describe('exact multi-repository PR analysis', () => {
           reason: 'incomplete_index',
         }),
       ]),
+    );
+    await expect(canonicalJson(first.value)).toMatchFileSnapshot(
+      '../../../features/next-generation-impact/fixtures/v0.4.0/analysis-result.json',
     );
 
     clock.set(later);

@@ -38,7 +38,7 @@
     "test:compatibility": "vitest run packages/schema/test/schema.test.ts",
     "api:check": "node tools/check-public-api.mjs",
     "hosts:check": "node tools/check-host-capabilities.mjs",
-    "compatibility:check": "node tools/check-release-metadata.mjs && pnpm test:compatibility",
+    "compatibility:check": "node tools/check-release-metadata.mjs && node tools/check-v0.4-baseline.mjs && pnpm test:compatibility",
     "benchmark": "pnpm build && node tools/benchmark.mjs",
     "schema:generate": "tsx tools/generate-schemas.ts --write",
     "schema:check": "tsx tools/generate-schemas.ts --check",
