@@ -115,6 +115,41 @@ describe('analysis scope v2', () => {
     ]);
   });
 
+  it('excludes a repository with an explicit evidence-consumption denial', () => {
+    const base = registry();
+    const denied = createRegistrySnapshot({
+      workspaceId: workspace,
+      sequence: 2,
+      createdAt: instant('2026-09-02T20:01:00.000Z'),
+      createdBy: 'scope-test',
+      source: 'fixture',
+      reason: 'consent revoked',
+      repositories: base.repositories,
+      consents: [
+        {
+          repositoryId: consumerA,
+          action: 'evidence.consume',
+          grantee: 'host',
+          decision: 'deny',
+          actor: 'repository-owner',
+          reason: 'revoked',
+          revision: 'consent-a-2',
+        },
+      ],
+    });
+    const prepared = prepareAnalysisScope({
+      registry: denied,
+      producerRepositoryId: producer,
+      consumerScope: { mode: 'allowlist', repositoryIds: [consumerA] },
+      consentGrantee: 'host',
+    });
+    expect(prepared.candidates.map((value) => value.membership.repositoryId)).toEqual([producer]);
+    expect(prepared.gaps).toContainEqual({
+      repositoryId: consumerA,
+      reason: 'consent_denied',
+    });
+  });
+
   it('creates stable provenance and denies reads outside the authorized capability', () => {
     const prepared = prepareAnalysisScope({
       registry: registry(),

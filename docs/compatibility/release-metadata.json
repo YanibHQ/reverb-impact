@@ -10,8 +10,8 @@
     "previous_major_disposition": "No previous public schema major exists before the first release; v0 is unsupported."
   },
   "storage": {
-    "sqlite_migration": 7,
-    "postgres_migration": 3
+    "sqlite_migration": 8,
+    "postgres_migration": 4
   },
   "adapters": [
     {

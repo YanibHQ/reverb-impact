@@ -20,11 +20,11 @@
 
 ## Phase 002 — foundation
 
-- [ ] Add v2 values/types/schemas and negotiation tests
-- [ ] Add normalized scope hash and resolved scoped-read capability
-- [ ] Enforce scope in source, generation, evidence, and retrieval paths
-- [ ] Add membership/authorization/consent and unselected-read canary tests
-- [ ] Add additive SQLite and PostgreSQL migrations plus `0.4.0` upgrade fixtures
+- [x] Add v2 values/types/schemas and negotiation tests
+- [x] Add normalized scope hash and resolved scoped-read capability
+- [x] Enforce scope in source, generation, evidence, and retrieval paths
+- [x] Add membership/authorization/consent and unselected-read canary tests
+- [x] Add additive SQLite and PostgreSQL migrations plus `0.4.0` upgrade fixtures
 - [ ] Add v2 coverage/provenance records and performance budgets
 - [ ] Prove v1 disabled-feature canonical equivalence
 
