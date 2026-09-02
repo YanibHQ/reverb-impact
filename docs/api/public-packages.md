@@ -72,6 +72,13 @@ delta updates, and logical extraction materialization. `planPathPartitionInvalid
 conservative default: it invalidates direct path owners plus their reverse dependency closure, and
 marks any unowned changed path incomplete. It never requests a repository-wide fallback.
 
+The TypeScript/npm adapter implements partitioning version 1 at one npm package root per adapter
+invocation. Its persisted payload contains normalized AST-derived symbols, re-exports, imports,
+artifact identities, failure facts, and package metadata—not source bytes. Its delta updater accepts
+only changed eligible head artifacts and rematerializes the package's logical extraction from base
+facts plus those changes. Missing state or required blobs makes coverage incomplete; it cannot
+authorize a full-source fallback.
+
 ## Provider source budgets
 
 `BudgetedRepositoryReader` wraps any source adapter with hard per-run ceilings for metadata calls,

@@ -114,6 +114,9 @@ Detailed tasks: [phases/001-repository-index/tasks.md](phases/001-repository-ind
 - [x] Coverage/diagnostic aggregation
 - [x] Incremental content reuse and clean-rebuild equivalence
 - [ ] Persist adapter-owned semantic partitions/snapshots so incremental PR analysis does not recreate unchanged extraction input
+  - [x] TypeScript/npm package partitions and clean-versus-incremental equivalence
+  - [ ] OpenAPI document/reference partitions and equivalence
+  - [ ] Protobuf file/import-closure partitions and equivalence
 
 ### 1F. Overlay primitives
 
@@ -148,6 +151,7 @@ Detailed tasks: [phases/002-contract-change-detection/tasks.md](phases/002-contr
 - [x] manifest/lockfile version and activation semantics
 - [x] signature compatibility subset and `unknown` boundaries
 - [x] barrel/re-export, overload, type-only, JS consumer, version-pinned fixtures
+- [x] package-scoped semantic partitions, changed-only updates, and edit/delete/rename equivalence
 
 ### 2C. OpenAPI
 

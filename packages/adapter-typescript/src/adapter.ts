@@ -3,6 +3,7 @@ import {
   hashCanonical,
   repoPath,
   type BoundedDiagnostic,
+  type ConfigRevision,
   type ContentHash,
   type RepoPath,
 } from '@yanib/reverb-domain';
@@ -12,16 +13,24 @@ import {
   canonicalShape,
   finalizeDiff,
   finalizeExtraction,
+  planPathPartitionInvalidation,
   type AdapterCoverage,
   type AdapterDiffResult,
+  type AdapterInvalidationPlan,
+  type AdapterPartitionBuild,
+  type AdapterPartitionBuildResult,
+  type AdapterPartitionDescriptor,
+  type AdapterPartitionUpdateResult,
+  type AdapterPartitionView,
+  type AdapterPathChange,
   type ArtifactInput,
-  type ContractAdapter,
   type ContractChange,
   type ContractDefinition,
   type ContractReference,
   type DiffRequest,
   type DifferMetadata,
   type ExtractRequest,
+  type IncrementalContractAdapter,
 } from '@yanib/reverb-adapter-sdk';
 
 import { normalizeNpmSubpath, parseNpmSpecifier, typeScriptSymbolKey } from './identity.js';
@@ -36,6 +45,47 @@ import {
 const manifest = TYPESCRIPT_ADAPTER_MANIFEST;
 const decoder = new TextDecoder('utf-8', { fatal: true });
 const TS_PATH = /(?:\.d)?\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs)$/;
+const PACKAGE_JSON_PATH = /(?:^|\/)package\.json$/;
+
+type ArtifactClassification = ArtifactInput['classification'];
+type FailureReason = 'byte_limit' | 'syntax_error' | 'unsafe_input' | 'missing_changed_blob';
+
+interface SemanticArtifactDescriptor {
+  readonly path: RepoPath;
+  readonly contentHash: ContentHash;
+  readonly classification: ArtifactClassification;
+}
+
+interface SemanticFailure {
+  readonly path: RepoPath;
+  readonly reason: FailureReason;
+}
+
+interface TypeScriptSemanticState {
+  readonly packageRoot: string;
+  readonly artifacts: Map<string, SemanticArtifactDescriptor>;
+  readonly modules: Map<string, ParsedTypeScriptModule>;
+  readonly packageJson: Map<string, Readonly<Record<string, unknown>>>;
+  readonly failures: Map<string, SemanticFailure>;
+}
+
+interface TypeScriptPartitionPayload extends Readonly<Record<string, unknown>> {
+  readonly schema: 'reverb.typescript-package-partition';
+  readonly schemaVersion: '1.0';
+  readonly packageRoot: string;
+  readonly artifacts: readonly SemanticArtifactDescriptor[];
+  readonly modules: readonly {
+    readonly path: RepoPath;
+    readonly symbols: ParsedTypeScriptModule['symbols'];
+    readonly reExports: ParsedTypeScriptModule['reExports'];
+    readonly imports: ParsedTypeScriptModule['imports'];
+  }[];
+  readonly packageJson: readonly {
+    readonly path: RepoPath;
+    readonly raw: Readonly<Record<string, unknown>>;
+  }[];
+  readonly failures: readonly SemanticFailure[];
+}
 
 interface PackageMetadata {
   readonly name: string;
@@ -69,26 +119,127 @@ function record(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function packageMetadata(artifacts: readonly ArtifactInput[]): PackageMetadata | undefined {
-  const candidates = artifacts.filter((artifact) => artifact.path.endsWith('package.json'));
-  for (const artifact of candidates) {
+function normalizedPackageJson(raw: Readonly<Record<string, unknown>>) {
+  const normalized: Record<string, unknown> = {};
+  if (typeof raw.name === 'string') normalized.name = raw.name;
+  if (typeof raw.version === 'string') normalized.version = raw.version;
+  if (typeof raw.exports === 'string' || record(raw.exports)) normalized.exports = raw.exports;
+  for (const field of ['dependencies', 'peerDependencies', 'optionalDependencies']) {
+    const values = raw[field];
+    if (!record(values)) continue;
+    normalized[field] = Object.fromEntries(
+      Object.keys(values)
+        .sort()
+        .map((name) => [name, true]),
+    );
+  }
+  return normalized;
+}
+
+function relevantPath(path: RepoPath): boolean {
+  return TS_PATH.test(path) || PACKAGE_JSON_PATH.test(path);
+}
+
+function packageRoot(context: Readonly<Record<string, unknown>>): string {
+  const value = contextString(context, 'packageRoot') ?? '.';
+  if (value.length > 512 || value.includes('\0')) {
+    throw new AdapterValidationError(
+      'invalid_partition_context',
+      'TypeScript package root must be a bounded printable path.',
+    );
+  }
+  return value;
+}
+
+function emptyState(root: string): TypeScriptSemanticState {
+  return {
+    packageRoot: root,
+    artifacts: new Map(),
+    modules: new Map(),
+    packageJson: new Map(),
+    failures: new Map(),
+  };
+}
+
+function cloneState(state: TypeScriptSemanticState): TypeScriptSemanticState {
+  return {
+    packageRoot: state.packageRoot,
+    artifacts: new Map(state.artifacts),
+    modules: new Map(state.modules),
+    packageJson: new Map(state.packageJson),
+    failures: new Map(state.failures),
+  };
+}
+
+function removeStatePath(state: TypeScriptSemanticState, path: RepoPath): void {
+  state.artifacts.delete(path);
+  state.modules.delete(path);
+  state.packageJson.delete(path);
+  state.failures.delete(path);
+}
+
+function addArtifactToState(state: TypeScriptSemanticState, artifact: ArtifactInput): void {
+  if (!relevantPath(artifact.path)) return;
+  removeStatePath(state, artifact.path);
+  state.artifacts.set(artifact.path, {
+    path: artifact.path,
+    contentHash: artifact.contentHash,
+    classification: artifact.classification,
+  });
+  if (PACKAGE_JSON_PATH.test(artifact.path)) {
     try {
       const raw: unknown = JSON.parse(decoder.decode(artifact.bytes));
-      if (!record(raw) || typeof raw.name !== 'string' || raw.name.trim().length === 0) continue;
-      const dependencies = new Set<string>();
-      for (const field of ['dependencies', 'peerDependencies', 'optionalDependencies']) {
-        const values = raw[field];
-        if (record(values)) for (const name of Object.keys(values)) dependencies.add(name);
-      }
-      return {
-        name: raw.name,
-        ...(typeof raw.version === 'string' ? { version: raw.version } : {}),
-        dependencies,
-        raw,
-      };
+      if (record(raw)) state.packageJson.set(artifact.path, normalizedPackageJson(raw));
     } catch {
-      continue;
+      // Invalid package metadata is represented by the descriptor without a parsed record.
     }
+  }
+  if (
+    !TS_PATH.test(artifact.path) ||
+    artifact.classification === 'vendored' ||
+    artifact.classification === 'test'
+  ) {
+    return;
+  }
+  if (artifact.bytes.byteLength > manifest.resourceBudget.maximumInputBytes) {
+    state.failures.set(artifact.path, { path: artifact.path, reason: 'byte_limit' });
+    return;
+  }
+  try {
+    const parsed = parseTypeScriptModule(artifact, decoder.decode(artifact.bytes));
+    if (parsed.parseErrors > 0) {
+      state.failures.set(artifact.path, { path: artifact.path, reason: 'syntax_error' });
+    } else {
+      state.modules.set(artifact.path, parsed);
+    }
+  } catch {
+    state.failures.set(artifact.path, { path: artifact.path, reason: 'unsafe_input' });
+  }
+}
+
+function prepareState(request: ExtractRequest): TypeScriptSemanticState {
+  const state = emptyState(packageRoot(request.context));
+  for (const artifact of request.artifacts) addArtifactToState(state, artifact);
+  return state;
+}
+
+function packageMetadata(state: TypeScriptSemanticState): PackageMetadata | undefined {
+  const candidates = [...state.packageJson.entries()].sort(([left], [right]) =>
+    left.localeCompare(right),
+  );
+  for (const [, raw] of candidates) {
+    if (typeof raw.name !== 'string' || raw.name.trim().length === 0) continue;
+    const dependencies = new Set<string>();
+    for (const field of ['dependencies', 'peerDependencies', 'optionalDependencies']) {
+      const values = raw[field];
+      if (record(values)) for (const name of Object.keys(values)) dependencies.add(name);
+    }
+    return {
+      name: raw.name,
+      ...(typeof raw.version === 'string' ? { version: raw.version } : {}),
+      dependencies,
+      raw,
+    };
   }
   return undefined;
 }
@@ -269,13 +420,14 @@ function lockedPackages(context: Readonly<Record<string, unknown>>): ReadonlySet
 }
 
 function references(
-  request: ExtractRequest,
+  config: ConfigRevision,
+  context: Readonly<Record<string, unknown>>,
   modules: ReadonlyMap<string, ParsedTypeScriptModule>,
   metadata: PackageMetadata | undefined,
   registry: string,
 ): { readonly values: readonly ContractReference[]; readonly dynamic: number } {
   const values: ContractReference[] = [];
-  const locked = lockedPackages(request.context);
+  const locked = lockedPackages(context);
   let dynamic = 0;
   for (const module of modules.values()) {
     for (const imported of module.imports) {
@@ -299,7 +451,7 @@ function references(
           extractorId: manifest.id,
           extractorVersion: manifest.version,
           identityVersion: manifest.identityVersion,
-          configRevision: request.configRevision,
+          configRevision: config,
           evidenceStratum: 'dynamic_import',
           activation: 'unknown',
         });
@@ -322,7 +474,7 @@ function references(
         extractorId: manifest.id,
         extractorVersion: manifest.version,
         identityVersion: manifest.identityVersion,
-        configRevision: request.configRevision,
+        configRevision: config,
         evidenceStratum: 'static_import',
         activation:
           dependencyDeclared && locked.has(parsed.packageName)
@@ -336,10 +488,14 @@ function references(
   return { values, dynamic };
 }
 
-function sourceFingerprint(request: ExtractRequest, registry: string): ContentHash {
+function sourceFingerprint(
+  state: TypeScriptSemanticState,
+  context: Readonly<Record<string, unknown>>,
+  registry: string,
+): ContentHash {
   const safeEntrypoints = (
-    Array.isArray(request.context.entrypoints)
-      ? request.context.entrypoints.flatMap((item) => {
+    Array.isArray(context.entrypoints)
+      ? context.entrypoints.flatMap((item) => {
           if (!record(item) || typeof item.path !== 'string' || typeof item.subpath !== 'string') {
             return [];
           }
@@ -352,15 +508,325 @@ function sourceFingerprint(request: ExtractRequest, registry: string): ContentHa
   return contentHash(
     hashCanonical({
       registry,
-      artifacts: request.artifacts.map(({ path, contentHash: hash, classification }) => ({
-        path,
-        contentHash: hash,
-        classification,
-      })),
+      packageRoot: state.packageRoot,
+      artifacts: [...state.artifacts.values()]
+        .map(({ path, contentHash: hash, classification }) => ({
+          path,
+          contentHash: hash,
+          classification,
+        }))
+        .sort((left, right) => left.path.localeCompare(right.path)),
+      failures: [...state.failures.values()].sort((left, right) =>
+        left.path.localeCompare(right.path),
+      ),
       entrypoints: safeEntrypoints,
-      lockedPackages: [...lockedPackages(request.context)].sort(),
+      lockedPackages: [...lockedPackages(context)].sort(),
     }),
   );
+}
+
+function failureDiagnostic(failure: SemanticFailure): BoundedDiagnostic {
+  switch (failure.reason) {
+    case 'byte_limit':
+      return diagnostic('error', 'TypeScript input exceeds the declared byte limit.', failure.path);
+    case 'syntax_error':
+      return diagnostic('error', 'TypeScript input contains syntax errors.', failure.path);
+    case 'unsafe_input':
+      return diagnostic('error', 'TypeScript input could not be parsed safely.', failure.path);
+    case 'missing_changed_blob':
+      return diagnostic(
+        'error',
+        'A required changed artifact was unavailable within the source budget.',
+        failure.path,
+      );
+  }
+}
+
+function materializeState(
+  state: TypeScriptSemanticState,
+  config: ConfigRevision,
+  context: Readonly<Record<string, unknown>>,
+) {
+  const modules = state.modules;
+  const diagnostics = [...state.failures.values()]
+    .sort((left, right) => left.path.localeCompare(right.path))
+    .map(failureDiagnostic);
+  const eligibleFailures = [...state.failures.values()].filter((failure) =>
+    TS_PATH.test(failure.path),
+  ).length;
+  const eligible = modules.size + eligibleFailures;
+  const processed = modules.size;
+  const failed = eligibleFailures;
+  const metadata = packageMetadata(state);
+  const registry = contextString(context, 'packageRegistry') ?? 'npm';
+  const publicEntrypoints = entrypoints(context, metadata, modules);
+  const definitions = new Map<string, ContractDefinition>();
+  const ambiguousDefinitions = new Set<string>();
+  let unresolvedExports = publicEntrypoints.unresolved;
+  if (metadata !== undefined) {
+    for (const entrypoint of publicEntrypoints.values) {
+      const resolved = resolvePublicSymbols(entrypoint, modules);
+      unresolvedExports += resolved.unresolved;
+      for (const symbol of resolved.symbols) {
+        if (definitions.size >= manifest.resourceBudget.maximumItems) {
+          unresolvedExports += 1;
+          break;
+        }
+        const shape = canonicalShape({
+          namespace: symbol.space,
+          declarationKind: symbol.declarationKind,
+          ...symbol.shape,
+        });
+        const key = typeScriptSymbolKey(
+          registry,
+          metadata.name,
+          entrypoint.subpath,
+          symbol.space,
+          symbol.name,
+        );
+        const candidate: ContractDefinition = {
+          contractKind: 'typescript_symbol',
+          canonicalKey: key,
+          displayName: symbol.name,
+          path: symbol.path,
+          range: symbol.range,
+          contentHash: symbol.contentHash,
+          shapeHash: shape.shapeHash,
+          shape: shape.shape,
+          extractorId: manifest.id,
+          extractorVersion: manifest.version,
+          identityVersion: manifest.identityVersion,
+          configRevision: config,
+          evidenceStratum: 'public_export',
+        };
+        if (ambiguousDefinitions.has(key)) continue;
+        const prior = definitions.get(key);
+        if (prior === undefined) definitions.set(key, candidate);
+        else if (prior.shapeHash !== candidate.shapeHash) {
+          definitions.delete(key);
+          ambiguousDefinitions.add(key);
+          unresolvedExports += 1;
+        }
+      }
+    }
+  } else if (eligible > 0) {
+    unresolvedExports += 1;
+    diagnostics.push(
+      diagnostic('warning', 'Package metadata is missing; public export identity is unknown.'),
+    );
+  }
+  if (ambiguousDefinitions.size > 0) {
+    diagnostics.push(
+      diagnostic(
+        'warning',
+        'Conflicting public exports share an identity and were left unresolved.',
+      ),
+    );
+  }
+  const imported = references(config, context, modules, metadata, registry);
+  if (imported.dynamic > 0) {
+    diagnostics.push(
+      diagnostic('warning', 'Dynamic or namespace imports were retained as unresolved references.'),
+    );
+  }
+  const partial =
+    state.failures.size > 0 || failed > 0 || unresolvedExports > 0 || imported.dynamic > 0;
+  const coverageState: AdapterCoverage['state'] =
+    eligible === 0
+      ? 'unsupported'
+      : failed === eligible
+        ? 'failed'
+        : partial
+          ? 'partial'
+          : 'complete';
+  return finalizeExtraction({
+    schema: 'reverb.adapter-extraction',
+    schemaVersion: '1.0',
+    adapterId: manifest.id,
+    adapterVersion: manifest.version,
+    identityVersion: manifest.identityVersion,
+    configRevision: config,
+    definitions: [...definitions.values()],
+    references: imported.values,
+    coverage: {
+      state: coverageState,
+      eligibleArtifacts: eligible,
+      processedArtifacts: processed,
+      skippedArtifacts: 0,
+      failedArtifacts: failed,
+      limitations: [
+        ...(unresolvedExports > 0 ? [{ code: 'unresolved_public_export' }] : []),
+        ...(imported.dynamic > 0 ? [{ code: 'dynamic_or_reflective_use' }] : []),
+        ...(state.failures.size > failed ? [{ code: 'incomplete_input' }] : []),
+      ],
+    },
+    diagnostics,
+    sourceFingerprint: sourceFingerprint(state, context, registry),
+  });
+}
+
+function encodeState(state: TypeScriptSemanticState): TypeScriptPartitionPayload {
+  return {
+    schema: 'reverb.typescript-package-partition',
+    schemaVersion: '1.0',
+    packageRoot: state.packageRoot,
+    artifacts: [...state.artifacts.values()].sort((left, right) =>
+      left.path.localeCompare(right.path),
+    ),
+    modules: [...state.modules.values()]
+      .map((module) => ({
+        path: module.artifact.path,
+        symbols: module.symbols,
+        reExports: module.reExports,
+        imports: module.imports,
+      }))
+      .sort((left, right) => left.path.localeCompare(right.path)),
+    packageJson: [...state.packageJson.entries()]
+      .map(([path, raw]) => ({ path: repoPath(path), raw }))
+      .sort((left, right) => left.path.localeCompare(right.path)),
+    failures: [...state.failures.values()].sort((left, right) =>
+      left.path.localeCompare(right.path),
+    ),
+  };
+}
+
+function requirePayload(condition: unknown, message: string): asserts condition {
+  if (!condition) throw new AdapterValidationError('invalid_partition_payload', message);
+}
+
+function decodeState(payload: Readonly<Record<string, unknown>>): TypeScriptSemanticState {
+  requirePayload(
+    payload.schema === 'reverb.typescript-package-partition' && payload.schemaVersion === '1.0',
+    'TypeScript partition payload schema is unsupported.',
+  );
+  requirePayload(
+    typeof payload.packageRoot === 'string' && payload.packageRoot.length <= 512,
+    'TypeScript partition package root is invalid.',
+  );
+  requirePayload(
+    Array.isArray(payload.artifacts) &&
+      Array.isArray(payload.modules) &&
+      Array.isArray(payload.packageJson) &&
+      Array.isArray(payload.failures),
+    'TypeScript partition payload collections are invalid.',
+  );
+  const state = emptyState(payload.packageRoot);
+  for (const value of payload.artifacts) {
+    requirePayload(record(value), 'TypeScript partition artifact is invalid.');
+    requirePayload(
+      typeof value.path === 'string' &&
+        typeof value.contentHash === 'string' &&
+        ['source', 'generated', 'vendored', 'test', 'example'].includes(
+          String(value.classification),
+        ),
+      'TypeScript partition artifact fields are invalid.',
+    );
+    const path = repoPath(value.path);
+    requirePayload(!state.artifacts.has(path), 'TypeScript partition artifact path is duplicated.');
+    state.artifacts.set(path, {
+      path,
+      contentHash: contentHash(value.contentHash),
+      classification: value.classification as ArtifactClassification,
+    });
+  }
+  for (const value of payload.modules) {
+    requirePayload(record(value), 'TypeScript partition module is invalid.');
+    requirePayload(
+      typeof value.path === 'string' &&
+        Array.isArray(value.symbols) &&
+        Array.isArray(value.reExports) &&
+        Array.isArray(value.imports),
+      'TypeScript partition module fields are invalid.',
+    );
+    const path = repoPath(value.path);
+    const descriptor = state.artifacts.get(path);
+    requirePayload(descriptor !== undefined, 'TypeScript partition module has no artifact.');
+    requirePayload(!state.modules.has(path), 'TypeScript partition module path is duplicated.');
+    state.modules.set(path, {
+      artifact: { ...descriptor, bytes: new Uint8Array() },
+      symbols: value.symbols as unknown as ParsedTypeScriptModule['symbols'],
+      reExports: value.reExports as unknown as ParsedTypeScriptModule['reExports'],
+      imports: value.imports as unknown as ParsedTypeScriptModule['imports'],
+      parseErrors: 0,
+    });
+  }
+  for (const value of payload.packageJson) {
+    requirePayload(
+      record(value) && typeof value.path === 'string' && record(value.raw),
+      'TypeScript partition package metadata is invalid.',
+    );
+    const path = repoPath(value.path);
+    requirePayload(
+      state.artifacts.has(path) && !state.packageJson.has(path),
+      'TypeScript partition package metadata path is invalid.',
+    );
+    state.packageJson.set(path, value.raw);
+  }
+  for (const value of payload.failures) {
+    requirePayload(record(value), 'TypeScript partition failure is invalid.');
+    requirePayload(
+      typeof value.path === 'string' &&
+        ['byte_limit', 'syntax_error', 'unsafe_input', 'missing_changed_blob'].includes(
+          String(value.reason),
+        ),
+      'TypeScript partition failure fields are invalid.',
+    );
+    const path = repoPath(value.path);
+    requirePayload(!state.failures.has(path), 'TypeScript partition failure path is duplicated.');
+    state.failures.set(path, { path, reason: value.reason as FailureReason });
+  }
+  return state;
+}
+
+function buildPartition(
+  state: TypeScriptSemanticState,
+  config: ConfigRevision,
+  context: Readonly<Record<string, unknown>>,
+): AdapterPartitionBuild {
+  return {
+    partitionKey: `package:${state.packageRoot}`,
+    ownedPaths: [...state.artifacts.keys()].sort().map(repoPath),
+    dependencyKeys: [],
+    payload: encodeState(state),
+    extraction: materializeState(state, config, context),
+  };
+}
+
+function buildResult(partitions: readonly AdapterPartitionBuild[]): AdapterPartitionBuildResult {
+  const coverage = partitions[0]?.extraction.coverage ?? {
+    state: 'unsupported' as const,
+    eligibleArtifacts: 0,
+    processedArtifacts: 0,
+    skippedArtifacts: 0,
+    failedArtifacts: 0,
+    limitations: [],
+  };
+  const diagnostics = partitions.flatMap((partition) => partition.extraction.diagnostics);
+  const canonical = {
+    partitions,
+    coverage,
+    diagnostics,
+  };
+  return { ...canonical, outputHash: contentHash(hashCanonical(canonical)) };
+}
+
+function updateResult(input: Omit<AdapterPartitionUpdateResult, 'outputHash'>) {
+  return { ...input, outputHash: contentHash(hashCanonical(input)) };
+}
+
+function adapterRelevantChange(change: AdapterPathChange): AdapterPathChange | undefined {
+  const pathRelevant = relevantPath(change.path);
+  const previousRelevant = change.previousPath !== undefined && relevantPath(change.previousPath);
+  if (!pathRelevant && !previousRelevant) return undefined;
+  if (pathRelevant) {
+    return previousRelevant
+      ? change
+      : {
+          kind: change.kind,
+          path: change.path,
+        };
+  }
+  return { kind: change.kind, path: change.previousPath! };
 }
 
 function differMetadata(): DifferMetadata {
@@ -419,155 +885,172 @@ function changedCompatibility(
   return 'unknown';
 }
 
-export class TypeScriptContractAdapter implements ContractAdapter {
+export class TypeScriptContractAdapter implements IncrementalContractAdapter {
   public readonly manifest = manifest;
+  public readonly partitioningVersion = 1;
 
   public async extract(request: ExtractRequest) {
-    const modules = new Map<string, ParsedTypeScriptModule>();
-    const diagnostics: BoundedDiagnostic[] = [];
-    let eligible = 0;
-    let processed = 0;
-    let failed = 0;
-    for (const artifact of request.artifacts) {
-      if (
-        !TS_PATH.test(artifact.path) ||
-        artifact.classification === 'vendored' ||
-        artifact.classification === 'test'
-      )
-        continue;
-      eligible += 1;
-      if (artifact.bytes.byteLength > manifest.resourceBudget.maximumInputBytes) {
-        failed += 1;
-        diagnostics.push(
-          diagnostic('error', 'TypeScript input exceeds the declared byte limit.', artifact.path),
-        );
-        continue;
-      }
-      try {
-        const parsed = parseTypeScriptModule(artifact, decoder.decode(artifact.bytes));
-        if (parsed.parseErrors > 0) {
-          failed += 1;
-          diagnostics.push(
-            diagnostic('error', 'TypeScript input contains syntax errors.', artifact.path),
-          );
-        } else {
-          processed += 1;
-          modules.set(artifact.path, parsed);
-        }
-      } catch {
-        failed += 1;
-        diagnostics.push(
-          diagnostic('error', 'TypeScript input could not be parsed safely.', artifact.path),
-        );
-      }
-    }
-    const metadata = packageMetadata(request.artifacts);
-    const registry = contextString(request.context, 'packageRegistry') ?? 'npm';
-    const publicEntrypoints = entrypoints(request.context, metadata, modules);
-    const definitions = new Map<string, ContractDefinition>();
-    const ambiguousDefinitions = new Set<string>();
-    let unresolvedExports = publicEntrypoints.unresolved;
-    if (metadata !== undefined) {
-      for (const entrypoint of publicEntrypoints.values) {
-        const resolved = resolvePublicSymbols(entrypoint, modules);
-        unresolvedExports += resolved.unresolved;
-        for (const symbol of resolved.symbols) {
-          if (definitions.size >= manifest.resourceBudget.maximumItems) {
-            unresolvedExports += 1;
-            break;
-          }
-          const shape = canonicalShape({
-            namespace: symbol.space,
-            declarationKind: symbol.declarationKind,
-            ...symbol.shape,
-          });
-          const key = typeScriptSymbolKey(
-            registry,
-            metadata.name,
-            entrypoint.subpath,
-            symbol.space,
-            symbol.name,
-          );
-          const candidate: ContractDefinition = {
-            contractKind: 'typescript_symbol',
-            canonicalKey: key,
-            displayName: symbol.name,
-            path: symbol.path,
-            range: symbol.range,
-            contentHash: symbol.contentHash,
-            shapeHash: shape.shapeHash,
-            shape: shape.shape,
-            extractorId: manifest.id,
-            extractorVersion: manifest.version,
-            identityVersion: manifest.identityVersion,
-            configRevision: request.configRevision,
-            evidenceStratum: 'public_export',
-          };
-          if (ambiguousDefinitions.has(key)) continue;
-          const prior = definitions.get(key);
-          if (prior === undefined) definitions.set(key, candidate);
-          else if (prior.shapeHash !== candidate.shapeHash) {
-            definitions.delete(key);
-            ambiguousDefinitions.add(key);
-            unresolvedExports += 1;
-          }
-        }
-      }
-    } else if (eligible > 0) {
-      unresolvedExports += 1;
-      diagnostics.push(
-        diagnostic('warning', 'Package metadata is missing; public export identity is unknown.'),
-      );
-    }
-    if (ambiguousDefinitions.size > 0) {
-      diagnostics.push(
-        diagnostic(
-          'warning',
-          'Conflicting public exports share an identity and were left unresolved.',
-        ),
-      );
-    }
-    const imported = references(request, modules, metadata, registry);
-    if (imported.dynamic > 0) {
-      diagnostics.push(
-        diagnostic(
-          'warning',
-          'Dynamic or namespace imports were retained as unresolved references.',
-        ),
-      );
-    }
-    const partial = failed > 0 || unresolvedExports > 0 || imported.dynamic > 0;
-    const state: AdapterCoverage['state'] =
-      eligible === 0
-        ? 'unsupported'
-        : failed === eligible
-          ? 'failed'
-          : partial
-            ? 'partial'
-            : 'complete';
-    return finalizeExtraction({
-      schema: 'reverb.adapter-extraction',
-      schemaVersion: '1.0',
-      adapterId: manifest.id,
-      adapterVersion: manifest.version,
-      identityVersion: manifest.identityVersion,
-      configRevision: request.configRevision,
-      definitions: [...definitions.values()],
-      references: imported.values,
-      coverage: {
-        state,
-        eligibleArtifacts: eligible,
-        processedArtifacts: processed,
-        skippedArtifacts: 0,
-        failedArtifacts: failed,
-        limitations: [
-          ...(unresolvedExports > 0 ? [{ code: 'unresolved_public_export' }] : []),
-          ...(imported.dynamic > 0 ? [{ code: 'dynamic_or_reflective_use' }] : []),
-        ],
-      },
-      diagnostics,
-      sourceFingerprint: sourceFingerprint(request, registry),
+    return materializeState(prepareState(request), request.configRevision, request.context);
+  }
+
+  public async buildPartitions(request: ExtractRequest): Promise<AdapterPartitionBuildResult> {
+    return buildResult([
+      buildPartition(prepareState(request), request.configRevision, request.context),
+    ]);
+  }
+
+  public planInvalidation(request: {
+    readonly partitions: readonly AdapterPartitionDescriptor[];
+    readonly changes: readonly AdapterPathChange[];
+    readonly context: Readonly<Record<string, unknown>>;
+  }): AdapterInvalidationPlan {
+    const changes = request.changes.flatMap((change) => {
+      const relevant = adapterRelevantChange(change);
+      return relevant === undefined ? [] : [relevant];
     });
+    const partitions = request.partitions.map((partition) => {
+      if (request.partitions.length !== 1) return partition;
+      const ownedPaths = new Set(partition.ownedPaths);
+      for (const change of changes) {
+        ownedPaths.add(change.path);
+        if (change.previousPath !== undefined) ownedPaths.add(change.previousPath);
+      }
+      return { ...partition, ownedPaths: [...ownedPaths].sort() };
+    });
+    return planPathPartitionInvalidation({ partitions, changes });
+  }
+
+  public async updatePartitions(request: {
+    readonly basePartitions: readonly AdapterPartitionView[];
+    readonly plan: AdapterInvalidationPlan;
+    readonly changes: readonly AdapterPathChange[];
+    readonly changedArtifacts: readonly ArtifactInput[];
+    readonly configRevision: ConfigRevision;
+    readonly context: Readonly<Record<string, unknown>>;
+  }): Promise<AdapterPartitionUpdateResult> {
+    if (!request.plan.complete) {
+      return updateResult({
+        replacements: [],
+        tombstones: [],
+        coverage: {
+          state: 'partial',
+          eligibleArtifacts: request.plan.changedPaths.length,
+          processedArtifacts: 0,
+          skippedArtifacts: 0,
+          failedArtifacts: request.plan.changedPaths.length,
+          limitations: [{ code: 'unmatched_changed_path' }],
+        },
+        diagnostics: [
+          diagnostic('error', 'Changed paths could not be assigned to one package partition.'),
+        ],
+      });
+    }
+    if (request.plan.invalidatedPartitionKeys.length === 0) {
+      return updateResult({
+        replacements: [],
+        tombstones: [],
+        coverage: {
+          state: 'complete',
+          eligibleArtifacts: 0,
+          processedArtifacts: 0,
+          skippedArtifacts: 0,
+          failedArtifacts: 0,
+          limitations: [],
+        },
+        diagnostics: [],
+      });
+    }
+    if (
+      request.basePartitions.length !== 1 ||
+      request.plan.invalidatedPartitionKeys.length !== 1 ||
+      request.basePartitions[0]?.partitionKey !== request.plan.invalidatedPartitionKeys[0]
+    ) {
+      return updateResult({
+        replacements: [],
+        tombstones: [],
+        coverage: {
+          state: 'partial',
+          eligibleArtifacts: request.plan.invalidatedPartitionKeys.length,
+          processedArtifacts: 0,
+          skippedArtifacts: 0,
+          failedArtifacts: request.plan.invalidatedPartitionKeys.length,
+          limitations: [{ code: 'incompatible_partition_set' }],
+        },
+        diagnostics: [
+          diagnostic('error', 'TypeScript incremental updates require one package partition.'),
+        ],
+      });
+    }
+    let state: TypeScriptSemanticState;
+    try {
+      state = cloneState(decodeState(request.basePartitions[0]!.payload));
+    } catch (error) {
+      if (!(error instanceof Error)) throw error;
+      return updateResult({
+        replacements: [],
+        tombstones: [],
+        coverage: {
+          state: 'failed',
+          eligibleArtifacts: 1,
+          processedArtifacts: 0,
+          skippedArtifacts: 0,
+          failedArtifacts: 1,
+          limitations: [{ code: 'invalid_partition_payload' }],
+        },
+        diagnostics: [diagnostic('error', 'Persisted TypeScript partition state is invalid.')],
+      });
+    }
+
+    const expectedHeadPaths = new Set<RepoPath>();
+    for (const change of request.changes) {
+      if (relevantPath(change.path)) removeStatePath(state, change.path);
+      if (
+        change.kind !== 'copied' &&
+        change.previousPath !== undefined &&
+        relevantPath(change.previousPath)
+      ) {
+        removeStatePath(state, change.previousPath);
+      }
+      if (change.kind !== 'deleted' && relevantPath(change.path)) {
+        expectedHeadPaths.add(change.path);
+      }
+    }
+    const suppliedPaths = new Set<RepoPath>();
+    for (const artifact of request.changedArtifacts) {
+      if (!relevantPath(artifact.path)) continue;
+      suppliedPaths.add(artifact.path);
+      addArtifactToState(state, artifact);
+    }
+    for (const path of expectedHeadPaths) {
+      if (!suppliedPaths.has(path)) {
+        state.failures.set(path, { path, reason: 'missing_changed_blob' });
+      }
+    }
+    const replacement = buildPartition(state, request.configRevision, request.context);
+    return updateResult({
+      replacements: [replacement],
+      tombstones: [],
+      coverage: replacement.extraction.coverage,
+      diagnostics: replacement.extraction.diagnostics,
+    });
+  }
+
+  public async materializePartitions(request: {
+    readonly partitions: readonly AdapterPartitionView[];
+    readonly configRevision: ConfigRevision;
+    readonly context: Readonly<Record<string, unknown>>;
+  }) {
+    if (request.partitions.length !== 1) {
+      throw new AdapterValidationError(
+        'incompatible_partition_set',
+        'TypeScript extraction materialization requires one package partition.',
+      );
+    }
+    return materializeState(
+      decodeState(request.partitions[0]!.payload),
+      request.configRevision,
+      request.context,
+    );
   }
 
   public async diff(request: DiffRequest): Promise<AdapterDiffResult> {

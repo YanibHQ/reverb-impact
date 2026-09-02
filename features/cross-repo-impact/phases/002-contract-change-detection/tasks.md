@@ -40,6 +40,9 @@
 - [x] Manifest/lockfile version and activation classification
 - [x] Compatibility subset with conservative unknowns
 - [x] Barrel/overload/type-only/JS/dynamic/version fixtures
+- [x] Package-scoped semantic partitions contain parser facts without source bytes
+- [x] Changed-only edit/add/delete/rename/barrel/metadata equivalence with clean extraction
+- [x] Missing base state or required changed blobs abstain without a repository scan
 - [x] Remedies and admission report
 
 ## F. Cross-adapter verification

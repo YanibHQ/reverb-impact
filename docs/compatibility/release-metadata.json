@@ -16,7 +16,7 @@
   "adapters": [
     {
       "id": "reverb.typescript",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "identity_version": 1
     },
     {
@@ -31,8 +31,9 @@
     }
   ],
   "reindex": {
-    "required": false,
-    "reason": "No adapter extraction or identity version changed in this repository state."
+    "required": true,
+    "adapter_ids": ["reverb.typescript"],
+    "reason": "TypeScript adapter 0.2.0 changes extraction fingerprints and introduces persisted package-partition state; existing TypeScript observations and snapshots must be rebuilt."
   },
   "calibration": {
     "reset_strata": [],
