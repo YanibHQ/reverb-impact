@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
   TYPESCRIPT_ADMISSION_REPORT,
   typeScriptAdapter,
+  typeScriptRepositorySymbolKey,
   typeScriptSymbolKey,
 } from '../src/index.js';
 
@@ -54,6 +55,17 @@ async function extract(artifacts: readonly ArtifactInput[]) {
       packageRegistry: 'npm',
       lockedVersions: { '@acme/auth': '2.1.0' },
     },
+  });
+}
+
+async function extractInternal(
+  artifacts: readonly ArtifactInput[],
+  repositoryScope = 'repo_acme_storefront',
+) {
+  return typeScriptAdapter.extract({
+    artifacts,
+    configRevision: revision,
+    context: { packageRegistry: 'npm', repositoryScope },
   });
 }
 
@@ -114,6 +126,90 @@ export function getPet(id: string): string { return id; }
     expect(typeScriptSymbolKey('npm', '@acme/pets', '.', 'type', 'Pet')).not.toBe(
       typeScriptSymbolKey('npm', '@acme/pets', '.', 'value', 'Pet'),
     );
+  });
+
+  it('joins repository-local relative and tsconfig-path imports to module exports', async () => {
+    const result = await extractInternal([
+      artifact('package.json', JSON.stringify({ name: '@acme/storefront', private: true })),
+      artifact('tsconfig.json', JSON.stringify({ compilerOptions: { paths: { '@/*': ['./*'] } } })),
+      artifact(
+        'lib/checkout.ts',
+        `export function calculateTotal(value: number): number { return value; }`,
+      ),
+      artifact(
+        'app/cart.ts',
+        `import { calculateTotal } from '@/lib/checkout'; export const total = calculateTotal(1);`,
+      ),
+      artifact(
+        'app/summary.ts',
+        `import { calculateTotal } from '../lib/checkout.js'; export const summary = calculateTotal(2);`,
+      ),
+      artifact(
+        'app/lazy.ts',
+        `import cases from './cases.json'; export async function total() { const { calculateTotal } = await import('@/lib/checkout'); return calculateTotal(cases.length); }`,
+      ),
+    ]);
+    const key = typeScriptRepositorySymbolKey(
+      'repo_acme_storefront',
+      'lib/checkout.ts',
+      'value',
+      'calculateTotal',
+    );
+
+    expect(result.coverage.state).toBe('complete');
+    expect(result.definitions).toContainEqual(
+      expect.objectContaining({ canonicalKey: key, evidenceStratum: 'internal_module_export' }),
+    );
+    expect(result.references.filter((reference) => reference.canonicalKey === key)).toHaveLength(3);
+    expect(
+      result.references
+        .filter((reference) => reference.canonicalKey === key)
+        .every(
+          (reference) =>
+            reference.evidenceStratum === 'internal_static_import' &&
+            reference.activation === 'current_runtime',
+        ),
+    ).toBe(true);
+  });
+
+  it('keeps repository-local identities isolated between repositories', () => {
+    expect(
+      typeScriptRepositorySymbolKey('repo_a', 'lib/checkout.ts', 'value', 'calculateTotal'),
+    ).not.toBe(
+      typeScriptRepositorySymbolKey('repo_b', 'lib/checkout.ts', 'value', 'calculateTotal'),
+    );
+  });
+
+  it('flags an implementation-only internal module change for immediate review', async () => {
+    const fixture = (body: string) => [
+      artifact('package.json', JSON.stringify({ name: '@acme/storefront', private: true })),
+      artifact(
+        'lib/checkout.ts',
+        `export function calculateTotal(value: number): number { ${body} }`,
+      ),
+      artifact(
+        'app/cart.ts',
+        `import { calculateTotal } from '../lib/checkout'; void calculateTotal(1);`,
+      ),
+    ];
+    const before = await extractInternal(fixture('return value;'));
+    const after = await extractInternal(fixture('return value * 2;'));
+    const diff = await typeScriptAdapter.diff({
+      base: before,
+      head: after,
+      configRevision: revision,
+      context: {},
+    });
+    const internal = diff.changes.find((change) =>
+      change.canonicalKey.startsWith('typescript-repository:'),
+    );
+
+    expect(internal).toMatchObject({
+      changeKind: 'module_export_changed',
+      compatibility: 'potentially_breaking',
+      activation: 'current_runtime',
+      remedy: { kind: 'review_or_update_internal_consumers' },
+    });
   });
 
   it('classifies a newly required parameter as breaking on upgrade', async () => {

@@ -5,7 +5,7 @@ export const PROTOBUF_ADAPTER_MANIFEST: AdapterManifest = validateAdapterManifes
   schema: 'reverb.adapter-manifest',
   schemaVersion: '1.0',
   id: adapterId('reverb.protobuf'),
-  version: '0.1.0',
+  version: '0.2.0',
   identityVersion: 1,
   contractKinds: ['protobuf_method', 'protobuf_field'],
   capabilityTiers: [

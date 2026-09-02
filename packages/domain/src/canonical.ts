@@ -30,9 +30,13 @@ function normalize(value: unknown, seen: Set<object>): CanonicalJsonValue {
   }
   if (typeof value === 'object') {
     const object = value as Record<string, unknown>;
+    const prototype = Object.getPrototypeOf(object);
+    if (prototype !== Object.prototype && prototype !== null) {
+      throw new ReverbError('invalid_schema', 'Canonical JSON objects must be plain records.');
+    }
     if (seen.has(object)) throw new ReverbError('invalid_schema', 'Canonical JSON is cyclic.');
     seen.add(object);
-    const output: Record<string, CanonicalJsonValue> = {};
+    const output = Object.create(null) as Record<string, CanonicalJsonValue>;
     for (const key of Object.keys(object).sort()) {
       const child = object[key];
       if (child === undefined) {

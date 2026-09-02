@@ -1,6 +1,6 @@
 # Publishing a release
 
-Reverb packages use a fixed version across the workspace. The current candidate is `0.2.0`.
+Reverb packages use a fixed version across the workspace. The current candidate is `0.4.0`.
 Before publishing, confirm that every public manifest, the CLI version, schema compatibility record,
 changelog, and [release metadata](../compatibility/release-metadata.json) name the same version.
 
@@ -60,3 +60,14 @@ The initial upload was performed locally with interactive npm authorization, so 
 not claimed for these registry artifacts. The repository artifact workflow remains available for
 independent build attestations. Container publication and release signatures are not part of this
 release record.
+
+## Version 0.3.0 publication record
+
+All 13 packages were published to the public npm registry on 2026-09-01 by the trusted GitHub
+Actions publisher. The publication log SHA-1 digests matched the registry records for every package,
+and each registry SRI digest was queried successfully. npm recorded a signed provenance statement
+and transparency-log entry for every package.
+
+A new temporary project installed the exact public versions with zero reported vulnerabilities,
+imported all 13 root entry points under Node 24, and reported `0.3.0` from the installed `reverb`
+binary. Container publication and release signatures are not part of this release record.

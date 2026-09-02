@@ -1,6 +1,6 @@
 {
   "name": "@yanib/reverb-storage-sqlite",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "description": "SQLite storage adapter for Reverb local hosts",
   "type": "module",
   "license": "Apache-2.0",

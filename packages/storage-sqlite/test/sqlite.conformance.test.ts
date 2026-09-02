@@ -4,6 +4,8 @@ import { resolve } from 'node:path';
 
 import {
   runEvidenceGraphStoreConformance,
+  runAdapterSnapshotStoreConformance,
+  runAnalysisResultStoreV2Conformance,
   runGenerationStoreConformance,
   runReviewStoreConformance,
 } from '@yanib/reverb-testkit';
@@ -23,6 +25,20 @@ describe('SQLite generation store conformance', () => {
       });
     } finally {
       await Promise.all(roots.map((root) => rm(root, { recursive: true, force: true })));
+    }
+  });
+});
+
+describe('SQLite adapter snapshot store conformance', () => {
+  it('passes immutable partition and derived snapshot cases', async () => {
+    const root = await mkdtemp(resolve(tmpdir(), 'reverb-sqlite-snapshot-conformance-'));
+    try {
+      await runAdapterSnapshotStoreConformance(() => {
+        const store = new SqliteStore(resolve(root, 'reverb.sqlite'));
+        return { store, close: () => store.close() };
+      });
+    } finally {
+      await rm(root, { recursive: true, force: true });
     }
   });
 });
@@ -53,6 +69,19 @@ describe('SQLite evidence graph store conformance', () => {
       });
     } finally {
       await Promise.all(roots.map((root) => rm(root, { recursive: true, force: true })));
+    }
+  });
+});
+
+describe('SQLite v2 analysis result store conformance', () => {
+  it('persists immutable scoped results with workspace isolation', async () => {
+    const root = await mkdtemp(resolve(tmpdir(), 'reverb-sqlite-analysis-v2-conformance-'));
+    try {
+      const store = new SqliteStore(resolve(root, 'reverb.sqlite'));
+      await runAnalysisResultStoreV2Conformance({ store });
+      store.close();
+    } finally {
+      await rm(root, { recursive: true, force: true });
     }
   });
 });

@@ -2,7 +2,7 @@
   "document_schema": "reverb.release-compatibility-metadata",
   "schema_version": "1.0",
   "release_status": "pre_v1_release_candidate",
-  "package_version": "0.2.0",
+  "package_version": "0.4.0",
   "schema": {
     "current_version": "1.0",
     "supported_majors": [1],
@@ -10,29 +10,30 @@
     "previous_major_disposition": "No previous public schema major exists before the first release; v0 is unsupported."
   },
   "storage": {
-    "sqlite_migration": 5,
-    "postgres_migration": 3
+    "sqlite_migration": 8,
+    "postgres_migration": 4
   },
   "adapters": [
     {
       "id": "reverb.typescript",
-      "version": "0.1.0",
+      "version": "0.3.0",
       "identity_version": 1
     },
     {
       "id": "reverb.openapi",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "identity_version": 1
     },
     {
       "id": "reverb.protobuf",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "identity_version": 1
     }
   ],
   "reindex": {
-    "required": false,
-    "reason": "No adapter extraction or identity version changed in this repository state."
+    "required": true,
+    "adapter_ids": ["reverb.typescript"],
+    "reason": "TypeScript adapter 0.3.0 adds repository-scoped module identities, compiler path mappings, implementation hashes, and partitioning version 2; existing TypeScript observations and snapshots must be rebuilt."
   },
   "calibration": {
     "reset_strata": [],
@@ -43,6 +44,6 @@
     "container": false,
     "signature": false,
     "provenance_workflow": true,
-    "reason": "Version 0.2.0 is a verified release candidate; npm publication, container publication, and release signatures have not yet been recorded."
+    "reason": "Version 0.4.0 is a verified release candidate and has not yet been published."
   }
 }

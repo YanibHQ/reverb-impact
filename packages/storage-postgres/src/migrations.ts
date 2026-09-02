@@ -195,6 +195,79 @@ CREATE INDEX IF NOT EXISTS reverb_webhook_inbox_claim
   ON reverb_webhook_inbox (workspace_id, processing_state, received_at);
 `,
   },
+  {
+    version: 4,
+    name: 'bounded_analysis_v2',
+    sql: `
+CREATE TABLE IF NOT EXISTS reverb_analysis_scopes_v2 (
+  workspace_id text NOT NULL,
+  scope_hash text NOT NULL,
+  producer_repository_id text NOT NULL,
+  registry_revision text NOT NULL,
+  mode text NOT NULL CHECK (mode IN ('legacy', 'allowlist')),
+  payload_hash text NOT NULL,
+  payload jsonb NOT NULL,
+  created_at timestamptz NOT NULL,
+  PRIMARY KEY (workspace_id, scope_hash)
+);
+CREATE INDEX IF NOT EXISTS reverb_analysis_scopes_v2_producer
+  ON reverb_analysis_scopes_v2 (workspace_id, producer_repository_id, registry_revision);
+
+CREATE TABLE IF NOT EXISTS reverb_analysis_results_v2 (
+  workspace_id text NOT NULL,
+  analysis_id text NOT NULL,
+  producer_repository_id text NOT NULL,
+  scope_hash text NOT NULL,
+  state text NOT NULL CHECK (state IN ('complete', 'partial', 'superseded')),
+  output_hash text NOT NULL,
+  payload jsonb NOT NULL,
+  created_at timestamptz NOT NULL,
+  PRIMARY KEY (workspace_id, analysis_id),
+  FOREIGN KEY (workspace_id, scope_hash)
+    REFERENCES reverb_analysis_scopes_v2 (workspace_id, scope_hash)
+);
+CREATE INDEX IF NOT EXISTS reverb_analysis_results_v2_scope
+  ON reverb_analysis_results_v2 (workspace_id, scope_hash, state);
+
+CREATE TABLE IF NOT EXISTS reverb_reasoning_runs_v2 (
+  workspace_id text NOT NULL,
+  reasoning_run_id text NOT NULL,
+  analysis_id text NOT NULL,
+  scope_hash text NOT NULL,
+  state text NOT NULL CHECK (state IN ('complete', 'partial', 'failed', 'deleted')),
+  input_hash text NOT NULL,
+  output_hash text,
+  payload jsonb NOT NULL,
+  created_at timestamptz NOT NULL,
+  deleted_at timestamptz,
+  PRIMARY KEY (workspace_id, reasoning_run_id),
+  FOREIGN KEY (workspace_id, analysis_id)
+    REFERENCES reverb_analysis_results_v2 (workspace_id, analysis_id),
+  FOREIGN KEY (workspace_id, scope_hash)
+    REFERENCES reverb_analysis_scopes_v2 (workspace_id, scope_hash)
+);
+CREATE INDEX IF NOT EXISTS reverb_reasoning_runs_v2_analysis
+  ON reverb_reasoning_runs_v2 (workspace_id, analysis_id, state);
+
+ALTER TABLE reverb_analysis_scopes_v2 ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reverb_analysis_scopes_v2 FORCE ROW LEVEL SECURITY;
+CREATE POLICY reverb_analysis_scopes_v2_workspace_isolation ON reverb_analysis_scopes_v2
+  USING (workspace_id = NULLIF(current_setting('reverb.workspace_id', true), ''))
+  WITH CHECK (workspace_id = NULLIF(current_setting('reverb.workspace_id', true), ''));
+
+ALTER TABLE reverb_analysis_results_v2 ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reverb_analysis_results_v2 FORCE ROW LEVEL SECURITY;
+CREATE POLICY reverb_analysis_results_v2_workspace_isolation ON reverb_analysis_results_v2
+  USING (workspace_id = NULLIF(current_setting('reverb.workspace_id', true), ''))
+  WITH CHECK (workspace_id = NULLIF(current_setting('reverb.workspace_id', true), ''));
+
+ALTER TABLE reverb_reasoning_runs_v2 ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reverb_reasoning_runs_v2 FORCE ROW LEVEL SECURITY;
+CREATE POLICY reverb_reasoning_runs_v2_workspace_isolation ON reverb_reasoning_runs_v2
+  USING (workspace_id = NULLIF(current_setting('reverb.workspace_id', true), ''))
+  WITH CHECK (workspace_id = NULLIF(current_setting('reverb.workspace_id', true), ''));
+`,
+  },
 ];
 
 export const POSTGRES_TARGET_MAJOR = 18;

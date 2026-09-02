@@ -16,6 +16,49 @@ explicit and package breaking changes may occur in minor releases.
 - Fixed Windows quality and release verification for path boundaries, line endings, pnpm child
   processes, CLI fixtures, and tar archive paths.
 
+## 0.4.0 - 2026-09-02
+
+- Added repository-scoped TypeScript module definitions and static references for same-repository
+  pull-request impact analysis without conflating private modules with npm-public contracts.
+- Added deterministic relative and `compilerOptions.paths` module resolution from persisted bounded
+  `tsconfig`/`jsconfig` facts, including changed-blob-only incremental equivalence.
+- Added hash-only implementation evidence so internal function, class, and variable behavior edits
+  become potentially breaking current-runtime review candidates without persisting source bodies.
+- Preserved one stable evidence reference per importing module and added static resolution for
+  literal dynamic imports with named destructuring.
+- Advanced the TypeScript adapter to 0.3.0 and partitioning version 2. TypeScript snapshots require
+  re-indexing; canonical npm identities remain on identity version 1.
+
+## 0.3.0 - 2026-09-01
+
+- Published all 13 packages through the trusted GitHub Actions npm publisher with signed provenance.
+- Added Protobuf partitioning v1: one normalized method/field fact partition per discovered
+  descriptor-set artifact, changed-blob discovery, replacements/tombstones, and clean-versus-
+  incremental equivalence for edits, additions, deletions, renames, and non-descriptor changes.
+- Advanced the Protobuf adapter manifest to 0.2.0 and included it in the declared adapter re-index.
+- Added OpenAPI partitioning v1: one normalized document-fact partition per discovered spec,
+  changed-blob content discovery, document replacement/tombstones, and clean-versus-incremental
+  equivalence for edits, additions, deletions, renames, and non-spec changes.
+- Advanced the OpenAPI adapter manifest to 0.2.0 and included it in the declared adapter re-index.
+- Added TypeScript/npm partitioning v1: package-scoped persisted AST-derived facts, changed-blob
+  delta updates, fail-closed missing-input handling, and clean-versus-incremental equivalence for
+  edits, additions, deletions, renames, barrel changes, imports, and package metadata.
+- Advanced the TypeScript adapter manifest to 0.2.0 so older semantic snapshots cannot be reused
+  across the incremental state boundary.
+- Added the `IncrementalContractAdapter` partition lifecycle, deterministic path-ownership and
+  reverse-dependency invalidation planning, and fail-closed handling for unowned changed paths.
+- Added `BudgetedRepositoryReader`, which atomically enforces per-run metadata-call, blob-read, and
+  byte ceilings without widening the provider source set.
+- Added workspace-scoped, content-addressed adapter semantic partitions and immutable generation
+  snapshot manifests with base-plus-delta resolution, compatibility validation, and shared
+  in-memory/SQLite conformance.
+- Added SQLite migration 007 for adapter partitions and generation snapshots.
+- Added immutable, non-selected derived-generation provenance over an exact base generation and
+  completed pull-request overlay, with logical artifact resolution that requires no provider source
+  reads or duplicated base artifact rows.
+- Added in-memory and SQLite generation-store conformance for base-plus-overlay derivation, SQLite
+  migration 006, and the optional canonical generation `derivation` envelope.
+
 ## 0.2.0 - 2026-08-31
 
 - Added exact same-repository producer-as-consumer analysis through a required, scope-validated

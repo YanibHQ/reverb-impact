@@ -1,6 +1,10 @@
 import type {
   AnalysisId,
   AnalysisResult,
+  AnalysisResultV2,
+  AdapterGenerationSnapshot,
+  AdapterId,
+  AdapterSemanticPartition,
   ArtifactBatch,
   BeginGeneration,
   BlobResult,
@@ -113,6 +117,17 @@ export interface OverlaySummary {
   readonly resultHash: ContentHash;
 }
 
+export interface DeriveGeneration {
+  readonly generationId: GenerationId;
+  readonly baseGenerationId: GenerationId;
+  readonly overlayId: OverlayId;
+  readonly completedAt: Instant;
+  readonly coverage: readonly CoverageRecord[];
+  readonly diagnostics: readonly BoundedDiagnostic[];
+  readonly coverageHash: ContentHash;
+  readonly artifactResultHash: ContentHash;
+}
+
 export interface GenerationStore {
   beginGeneration(input: BeginGeneration): Promise<PortResult<GenerationLease>>;
   putArtifacts(lease: GenerationLease, batch: ArtifactBatch): Promise<PortResult<void>>;
@@ -123,6 +138,7 @@ export interface GenerationStore {
   failGeneration(lease: GenerationLease, failure: GenerationFailure): Promise<PortResult<void>>;
   expireLease(lease: GenerationLease, at: Instant): Promise<PortResult<void>>;
   getGeneration(id: GenerationId): Promise<PortResult<RepositoryGeneration>>;
+  deriveGeneration(input: DeriveGeneration): Promise<PortResult<RepositoryGeneration>>;
   selectGeneration(query: GenerationSelection): Promise<PortResult<GenerationSelectionResult>>;
   listArtifacts(generationId: GenerationId): Promise<PortResult<readonly FileArtifact[]>>;
   getGenerationCoverage(generationId: GenerationId): Promise<PortResult<readonly CoverageRecord[]>>;
@@ -147,6 +163,32 @@ export interface GenerationStore {
   ): Promise<PortResult<void>>;
   getOverlay(id: OverlayId): Promise<PortResult<PullRequestOverlay>>;
   listOverlayEntries(id: OverlayId): Promise<PortResult<readonly OverlayEntry[]>>;
+}
+
+export interface AdapterSnapshotQuery {
+  readonly workspaceId: WorkspaceId;
+  readonly repositoryId: RepositoryStableId;
+  readonly generationId: GenerationId;
+  readonly adapterId: AdapterId;
+}
+
+export interface AdapterSnapshotStore {
+  putAdapterPartition(partition: AdapterSemanticPartition): Promise<PortResult<ContentHash>>;
+  getAdapterPartition(
+    workspaceId: WorkspaceId,
+    outputHash: ContentHash,
+  ): Promise<PortResult<AdapterSemanticPartition | null>>;
+  putAdapterSnapshot(snapshot: AdapterGenerationSnapshot): Promise<PortResult<ContentHash>>;
+  getAdapterSnapshot(
+    query: AdapterSnapshotQuery,
+  ): Promise<PortResult<AdapterGenerationSnapshot | null>>;
+  getAdapterSnapshotByHash(
+    workspaceId: WorkspaceId,
+    outputHash: ContentHash,
+  ): Promise<PortResult<AdapterGenerationSnapshot | null>>;
+  resolveAdapterPartitions(
+    query: AdapterSnapshotQuery,
+  ): Promise<PortResult<readonly AdapterSemanticPartition[]>>;
 }
 
 export interface CanonicalRecord {
@@ -217,6 +259,14 @@ export interface EvidenceGraphStore {
   ): Promise<
     PortResult<{ readonly analysis: AnalysisResult; readonly finding: FindingOccurrence }>
   >;
+}
+
+export interface AnalysisResultStoreV2 {
+  persistAnalysisV2(result: AnalysisResultV2): Promise<PortResult<void>>;
+  getAnalysisV2(
+    workspaceId: WorkspaceId,
+    analysisId: AnalysisId,
+  ): Promise<PortResult<AnalysisResultV2 | null>>;
 }
 
 export interface ReviewEvaluationStore {

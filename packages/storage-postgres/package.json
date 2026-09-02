@@ -1,6 +1,6 @@
 {
   "name": "@yanib/reverb-storage-postgres",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "description": "PostgreSQL storage adapter for Reverb reference hosts",
   "type": "module",
   "license": "Apache-2.0",
@@ -31,11 +31,13 @@
     "build": "tsc -b"
   },
   "dependencies": {
+    "@yanib/reverb-application": "workspace:*",
     "@yanib/reverb-domain": "workspace:*",
+    "@types/pg": "8.23.1",
     "pg": "8.23.0"
   },
   "devDependencies": {
-    "@types/pg": "8.23.1"
+    "@yanib/reverb-testkit": "workspace:*"
   },
   "publishConfig": {
     "access": "public",

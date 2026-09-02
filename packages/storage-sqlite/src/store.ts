@@ -4,15 +4,19 @@ import { DatabaseSync, type StatementSync } from 'node:sqlite';
 
 import {
   adapterId,
+  assertCanonicalAdapterGenerationSnapshot,
+  assertCanonicalAdapterSemanticPartition,
   applyCompleteReferenceObservation,
   currentEvidenceEdges,
   finalizeAnalysisResult,
   commitSha,
   configRevision,
   contentHash,
+  canonicalJson,
   generationId,
   generationLeaseId,
   instant,
+  materializeOverlayArtifacts,
   overlayId,
   registryRevision,
   repoPath,
@@ -20,7 +24,10 @@ import {
   treeHash,
   workspaceId,
   type AnalysisResult,
+  type AnalysisResultV2,
   type AnalysisId,
+  type AdapterGenerationSnapshot,
+  type AdapterSemanticPartition,
   type ContentHash,
   type ArtifactBatch,
   type BeginGeneration,
@@ -57,9 +64,13 @@ import {
   portSuccess,
   type ArtifactCacheKey,
   type ArtifactCachePort,
+  type AnalysisResultStoreV2,
+  type AdapterSnapshotQuery,
+  type AdapterSnapshotStore,
   type BeginOverlay,
   type CachedArtifact,
   type DefinitionQuery,
+  type DeriveGeneration,
   type EdgeQuery,
   type EvidenceGraphStore,
   type GenerationSelection,
@@ -73,7 +84,7 @@ import {
   type ReviewEvaluationStore,
 } from '@yanib/reverb-application';
 
-export const SQLITE_SCHEMA_VERSION = 5;
+export const SQLITE_SCHEMA_VERSION = 8;
 
 interface GenerationRow {
   generation_id: string;
@@ -90,6 +101,8 @@ interface GenerationRow {
   coverage_hash: string | null;
   artifact_result_hash: string | null;
   selectable: number;
+  base_generation_id: string | null;
+  overlay_id: string | null;
 }
 
 interface LeaseRow {
@@ -569,6 +582,93 @@ CREATE INDEX promotion_records_stratum_idx
   ON promotion_records (stratum_key, decided_at);
 `;
 
+const MIGRATION_006 = `
+ALTER TABLE generations ADD COLUMN base_generation_id TEXT;
+ALTER TABLE generations ADD COLUMN overlay_id TEXT;
+CREATE UNIQUE INDEX generations_overlay_derivation_idx
+  ON generations (workspace_id, overlay_id)
+  WHERE overlay_id IS NOT NULL;
+`;
+
+const MIGRATION_007 = `
+CREATE TABLE adapter_semantic_partitions (
+  workspace_id TEXT NOT NULL,
+  repository_id TEXT NOT NULL,
+  output_hash TEXT NOT NULL,
+  adapter_id TEXT NOT NULL,
+  partition_key TEXT NOT NULL,
+  partition_json TEXT NOT NULL,
+  PRIMARY KEY (workspace_id, output_hash)
+) STRICT;
+CREATE INDEX adapter_semantic_partitions_repository_idx
+  ON adapter_semantic_partitions (workspace_id, repository_id, adapter_id, partition_key);
+
+CREATE TABLE adapter_generation_snapshots (
+  workspace_id TEXT NOT NULL,
+  repository_id TEXT NOT NULL,
+  generation_id TEXT NOT NULL,
+  adapter_id TEXT NOT NULL,
+  output_hash TEXT NOT NULL,
+  snapshot_json TEXT NOT NULL,
+  PRIMARY KEY (workspace_id, output_hash),
+  UNIQUE (workspace_id, repository_id, generation_id, adapter_id)
+) STRICT;
+CREATE INDEX adapter_generation_snapshots_generation_idx
+  ON adapter_generation_snapshots (workspace_id, repository_id, generation_id, adapter_id);
+`;
+
+const MIGRATION_008 = `
+CREATE TABLE analysis_scopes_v2 (
+  workspace_id TEXT NOT NULL,
+  scope_hash TEXT NOT NULL,
+  producer_repository_id TEXT NOT NULL,
+  registry_revision TEXT NOT NULL,
+  mode TEXT NOT NULL CHECK (mode IN ('legacy', 'allowlist')),
+  payload_hash TEXT NOT NULL,
+  scope_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (workspace_id, scope_hash)
+) STRICT;
+CREATE INDEX analysis_scopes_v2_producer_idx
+  ON analysis_scopes_v2 (workspace_id, producer_repository_id, registry_revision);
+
+CREATE TABLE analysis_results_v2 (
+  workspace_id TEXT NOT NULL,
+  analysis_id TEXT NOT NULL,
+  producer_repository_id TEXT NOT NULL,
+  scope_hash TEXT NOT NULL,
+  state TEXT NOT NULL CHECK (state IN ('complete', 'partial', 'superseded')),
+  output_hash TEXT NOT NULL,
+  result_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (workspace_id, analysis_id),
+  FOREIGN KEY (workspace_id, scope_hash)
+    REFERENCES analysis_scopes_v2 (workspace_id, scope_hash)
+) STRICT;
+CREATE INDEX analysis_results_v2_scope_idx
+  ON analysis_results_v2 (workspace_id, scope_hash, state);
+
+CREATE TABLE reasoning_runs_v2 (
+  workspace_id TEXT NOT NULL,
+  reasoning_run_id TEXT NOT NULL,
+  analysis_id TEXT NOT NULL,
+  scope_hash TEXT NOT NULL,
+  state TEXT NOT NULL CHECK (state IN ('complete', 'partial', 'failed', 'deleted')),
+  input_hash TEXT NOT NULL,
+  output_hash TEXT,
+  run_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  deleted_at TEXT,
+  PRIMARY KEY (workspace_id, reasoning_run_id),
+  FOREIGN KEY (workspace_id, analysis_id)
+    REFERENCES analysis_results_v2 (workspace_id, analysis_id),
+  FOREIGN KEY (workspace_id, scope_hash)
+    REFERENCES analysis_scopes_v2 (workspace_id, scope_hash)
+) STRICT;
+CREATE INDEX reasoning_runs_v2_analysis_idx
+  ON reasoning_runs_v2 (workspace_id, analysis_id, state);
+`;
+
 function infrastructureFailure(code: string, message: string, retryable = false): PortFailure {
   return { kind: 'infrastructure', code, safeMessage: message, retryable };
 }
@@ -609,6 +709,15 @@ function generationFromRow(row: GenerationRow): RepositoryGeneration {
       ? { artifactResultHash: contentHash(row.artifact_result_hash) }
       : {}),
     selectable: row.selectable === 1,
+    ...(row.base_generation_id && row.overlay_id
+      ? {
+          derivation: {
+            baseGenerationId: generationId(row.base_generation_id),
+            overlayId: overlayId(row.overlay_id),
+            storageMode: 'base_overlay' as const,
+          },
+        }
+      : {}),
   };
 }
 
@@ -657,9 +766,11 @@ function artifactFromJson(json: string): FileArtifact {
 export class SqliteStore
   implements
     GenerationStore,
+    AdapterSnapshotStore,
     WorkspaceRegistry,
     ArtifactCachePort,
     EvidenceGraphStore,
+    AnalysisResultStoreV2,
     ReviewEvaluationStore
 {
   readonly #database: DatabaseSync;
@@ -729,6 +840,42 @@ export class SqliteStore
         this.#database
           .prepare('INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)')
           .run(5, new Date(0).toISOString());
+        return portSuccess(undefined);
+      });
+    }
+    const sixth = this.#database
+      .prepare('SELECT version FROM schema_migrations WHERE version = 6')
+      .get();
+    if (!sixth) {
+      this.#transaction<void>(() => {
+        this.#database.exec(MIGRATION_006);
+        this.#database
+          .prepare('INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)')
+          .run(6, new Date(0).toISOString());
+        return portSuccess(undefined);
+      });
+    }
+    const seventh = this.#database
+      .prepare('SELECT version FROM schema_migrations WHERE version = 7')
+      .get();
+    if (!seventh) {
+      this.#transaction<void>(() => {
+        this.#database.exec(MIGRATION_007);
+        this.#database
+          .prepare('INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)')
+          .run(7, new Date(0).toISOString());
+        return portSuccess(undefined);
+      });
+    }
+    const eighth = this.#database
+      .prepare('SELECT version FROM schema_migrations WHERE version = 8')
+      .get();
+    if (!eighth) {
+      this.#transaction<void>(() => {
+        this.#database.exec(MIGRATION_008);
+        this.#database
+          .prepare('INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)')
+          .run(8, new Date(0).toISOString());
         return portSuccess(undefined);
       });
     }
@@ -1010,6 +1157,99 @@ export class SqliteStore
     });
   }
 
+  public async deriveGeneration(
+    input: DeriveGeneration,
+  ): Promise<PortResult<RepositoryGeneration>> {
+    return this.#safe(() =>
+      this.#transaction(() => {
+        const existing = this.#generationRow(input.generationId);
+        if (existing) {
+          const sameDerivation =
+            existing.base_generation_id === input.baseGenerationId &&
+            existing.overlay_id === input.overlayId &&
+            existing.coverage_hash === input.coverageHash &&
+            existing.artifact_result_hash === input.artifactResultHash;
+          return sameDerivation
+            ? portSuccess(generationFromRow(existing))
+            : conflict('Generation ID was reused for a different derivation.');
+        }
+        if (input.generationId === input.baseGenerationId) {
+          return conflict('A derived generation cannot be its own base.');
+        }
+        const base = this.#generationRow(input.baseGenerationId);
+        const overlay = this.#overlayRow(input.overlayId);
+        if (!base || (base.state !== 'complete' && base.state !== 'partial')) {
+          return conflict('Derived generation requires a completed base generation.');
+        }
+        if (!overlay || (overlay.state !== 'complete' && overlay.state !== 'partial')) {
+          return conflict('Derived generation requires a completed overlay.');
+        }
+        const compatible =
+          overlay.base_generation_id === base.generation_id &&
+          overlay.workspace_id === base.workspace_id &&
+          overlay.repository_id === base.repository_id &&
+          overlay.base_sha === base.commit_sha &&
+          overlay.indexer_bundle_version === base.indexer_bundle_version &&
+          overlay.config_revision === base.config_revision &&
+          overlay.registry_revision === base.registry_revision;
+        if (!compatible) {
+          return conflict('Overlay is incompatible with its requested base generation.');
+        }
+        const state =
+          base.state === 'partial' || overlay.state === 'partial' ? 'partial' : 'complete';
+        this.#database
+          .prepare(
+            `INSERT INTO generations(
+              generation_id, workspace_id, repository_id, commit_sha, tree_hash,
+              indexer_bundle_version, config_revision, registry_revision, state, started_at,
+              completed_at, coverage_hash, artifact_result_hash, selectable,
+              base_generation_id, overlay_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+          )
+          .run(
+            input.generationId,
+            base.workspace_id,
+            base.repository_id,
+            overlay.head_sha,
+            overlay.head_tree_hash,
+            overlay.indexer_bundle_version,
+            overlay.config_revision,
+            overlay.registry_revision,
+            state,
+            overlay.started_at,
+            input.completedAt,
+            input.coverageHash,
+            input.artifactResultHash,
+            base.generation_id,
+            overlay.overlay_id,
+          );
+        const insertDiagnostic = this.#database.prepare(
+          'INSERT INTO artifact_diagnostics(workspace_id, generation_id, sequence, diagnostic_json) VALUES (?, ?, ?, ?)',
+        );
+        input.diagnostics.forEach((diagnostic, sequence) =>
+          insertDiagnostic.run(
+            base.workspace_id,
+            input.generationId,
+            sequence,
+            JSON.stringify(diagnostic),
+          ),
+        );
+        const insertCoverage = this.#database.prepare(
+          'INSERT INTO coverage_records(workspace_id, generation_id, sequence, coverage_json) VALUES (?, ?, ?, ?)',
+        );
+        input.coverage.forEach((coverage, sequence) =>
+          insertCoverage.run(
+            base.workspace_id,
+            input.generationId,
+            sequence,
+            JSON.stringify(coverage),
+          ),
+        );
+        return portSuccess(generationFromRow(this.#generationRow(input.generationId)!));
+      }),
+    );
+  }
+
   public async selectGeneration(
     query: GenerationSelection,
   ): Promise<PortResult<GenerationSelectionResult>> {
@@ -1063,14 +1303,15 @@ export class SqliteStore
     });
   }
 
-  public async listArtifacts(
+  #listArtifacts(
     generation: GenerationId,
-  ): Promise<PortResult<readonly FileArtifact[]>> {
-    return this.#safe(() => {
-      const row = this.#generationRow(generation);
-      if (!row || (row.state !== 'complete' && row.state !== 'partial')) {
-        return notFound('Completed generation artifacts');
-      }
+    visited: Set<GenerationId>,
+  ): PortResult<readonly FileArtifact[]> {
+    const row = this.#generationRow(generation);
+    if (!row || (row.state !== 'complete' && row.state !== 'partial')) {
+      return notFound('Completed generation artifacts');
+    }
+    if (!row.base_generation_id && !row.overlay_id) {
       const rows = this.#database
         .prepare(
           'SELECT * FROM file_artifacts WHERE workspace_id = ? AND generation_id = ? ORDER BY path',
@@ -1097,7 +1338,49 @@ export class SqliteStore
           ),
         ),
       );
-    });
+    }
+    if (!row.base_generation_id || !row.overlay_id) {
+      return portFailure(
+        infrastructureFailure(
+          'invalid_generation_derivation',
+          'Derived generation provenance is incomplete.',
+        ),
+      );
+    }
+    if (visited.has(generation)) {
+      return portFailure(
+        infrastructureFailure(
+          'generation_derivation_cycle',
+          'Derived generation ancestry contains a cycle.',
+        ),
+      );
+    }
+    visited.add(generation);
+    const base = this.#listArtifacts(generationId(row.base_generation_id), visited);
+    visited.delete(generation);
+    if (!base.ok) return base;
+    const overlay = this.#overlayRow(overlayId(row.overlay_id));
+    if (!overlay || (overlay.state !== 'complete' && overlay.state !== 'partial')) {
+      return notFound('Completed derived generation overlay');
+    }
+    const entries = this.#database
+      .prepare(
+        'SELECT entry_json FROM overlay_entries WHERE workspace_id = ? AND overlay_id = ? ORDER BY path',
+      )
+      .all(overlay.workspace_id, overlay.overlay_id) as unknown as { entry_json: string }[];
+    return portSuccess(
+      materializeOverlayArtifacts(
+        generation,
+        base.value,
+        entries.map((entry) => JSON.parse(entry.entry_json) as OverlayEntry),
+      ),
+    );
+  }
+
+  public async listArtifacts(
+    generation: GenerationId,
+  ): Promise<PortResult<readonly FileArtifact[]>> {
+    return this.#safe(() => this.#listArtifacts(generation, new Set()));
   }
 
   public async getGenerationCoverage(
@@ -1301,6 +1584,290 @@ export class SqliteStore
         )
         .all(overlay.workspace_id, id) as unknown as { entry_json: string }[];
       return portSuccess(rows.map((row) => JSON.parse(row.entry_json) as OverlayEntry));
+    });
+  }
+
+  public async putAdapterPartition(
+    partition: AdapterSemanticPartition,
+  ): Promise<PortResult<ContentHash>> {
+    try {
+      assertCanonicalAdapterSemanticPartition(partition);
+    } catch {
+      return conflict('Adapter semantic partition is not canonical.');
+    }
+    return this.#safe(() =>
+      this.#transaction(() => {
+        const existing = this.#database
+          .prepare(
+            'SELECT partition_json FROM adapter_semantic_partitions WHERE workspace_id = ? AND output_hash = ?',
+          )
+          .get(partition.workspaceId, partition.outputHash) as unknown as
+          | { partition_json: string }
+          | undefined;
+        if (existing) {
+          return canonicalJson(JSON.parse(existing.partition_json)) === canonicalJson(partition)
+            ? portSuccess(partition.outputHash)
+            : conflict('Adapter partition hash was reused for different content.');
+        }
+        this.#database
+          .prepare(
+            `INSERT INTO adapter_semantic_partitions(
+              workspace_id, repository_id, output_hash, adapter_id, partition_key, partition_json
+            ) VALUES (?, ?, ?, ?, ?, ?)`,
+          )
+          .run(
+            partition.workspaceId,
+            partition.repositoryId,
+            partition.outputHash,
+            partition.adapterId,
+            partition.partitionKey,
+            JSON.stringify(partition),
+          );
+        return portSuccess(partition.outputHash);
+      }),
+    );
+  }
+
+  public async getAdapterPartition(
+    workspace: WorkspaceId,
+    output: ContentHash,
+  ): Promise<PortResult<AdapterSemanticPartition | null>> {
+    return this.#safe(() => {
+      const row = this.#database
+        .prepare(
+          'SELECT partition_json FROM adapter_semantic_partitions WHERE workspace_id = ? AND output_hash = ?',
+        )
+        .get(workspace, output) as unknown as { partition_json: string } | undefined;
+      return portSuccess(row ? (JSON.parse(row.partition_json) as AdapterSemanticPartition) : null);
+    });
+  }
+
+  #adapterSnapshotByHash(
+    workspace: WorkspaceId,
+    output: ContentHash,
+  ): AdapterGenerationSnapshot | null {
+    const row = this.#database
+      .prepare(
+        'SELECT snapshot_json FROM adapter_generation_snapshots WHERE workspace_id = ? AND output_hash = ?',
+      )
+      .get(workspace, output) as unknown as { snapshot_json: string } | undefined;
+    return row ? (JSON.parse(row.snapshot_json) as AdapterGenerationSnapshot) : null;
+  }
+
+  #adapterSnapshotsCompatible(
+    base: AdapterGenerationSnapshot,
+    head: AdapterGenerationSnapshot,
+  ): boolean {
+    return (
+      base.workspaceId === head.workspaceId &&
+      base.repositoryId === head.repositoryId &&
+      base.adapterId === head.adapterId &&
+      base.adapterVersion === head.adapterVersion &&
+      base.identityVersion === head.identityVersion &&
+      base.partitioningVersion === head.partitioningVersion &&
+      base.configRevision === head.configRevision &&
+      base.registryRevision === head.registryRevision
+    );
+  }
+
+  #adapterPartitionCompatible(
+    partition: AdapterSemanticPartition,
+    snapshot: AdapterGenerationSnapshot,
+  ): boolean {
+    return (
+      partition.workspaceId === snapshot.workspaceId &&
+      partition.repositoryId === snapshot.repositoryId &&
+      partition.adapterId === snapshot.adapterId &&
+      partition.adapterVersion === snapshot.adapterVersion &&
+      partition.identityVersion === snapshot.identityVersion &&
+      partition.partitioningVersion === snapshot.partitioningVersion &&
+      partition.configRevision === snapshot.configRevision &&
+      partition.registryRevision === snapshot.registryRevision
+    );
+  }
+
+  public async putAdapterSnapshot(
+    snapshot: AdapterGenerationSnapshot,
+  ): Promise<PortResult<ContentHash>> {
+    try {
+      assertCanonicalAdapterGenerationSnapshot(snapshot);
+    } catch {
+      return conflict('Adapter generation snapshot is not canonical.');
+    }
+    return this.#safe(() =>
+      this.#transaction(() => {
+        const generation = this.#generationRow(snapshot.generationId);
+        if (!generation || (generation.state !== 'complete' && generation.state !== 'partial')) {
+          return conflict('Adapter snapshot requires a completed generation.');
+        }
+        const generationMatches =
+          generation.workspace_id === snapshot.workspaceId &&
+          generation.repository_id === snapshot.repositoryId &&
+          generation.config_revision === snapshot.configRevision &&
+          generation.registry_revision === snapshot.registryRevision;
+        if (!generationMatches) {
+          return conflict('Adapter snapshot is incompatible with its generation.');
+        }
+        if (snapshot.baseSnapshotHash === snapshot.outputHash) {
+          return conflict('Adapter snapshot cannot be its own base.');
+        }
+        if (snapshot.baseSnapshotHash) {
+          const base = this.#adapterSnapshotByHash(snapshot.workspaceId, snapshot.baseSnapshotHash);
+          if (!base || !this.#adapterSnapshotsCompatible(base, snapshot)) {
+            return conflict('Adapter snapshot base is missing or incompatible.');
+          }
+          if (
+            generation.base_generation_id &&
+            base.generationId !== generation.base_generation_id
+          ) {
+            return conflict('Derived generation snapshot does not use its exact base generation.');
+          }
+        } else if (generation.base_generation_id) {
+          return conflict('Derived generation snapshot requires its exact base snapshot.');
+        }
+        for (const entry of snapshot.entries) {
+          if (entry.kind === 'tombstone') continue;
+          const row = this.#database
+            .prepare(
+              'SELECT partition_json FROM adapter_semantic_partitions WHERE workspace_id = ? AND output_hash = ?',
+            )
+            .get(snapshot.workspaceId, entry.partitionHash) as unknown as
+            | { partition_json: string }
+            | undefined;
+          const partition = row
+            ? (JSON.parse(row.partition_json) as AdapterSemanticPartition)
+            : null;
+          if (!partition || !this.#adapterPartitionCompatible(partition, snapshot)) {
+            return conflict('Adapter snapshot partition is missing or incompatible.');
+          }
+          if (partition.partitionKey !== entry.partitionKey) {
+            return conflict('Adapter snapshot partition key does not match its content.');
+          }
+        }
+        const existingPointer = this.#database
+          .prepare(
+            `SELECT output_hash, snapshot_json FROM adapter_generation_snapshots
+              WHERE workspace_id = ? AND repository_id = ? AND generation_id = ? AND adapter_id = ?`,
+          )
+          .get(
+            snapshot.workspaceId,
+            snapshot.repositoryId,
+            snapshot.generationId,
+            snapshot.adapterId,
+          ) as unknown as { output_hash: string; snapshot_json: string } | undefined;
+        if (existingPointer) {
+          return existingPointer.output_hash === snapshot.outputHash &&
+            canonicalJson(JSON.parse(existingPointer.snapshot_json)) === canonicalJson(snapshot)
+            ? portSuccess(snapshot.outputHash)
+            : conflict('Generation already has a different adapter snapshot.');
+        }
+        this.#database
+          .prepare(
+            `INSERT INTO adapter_generation_snapshots(
+              workspace_id, repository_id, generation_id, adapter_id, output_hash, snapshot_json
+            ) VALUES (?, ?, ?, ?, ?, ?)`,
+          )
+          .run(
+            snapshot.workspaceId,
+            snapshot.repositoryId,
+            snapshot.generationId,
+            snapshot.adapterId,
+            snapshot.outputHash,
+            JSON.stringify(snapshot),
+          );
+        return portSuccess(snapshot.outputHash);
+      }),
+    );
+  }
+
+  public async getAdapterSnapshot(
+    query: AdapterSnapshotQuery,
+  ): Promise<PortResult<AdapterGenerationSnapshot | null>> {
+    return this.#safe(() => {
+      const row = this.#database
+        .prepare(
+          `SELECT snapshot_json FROM adapter_generation_snapshots
+            WHERE workspace_id = ? AND repository_id = ? AND generation_id = ? AND adapter_id = ?`,
+        )
+        .get(
+          query.workspaceId,
+          query.repositoryId,
+          query.generationId,
+          query.adapterId,
+        ) as unknown as { snapshot_json: string } | undefined;
+      return portSuccess(row ? (JSON.parse(row.snapshot_json) as AdapterGenerationSnapshot) : null);
+    });
+  }
+
+  public async getAdapterSnapshotByHash(
+    workspace: WorkspaceId,
+    output: ContentHash,
+  ): Promise<PortResult<AdapterGenerationSnapshot | null>> {
+    return this.#safe(() => portSuccess(this.#adapterSnapshotByHash(workspace, output)));
+  }
+
+  #resolveAdapterSnapshot(
+    snapshot: AdapterGenerationSnapshot,
+    visited: Set<ContentHash>,
+  ): PortResult<Map<string, AdapterSemanticPartition>> {
+    if (visited.has(snapshot.outputHash)) {
+      return conflict('Adapter snapshot ancestry contains a cycle.');
+    }
+    visited.add(snapshot.outputHash);
+    let resolved = new Map<string, AdapterSemanticPartition>();
+    if (snapshot.baseSnapshotHash) {
+      const base = this.#adapterSnapshotByHash(snapshot.workspaceId, snapshot.baseSnapshotHash);
+      if (!base) return notFound('Adapter snapshot base');
+      const baseResult = this.#resolveAdapterSnapshot(base, visited);
+      if (!baseResult.ok) return baseResult;
+      resolved = new Map(baseResult.value);
+    }
+    visited.delete(snapshot.outputHash);
+    for (const entry of snapshot.entries) {
+      if (entry.kind === 'tombstone') {
+        resolved.delete(entry.partitionKey);
+        continue;
+      }
+      const row = this.#database
+        .prepare(
+          'SELECT partition_json FROM adapter_semantic_partitions WHERE workspace_id = ? AND output_hash = ?',
+        )
+        .get(snapshot.workspaceId, entry.partitionHash) as unknown as
+        | { partition_json: string }
+        | undefined;
+      if (!row) return notFound('Adapter semantic partition');
+      resolved.set(entry.partitionKey, JSON.parse(row.partition_json) as AdapterSemanticPartition);
+    }
+    return portSuccess(resolved);
+  }
+
+  public async resolveAdapterPartitions(
+    query: AdapterSnapshotQuery,
+  ): Promise<PortResult<readonly AdapterSemanticPartition[]>> {
+    return this.#safe(() => {
+      const row = this.#database
+        .prepare(
+          `SELECT snapshot_json FROM adapter_generation_snapshots
+            WHERE workspace_id = ? AND repository_id = ? AND generation_id = ? AND adapter_id = ?`,
+        )
+        .get(
+          query.workspaceId,
+          query.repositoryId,
+          query.generationId,
+          query.adapterId,
+        ) as unknown as { snapshot_json: string } | undefined;
+      if (!row) return notFound('Adapter generation snapshot');
+      const resolved = this.#resolveAdapterSnapshot(
+        JSON.parse(row.snapshot_json) as AdapterGenerationSnapshot,
+        new Set(),
+      );
+      return resolved.ok
+        ? portSuccess(
+            [...resolved.value.values()].sort((left, right) =>
+              left.partitionKey.localeCompare(right.partitionKey),
+            ),
+          )
+        : resolved;
     });
   }
 
@@ -1907,6 +2474,107 @@ export class SqliteStore
         return portSuccess(undefined);
       }),
     );
+  }
+
+  public async persistAnalysisV2(result: AnalysisResultV2): Promise<PortResult<void>> {
+    return this.#safe(() =>
+      this.#transaction(() => {
+        const workspace = result.legacyResult.workspaceId;
+        const analysis = result.legacyResult.analysisId;
+        if (
+          result.scope.workspaceId !== workspace ||
+          result.coverage.workspaceId !== workspace ||
+          result.scope.scopeHash !== result.coverage.scopeHash ||
+          result.scope.registryRevision !== result.coverage.registryRevision
+        ) {
+          return conflict('A v2 analysis result has inconsistent scope or coverage provenance.');
+        }
+        const existingScope = this.#database
+          .prepare(
+            `SELECT payload_hash, scope_json FROM analysis_scopes_v2
+             WHERE workspace_id = ? AND scope_hash = ?`,
+          )
+          .get(workspace, result.scope.scopeHash) as unknown as
+          | { payload_hash: string; scope_json: string }
+          | undefined;
+        const scopeJson = JSON.stringify(result.scope);
+        if (existingScope !== undefined) {
+          if (
+            existingScope.payload_hash !== result.scope.scopeHash ||
+            existingScope.scope_json !== scopeJson
+          ) {
+            return conflict('A v2 analysis scope is immutable for its scope hash.');
+          }
+        } else {
+          this.#database
+            .prepare(
+              `INSERT INTO analysis_scopes_v2(
+                workspace_id, scope_hash, producer_repository_id, registry_revision,
+                mode, payload_hash, scope_json, created_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            )
+            .run(
+              workspace,
+              result.scope.scopeHash,
+              result.scope.producerRepositoryId,
+              result.scope.registryRevision,
+              result.scope.mode,
+              result.scope.scopeHash,
+              scopeJson,
+              result.legacyResult.startedAt,
+            );
+        }
+        const existing = this.#database
+          .prepare(
+            `SELECT output_hash, result_json FROM analysis_results_v2
+             WHERE workspace_id = ? AND analysis_id = ?`,
+          )
+          .get(workspace, analysis) as unknown as
+          | { output_hash: string; result_json: string }
+          | undefined;
+        const resultJson = JSON.stringify(result);
+        if (existing !== undefined) {
+          return existing.output_hash === result.outputHash && existing.result_json === resultJson
+            ? portSuccess(undefined)
+            : conflict('A v2 analysis result is immutable for its analysis ID.');
+        }
+        this.#database
+          .prepare(
+            `INSERT INTO analysis_results_v2(
+              workspace_id, analysis_id, producer_repository_id, scope_hash,
+              state, output_hash, result_json, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .run(
+            workspace,
+            analysis,
+            result.legacyResult.producerRepositoryId,
+            result.scope.scopeHash,
+            result.state,
+            result.outputHash,
+            resultJson,
+            result.legacyResult.completedAt,
+          );
+        return portSuccess(undefined);
+      }),
+    );
+  }
+
+  public async getAnalysisV2(
+    workspace: WorkspaceId,
+    id: AnalysisId,
+  ): Promise<PortResult<AnalysisResultV2 | null>> {
+    return this.#safe(() => {
+      const row = this.#database
+        .prepare(
+          `SELECT result_json FROM analysis_results_v2
+           WHERE workspace_id = ? AND analysis_id = ?`,
+        )
+        .get(workspace, id) as unknown as { result_json: string } | undefined;
+      return portSuccess(
+        row === undefined ? null : (JSON.parse(row.result_json) as AnalysisResultV2),
+      );
+    });
   }
 
   public async getAnalysis(id: AnalysisId): Promise<PortResult<AnalysisResult>> {

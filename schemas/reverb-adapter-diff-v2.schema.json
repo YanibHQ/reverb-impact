@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.yanibhq.dev/reverb/adapter-diff/v2.json",
+  "title": "Reverb deterministic adapter diff v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "family",
+    "adapter_id",
+    "adapter_version",
+    "extraction_version",
+    "identity_version",
+    "partitioning_version",
+    "compatibility_version",
+    "changes",
+    "coverage",
+    "diagnostics",
+    "output_hash"
+  ],
+  "properties": {
+    "schema": { "const": "reverb.adapter-diff" },
+    "schema_version": { "const": "2.0" },
+    "family": {
+      "enum": ["events", "database", "implicit_http", "configuration", "infrastructure"]
+    },
+    "adapter_id": { "type": "string", "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)+$" },
+    "adapter_version": {
+      "type": "string",
+      "pattern": "^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:-[0-9A-Za-z.-]+)?$"
+    },
+    "extraction_version": { "type": "string", "pattern": "^[0-9A-Za-z][0-9A-Za-z._-]{0,127}$" },
+    "identity_version": { "type": "integer", "minimum": 1 },
+    "partitioning_version": { "type": "integer", "minimum": 1 },
+    "compatibility_version": { "type": "string", "pattern": "^[0-9A-Za-z][0-9A-Za-z._-]{0,127}$" },
+    "changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "contract_kind",
+          "canonical_key",
+          "change_kind",
+          "compatibility",
+          "activation",
+          "coverage_dependencies",
+          "remedy"
+        ],
+        "properties": {
+          "contract_kind": {
+            "enum": [
+              "event.destination",
+              "event.payload_schema",
+              "database.table",
+              "database.column",
+              "database.enum",
+              "http.route",
+              "configuration.key",
+              "configuration.feature_flag",
+              "infrastructure.service",
+              "infrastructure.endpoint",
+              "infrastructure.output"
+            ]
+          },
+          "canonical_key": { "type": "string", "minLength": 1, "maxLength": 2048 },
+          "change_kind": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "compatibility": {
+            "enum": ["breaking", "potentially_breaking", "compatible", "unknown"]
+          },
+          "activation": { "enum": ["current_runtime", "on_upgrade", "on_deploy", "unknown"] },
+          "base_shape_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+          "head_shape_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+          "coverage_dependencies": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1, "maxLength": 256 }
+          },
+          "remedy": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "text"],
+            "properties": {
+              "kind": { "type": "string", "minLength": 1, "maxLength": 128 },
+              "text": { "type": "string", "minLength": 1, "maxLength": 1024 }
+            }
+          }
+        }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "eligible_artifacts",
+        "processed_artifacts",
+        "skipped_artifacts",
+        "failed_artifacts",
+        "limitations"
+      ],
+      "properties": {
+        "state": { "enum": ["complete", "partial", "failed", "unsupported"] },
+        "eligible_artifacts": { "type": "integer", "minimum": 0 },
+        "processed_artifacts": { "type": "integer", "minimum": 0 },
+        "skipped_artifacts": { "type": "integer", "minimum": 0 },
+        "failed_artifacts": { "type": "integer", "minimum": 0 },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["code"],
+            "properties": {
+              "code": { "type": "string", "minLength": 1, "maxLength": 192 },
+              "scope": {
+                "type": "string",
+                "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*\\\\)(?!.*\\u0000).+(?<!/)$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "severity", "safe_message"],
+        "properties": {
+          "code": {
+            "enum": [
+              "binary_file",
+              "oversized_file",
+              "generated_path",
+              "vendored_path",
+              "symlink_entry",
+              "submodule_entry",
+              "unsupported_language",
+              "unreadable_blob",
+              "parse_failure",
+              "source_truncated",
+              "missing_blob",
+              "incomplete_tree",
+              "ambiguous_alias",
+              "overlapping_validity",
+              "incremental_divergence",
+              "cache_corrupt",
+              "cancelled"
+            ]
+          },
+          "severity": { "enum": ["info", "warning", "error"] },
+          "scope": {
+            "type": "string",
+            "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*\\\\)(?!.*\\u0000).+(?<!/)$"
+          },
+          "detail_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+          "safe_message": { "type": "string", "minLength": 1, "maxLength": 256 }
+        }
+      }
+    },
+    "output_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

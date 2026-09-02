@@ -1,5 +1,5 @@
 import { configRevision, contentHash, repoPath, sha256Bytes } from '@yanib/reverb-domain';
-import type { ArtifactInput } from '@yanib/reverb-adapter-sdk';
+import type { AdapterPartitionView, ArtifactInput } from '@yanib/reverb-adapter-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { protobufAdapter } from '../src/index.js';
@@ -44,5 +44,29 @@ describe('Protobuf hostile inputs', () => {
     });
     const diff = await protobufAdapter.diff({ base, head, configRevision: revision, context: {} });
     expect(diff.changes[0]?.compatibility).toBe('unknown');
+  });
+
+  it('rejects tampered persisted descriptor facts', async () => {
+    const built = await protobufAdapter.buildPartitions({
+      artifacts: [input('{"file":[]}')],
+      configRevision: revision,
+      context: {},
+    });
+    const partition = built.partitions[0]!;
+    const tampered: AdapterPartitionView = {
+      partitionKey: partition.partitionKey,
+      ownedPaths: partition.ownedPaths,
+      dependencyKeys: partition.dependencyKeys,
+      payload: { ...partition.payload, schema: 'tampered' },
+      outputHash: contentHash(`sha256:${'7'.repeat(64)}`),
+    };
+
+    await expect(
+      protobufAdapter.materializePartitions({
+        partitions: [tampered],
+        configRevision: revision,
+        context: {},
+      }),
+    ).rejects.toMatchObject({ code: 'invalid_partition_payload' });
   });
 });

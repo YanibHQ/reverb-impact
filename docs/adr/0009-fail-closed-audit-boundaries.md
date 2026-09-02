@@ -1,4 +1,4 @@
-# ADR 0006 — Fail-closed audit boundaries
+# ADR 0009 — Fail-closed audit boundaries
 
 **Status:** Accepted  
 **Date:** 2026-09-01

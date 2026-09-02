@@ -2,10 +2,14 @@
 
 Canonical Reverb JSON Schemas and runtime validation.
 
+Schema-major 2 additions use separate exported schema values and checked-in files. This includes
+the v2 analysis scope, coverage, budget, result, and deterministic adapter manifest, extraction,
+and diff envelopes; schema-major 1 remains unchanged.
+
 ## Installation
 
 ```bash
-pnpm add --save-exact @yanib/reverb-schema@0.2.0
+pnpm add --save-exact @yanib/reverb-schema@0.4.0
 ```
 
 Import only the documented package root. See the

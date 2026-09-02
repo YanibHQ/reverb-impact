@@ -4,6 +4,7 @@ import {
   contentHash,
   canPromoteAnalyzedHeadTree,
   generationId,
+  materializeOverlayArtifacts,
   overlayId,
   repoPath,
   resolveOverlayArtifact,
@@ -68,5 +69,52 @@ describe('overlay lookup', () => {
     const analyzed = treeHash('a'.repeat(40));
     expect(canPromoteAnalyzedHeadTree(analyzed, treeHash('a'.repeat(40)))).toBe(true);
     expect(canPromoteAnalyzedHeadTree(analyzed, treeHash('b'.repeat(40)))).toBe(false);
+  });
+
+  it('materializes a deterministic logical head from base metadata and overlay entries', () => {
+    const headGeneration = generationId('gen_01990f64-0000-7000-8000-000000000002');
+    const id = overlayId('ovl_01990f64-0000-7000-8000-000000000002');
+    const addedPath = repoPath('src/added.ts');
+    const { generationId: _generation, ...replacement } = {
+      ...artifact,
+      path: addedPath,
+      sourceBlobId: 'b'.repeat(40),
+    };
+    void _generation;
+    const materialized = materializeOverlayArtifacts(
+      headGeneration,
+      [artifact],
+      [
+        { overlayId: id, path: basePath, kind: 'tombstone' },
+        { overlayId: id, path: addedPath, kind: 'replacement', artifact: replacement },
+      ],
+    );
+
+    expect(materialized).toEqual([
+      expect.objectContaining({
+        generationId: headGeneration,
+        path: addedPath,
+        sourceBlobId: 'b'.repeat(40),
+      }),
+    ]);
+  });
+
+  it('rejects malformed or duplicate overlay replacements', () => {
+    const headGeneration = generationId('gen_01990f64-0000-7000-8000-000000000003');
+    const id = overlayId('ovl_01990f64-0000-7000-8000-000000000003');
+    const malformed = { overlayId: id, path: basePath, kind: 'replacement' as const };
+    expect(() => materializeOverlayArtifacts(headGeneration, [artifact], [malformed])).toThrow(
+      /same path/,
+    );
+    expect(() =>
+      materializeOverlayArtifacts(
+        headGeneration,
+        [artifact],
+        [
+          { overlayId: id, path: basePath, kind: 'tombstone' },
+          { overlayId: id, path: basePath, kind: 'tombstone' },
+        ],
+      ),
+    ).toThrow(/duplicate paths/);
   });
 });

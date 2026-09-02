@@ -2,7 +2,7 @@
   "schema": "reverb.adapter-admission",
   "schemaVersion": "1.0",
   "adapterId": "reverb.openapi",
-  "adapterVersion": "0.1.0",
+  "adapterVersion": "0.2.0",
   "identityVersion": 1,
   "demand": "Cross-repository HTTP API operation changes represented by OpenAPI 3.0 and 3.1.",
   "designPartner": "none",
@@ -45,5 +45,5 @@
   "realLabelledCorpusState": "absent",
   "promotionState": "UNMEASURED",
   "deliveryReady": false,
-  "outputHash": "sha256:0519f3a6f12da626de277991f702f151eb0bef40d825c18d891e6a52994aedd7"
+  "outputHash": "sha256:dcb323aae73045fc0a206222b1aa4d872bd40ab4eea8703a15aad212e5f086af"
 }

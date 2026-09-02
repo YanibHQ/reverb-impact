@@ -22,6 +22,9 @@
 - [x] Generated-client reference mapping
 - [x] Pinned differ wrapper and request/response change mapping
 - [x] Unresolved/remote ref, drift, fallback-lane, formatting fixtures
+- [x] Document-fact partitions contain operations/reference state without source bytes
+- [x] Changed-only edit/add/delete/rename/non-spec equivalence with clean extraction
+- [x] Missing changed blobs make coverage partial without a repository scan
 - [x] Remedies and admission report
 
 ## D. Protobuf/gRPC
@@ -30,6 +33,9 @@
 - [x] Provider method/message and consumer stub references
 - [x] Pinned `buf` wrapper/category config
 - [x] Reserved/deleted/renamed/reused-number/wire-JSON fixtures
+- [x] Descriptor-set partitions contain normalized method/field facts without source bytes
+- [x] Changed-only edit/add/delete/rename/non-descriptor equivalence with clean extraction
+- [x] Missing changed blobs make coverage partial without a repository scan
 - [x] Remedies and admission report
 
 ## E. TypeScript/npm
@@ -40,6 +46,9 @@
 - [x] Manifest/lockfile version and activation classification
 - [x] Compatibility subset with conservative unknowns
 - [x] Barrel/overload/type-only/JS/dynamic/version fixtures
+- [x] Package-scoped semantic partitions contain parser facts without source bytes
+- [x] Changed-only edit/add/delete/rename/barrel/metadata equivalence with clean extraction
+- [x] Missing base state or required changed blobs abstain without a repository scan
 - [x] Remedies and admission report
 
 ## F. Cross-adapter verification

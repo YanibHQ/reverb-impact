@@ -56,13 +56,14 @@ were generated locally from repository-backed references.
 | TypeScript/npm | Exported package symbols and downstream imports |
 | OpenAPI/HTTP | Operations, paths, methods, and service references |
 | Protobuf/gRPC | Services, methods, messages, fields, and generated-code references |
+| Events/queues (0.5.0) | Kafka, SQS/SNS, and Pub/Sub destinations and payload schemas |
 
 Additional contract types can be implemented through the public adapter SDK and its validation,
 compatibility, sandboxing, and admission interfaces.
 
 ## Release status
 
-Reverb `0.2.0` is the current public pre-1.0 release. Public APIs and storage formats may change in a
+Reverb `0.4.0` is the current public pre-1.0 release. Public APIs and storage formats may change in a
 future minor release, so downstream users should pin an exact package version. Analysis output is
 advisory: evidence classes must be calibrated with representative, human-reviewed data before they
 are used for automated delivery or policy decisions.
@@ -82,7 +83,7 @@ data; product integrations use Reverb's public package and host boundaries.
 Run the local CLI without adding it to a project:
 
 ```bash
-pnpm dlx reverb-impact@0.2.0 --help
+pnpm dlx reverb-impact@0.4.0 --help
 ```
 
 Hosted integrations such as Yanib should install the host-neutral core, selected contract adapters,
@@ -90,15 +91,15 @@ GitHub host, and PostgreSQL storage explicitly:
 
 ```bash
 pnpm add --save-exact \
-  @yanib/reverb-domain@0.2.0 \
-  @yanib/reverb-schema@0.2.0 \
-  @yanib/reverb-application@0.2.0 \
-  @yanib/reverb-adapter-sdk@0.2.0 \
-  @yanib/reverb-adapter-typescript@0.2.0 \
-  @yanib/reverb-adapter-openapi@0.2.0 \
-  @yanib/reverb-adapter-protobuf@0.2.0 \
-  @yanib/reverb-host-github@0.2.0 \
-  @yanib/reverb-storage-postgres@0.2.0
+  @yanib/reverb-domain@0.4.0 \
+  @yanib/reverb-schema@0.4.0 \
+  @yanib/reverb-application@0.4.0 \
+  @yanib/reverb-adapter-sdk@0.4.0 \
+  @yanib/reverb-adapter-typescript@0.4.0 \
+  @yanib/reverb-adapter-openapi@0.4.0 \
+  @yanib/reverb-adapter-protobuf@0.4.0 \
+  @yanib/reverb-host-github@0.4.0 \
+  @yanib/reverb-storage-postgres@0.4.0
 ```
 
 Install only the packages the host uses. SQLite, the local Git host, the CLI, and the testkit are
@@ -170,6 +171,7 @@ promotion decisions, status, and diagnostics.
 | `@yanib/reverb-schema` | Canonical JSON Schemas and runtime validation |
 | `@yanib/reverb-application` | Host-neutral use cases and ports |
 | `@yanib/reverb-adapter-sdk` | Contract-adapter interfaces, validation, and admission helpers |
+| `@yanib/reverb-adapter-events` | Kafka, SQS/SNS, and Pub/Sub contract analysis (available in 0.5.0) |
 | `@yanib/reverb-adapter-typescript` | TypeScript and npm contract analysis |
 | `@yanib/reverb-adapter-openapi` | OpenAPI and HTTP contract analysis |
 | `@yanib/reverb-adapter-protobuf` | Protobuf and gRPC contract analysis |

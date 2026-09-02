@@ -19,11 +19,11 @@ reports therefore always carry `promotionState: UNMEASURED` and `deliveryReady: 
 
 ## Artifact behavior
 
-| Adapter        | Processed                                                             | Excluded                                   | Incomplete behavior                                                                                                                                |
-| -------------- | --------------------------------------------------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| TypeScript/npm | source, generated declarations, JavaScript, examples                  | vendored and test artifacts                | missing package/export mapping, syntax errors, ambiguity, dynamic or namespace imports produce partial/failed coverage or unresolved references    |
-| OpenAPI        | content-discovered OpenAPI 3.0/3.1 source, generated, examples        | vendored and test artifacts                | remote refs are never fetched; unresolved local refs, missing registry service identity, and duplicate operation identity produce partial coverage |
-| Protobuf/gRPC  | canonical descriptor-set JSON from source/generated/example artifacts | raw `.proto`, vendored, and test artifacts | malformed descriptors and duplicate name/wire identities cannot manufacture an empty complete result                                               |
+| Adapter        | Processed                                                                    | Excluded                                   | Incomplete behavior                                                                                                                                                                        |
+| -------------- | ---------------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| TypeScript/npm | source, generated declarations, JavaScript, compiler path mappings, examples | vendored and test artifacts                | missing package/export mapping, syntax errors, ambiguous or unresolved local modules produce partial/failed coverage; computed and namespace imports remain explicit unresolved references |
+| OpenAPI        | content-discovered OpenAPI 3.0/3.1 source, generated, examples               | vendored and test artifacts                | remote refs are never fetched; unresolved local refs, missing registry service identity, and duplicate operation identity produce partial coverage                                         |
+| Protobuf/gRPC  | canonical descriptor-set JSON from source/generated/example artifacts        | raw `.proto`, vendored, and test artifacts | malformed descriptors and duplicate name/wire identities cannot manufacture an empty complete result                                                                                       |
 
 ## Tool and parser inventory
 

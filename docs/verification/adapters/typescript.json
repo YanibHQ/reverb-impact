@@ -2,7 +2,7 @@
   "schema": "reverb.adapter-admission",
   "schemaVersion": "1.0",
   "adapterId": "reverb.typescript",
-  "adapterVersion": "0.1.0",
+  "adapterVersion": "0.3.0",
   "identityVersion": 1,
   "demand": "Cross-repository npm package public API and consumer import changes.",
   "designPartner": "none",
@@ -16,7 +16,8 @@
   "limitations": [
     "Computed exports, reflective access, and namespace-member selection remain unresolved.",
     "Complex type-system compatibility is conservative and may be potentially breaking or unknown.",
-    "Package export targets that cannot be mapped to supplied source artifacts force partial coverage."
+    "Package export targets that cannot be mapped to supplied source artifacts force partial coverage.",
+    "Repository-local analysis resolves static named imports only; computed and namespace member use remains preview evidence."
   ],
   "maintainer": "YanibHQ/reverb-impact maintainers",
   "checks": [
@@ -44,5 +45,5 @@
   "realLabelledCorpusState": "absent",
   "promotionState": "UNMEASURED",
   "deliveryReady": false,
-  "outputHash": "sha256:c7bea5943691fdda5c794b10645c13fc6b2544bf1041c90a76e6ef8a2a5071fe"
+  "outputHash": "sha256:5308d8d0388c0f0c139e7f74b39d8b8dc238173b9f66991b2e51f31235ec0584"
 }

@@ -6,7 +6,7 @@ Reverb versions three independent surfaces:
 2. canonical JSON/storage schema major/minor;
 3. adapter extraction and identity versions.
 
-The current release is pre-v1 package version `0.2.0`, schema `1.0`, SQLite migration 5, and
+The current release candidate is pre-v1 package version `0.4.0`, schema `1.0`, SQLite migration 7, and
 PostgreSQL migration 3. There is no previous public schema major: schema v0 is explicitly
 unsupported rather than silently treated as a historical format. The schema-major envelope accepts
 supported major 1; each concrete schema validator still requires its declared minor contract.
@@ -29,8 +29,22 @@ adapter code and fails when it is stale.
 
 Version `0.2.0` intentionally requires `AnalyzePullRequestInput.producerHeadObservation` so the
 producer can be analyzed as a consumer at the exact PR head. Hosted PostgreSQL deployments apply
-migration 3 to add reclaimable webhook-worker leases. Neither change requires adapter re-indexing
-or a calibration reset.
+migration 3 to add reclaimable webhook-worker leases.
+
+Version `0.3.0` adds derived PR generations, adapter semantic snapshot persistence, hard provider
+source budgets, and incremental adapter contracts. TypeScript adapter 0.2.0 changes its source
+fingerprint and adds package-partition semantic state, so `reverb.typescript` observations and
+snapshots require re-indexing. OpenAPI adapter 0.2.0 similarly introduces document-fact
+partitions and a new extraction fingerprint, so `reverb.openapi` observations and snapshots also
+require re-indexing. Protobuf adapter 0.2.0 likewise introduces descriptor-fact partitions and a
+new extraction fingerprint, so `reverb.protobuf` observations and snapshots require re-indexing.
+All three identity versions remain 1, and every affected stratum was already `UNMEASURED`, so no
+promoted calibration state is carried forward or reset.
+
+Version `0.4.0` adds repository-scoped TypeScript module definitions and references, bounded
+`tsconfig`/`jsconfig` path resolution, hash-only implementation evidence, and partitioning version 2. TypeScript adapter 0.3.0 requires a TypeScript-only re-index. Its npm-public canonical identities
+remain unchanged, so identity version 1 is retained. The new internal evidence strata and all prior
+TypeScript strata remain `UNMEASURED` until independently evaluated and promoted.
 
 ## Upgrade procedure
 
