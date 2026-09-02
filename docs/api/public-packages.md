@@ -67,6 +67,14 @@ limitations, configuration, hashes, and adapter/extraction/identity/partitioning
 versions. `SqliteStore`, `PostgresHostedStore`, and `InMemoryAnalysisResultStoreV2` implement the
 immutable v2 result-store contract. The testkit exports the shared storage conformance suite.
 
+`IndexRepositoryGenerationV2` and `CreatePullRequestOverlayV2` add hard execution budgets around
+the unchanged v1 generation and overlay use cases. Bootstrap and incremental indexing are selected
+independently from whether a previous generation is supplied; overlay construction always uses the
+pull-request lane. Each result contains the exact legacy result plus closed, source-free telemetry
+for provider requests, source bytes, storage queries, artifacts, model tokens, latency, and exhausted
+dimensions. Budget failures remain explicit incomplete-provider failures, and cleanup operations
+still close failed leases.
+
 ## Derived pull-request generations
 
 `GenerationStore.deriveGeneration` atomically creates a non-selected logical head from a completed,

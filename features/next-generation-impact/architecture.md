@@ -150,5 +150,11 @@ The response cannot directly construct a deterministic `Finding`; it can constru
 - **Reasoning:** optional post-deterministic lane with an independent timeout/circuit breaker.
 - **Delivery:** existing host-owned, authorization-rechecked projection; no automatic enablement.
 
+`IndexRepositoryGenerationV2` chooses the bootstrap or incremental lane from the presence of a
+previous generation. `CreatePullRequestOverlayV2` applies the independent pull-request lane. Both
+wrap the unchanged v1 use cases with atomic provider-call, source-byte, storage-query, artifact,
+model-token, and latency accounting. Provider byte reservations are settled against actual reads;
+cleanup writes remain available after exhaustion so a failed lease cannot remain selectable.
+
 No lane may turn an infrastructure failure into a successful empty result. Every immutable result
 records inputs, versions, scope, and coverage sufficient to reproduce its claims.

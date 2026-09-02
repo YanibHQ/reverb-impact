@@ -1,6 +1,7 @@
 import {
   adapterId,
   analysisId,
+  canonicalJson,
   commitSha,
   configRevision,
   contentHash,
@@ -16,7 +17,7 @@ import {
   treeHash,
   workspaceId,
 } from '@yanib/reverb-domain';
-import { AnalyzePullRequestV2, portSuccess } from '@yanib/reverb-application';
+import { AnalyzePullRequest, AnalyzePullRequestV2, portSuccess } from '@yanib/reverb-application';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -206,6 +207,28 @@ function producerEventsCoverage() {
 }
 
 describe('AnalyzePullRequestV2 bounded scope', () => {
+  it('keeps the nested v1 result canonically identical when all v2 families are disabled', async () => {
+    const legacyDependencies = await fixture();
+    const v2Dependencies = await fixture();
+    allow(legacyDependencies.authorization, [producer, consumer, unselectedCanary]);
+    allow(v2Dependencies.authorization, [producer, consumer, unselectedCanary]);
+    const request = input('ana_01990f64-0000-7000-8000-000000000502');
+    const legacy = await new AnalyzePullRequest({
+      ...legacyDependencies,
+      clock: new FakeClock(now),
+    }).execute(request);
+    const v2 = await new AnalyzePullRequestV2({
+      ...v2Dependencies,
+      clock: new FakeClock(now),
+    }).execute(request);
+    expect(legacy.ok).toBe(true);
+    expect(v2.ok).toBe(true);
+    if (legacy.ok && v2.ok) {
+      expect(canonicalJson(v2.value.legacyResult)).toBe(canonicalJson(legacy.value));
+      expect(v2.value.deterministicFindings).toEqual(legacy.value.findings);
+    }
+  });
+
   it('treats an empty allowlist as exact-head producer-only analysis', async () => {
     const dependencies = await fixture();
     allow(dependencies.authorization, [producer]);

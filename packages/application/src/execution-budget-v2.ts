@@ -41,6 +41,20 @@ const usageToDimension = {
   artifacts: 'artifacts',
   modelTokens: 'model_tokens',
 } as const satisfies Record<keyof ExecutionBudgetDeltaV2, BudgetDimensionV2>;
+type ReservableDimensionV2 = keyof typeof usageToDimension;
+
+function reservationEntries(
+  delta: ExecutionBudgetDeltaV2,
+): readonly (readonly [ReservableDimensionV2, number])[] {
+  return Object.entries(delta).map(([key, amount]) => {
+    if (!Object.hasOwn(usageToDimension, key) || !validNonNegativeInteger(amount)) {
+      throw new RangeError(
+        'Execution budget reservations require known dimensions and non-negative safe integers.',
+      );
+    }
+    return [key as ReservableDimensionV2, amount] as const;
+  });
+}
 
 function validNonNegativeInteger(value: number): boolean {
   return Number.isSafeInteger(value) && value >= 0;
@@ -81,6 +95,18 @@ export class ExecutionBudgetV2 {
     return { ...this.#usage, latencyMs: elapsed(this.#startedAt, this.clock.now()) };
   }
 
+  public remaining(): ExecutionBudgetLimitsV2 {
+    const usage = this.usage();
+    return {
+      providerRequests: Math.max(0, this.limits.providerRequests - usage.providerRequests),
+      sourceBytes: Math.max(0, this.limits.sourceBytes - usage.sourceBytes),
+      storageQueries: Math.max(0, this.limits.storageQueries - usage.storageQueries),
+      artifacts: Math.max(0, this.limits.artifacts - usage.artifacts),
+      modelTokens: Math.max(0, this.limits.modelTokens - usage.modelTokens),
+      latencyMs: Math.max(0, this.limits.latencyMs - usage.latencyMs),
+    };
+  }
+
   #exhaustedResult(dimension: BudgetDimensionV2): PortResult<void> {
     this.#exhausted.add(dimension);
     this.telemetry?.emit({
@@ -98,19 +124,27 @@ export class ExecutionBudgetV2 {
   }
 
   public reserve(delta: ExecutionBudgetDeltaV2): PortResult<void> {
+    const entries = reservationEntries(delta);
     const latencyMs = elapsed(this.#startedAt, this.clock.now());
     if (latencyMs > this.limits.latencyMs) return this.#exhaustedResult('latency_ms');
-    for (const [key, amount] of Object.entries(delta) as [keyof ExecutionBudgetDeltaV2, number][]) {
-      if (!validNonNegativeInteger(amount)) {
-        throw new RangeError('Execution budget reservations must be non-negative safe integers.');
-      }
+    for (const [key, amount] of entries) {
       const next = this.#usage[key] + amount;
       if (next > this.limits[key]) return this.#exhaustedResult(usageToDimension[key]);
     }
-    for (const [key, amount] of Object.entries(delta) as [keyof ExecutionBudgetDeltaV2, number][]) {
+    for (const [key, amount] of entries) {
       this.#usage[key] += amount;
     }
     return portSuccess(undefined);
+  }
+
+  public release(delta: ExecutionBudgetDeltaV2): void {
+    const entries = reservationEntries(delta);
+    for (const [key, amount] of entries) {
+      if (amount > this.#usage[key]) {
+        throw new RangeError('Execution budget releases cannot exceed reserved usage.');
+      }
+    }
+    for (const [key, amount] of entries) this.#usage[key] -= amount;
   }
 
   public complete(completedAt = this.clock.now()): ExecutionBudgetReportV2 {

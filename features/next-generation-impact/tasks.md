@@ -25,8 +25,8 @@
 - [x] Enforce scope in source, generation, evidence, and retrieval paths
 - [x] Add membership/authorization/consent and unselected-read canary tests
 - [x] Add additive SQLite and PostgreSQL migrations plus `0.4.0` upgrade fixtures
-- [ ] Add v2 coverage/provenance records and performance budgets
-- [ ] Prove v1 disabled-feature canonical equivalence
+- [x] Add v2 coverage/provenance records and performance budgets
+- [x] Prove v1 disabled-feature canonical equivalence
 
 ## Phase 003 — deterministic adapters
 
