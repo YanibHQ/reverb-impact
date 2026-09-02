@@ -1,6 +1,6 @@
 {
   "name": "@yanib/reverb-host-local",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Local Git and filesystem host adapters for Reverb",
   "type": "module",
   "license": "Apache-2.0",

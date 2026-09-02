@@ -11,3 +11,4 @@ Accepted ADRs are immutable. A new ADR supersedes an old decision and links it e
 - [0004 — Adapter manifest SemVer validation](0004-adapter-manifest-semver-validation.md)
 - [0005 — Canonical JSON object boundary](0005-canonical-json-object-boundary.md)
 - [0006 — Index-first pull-request overlays](0006-index-first-pr-overlays.md)
+- [0007 — Repository-scoped TypeScript module contracts](0007-repository-scoped-typescript-modules.md)

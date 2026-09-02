@@ -5,13 +5,17 @@ export const TYPESCRIPT_ADAPTER_MANIFEST: AdapterManifest = validateAdapterManif
   schema: 'reverb.adapter-manifest',
   schemaVersion: '1.0',
   id: adapterId('reverb.typescript'),
-  version: '0.2.0',
+  version: '0.3.0',
   identityVersion: 1,
   contractKinds: ['typescript_symbol'],
   capabilityTiers: [
     { input: 'npm package exports with TypeScript source or declarations', tier: 'contract_grade' },
     { input: 'npm package exports with JavaScript source', tier: 'structural' },
     { input: 'static ESM/CommonJS named imports', tier: 'structural' },
+    {
+      input: 'repository-scoped TypeScript modules with relative or tsconfig-path imports',
+      tier: 'structural',
+    },
     { input: 'dynamic or namespace imports', tier: 'preview' },
   ],
   evidenceStrata: [
@@ -33,12 +37,31 @@ export const TYPESCRIPT_ADAPTER_MANIFEST: AdapterManifest = validateAdapterManif
       requiredEvidence: ['bounded import pattern', 'source location'],
       promotionState: 'UNMEASURED',
     },
+    {
+      id: 'internal_module_export',
+      family: 'exact_symbol',
+      requiredEvidence: ['repository scope', 'resolved module path', 'exported symbol shape'],
+      promotionState: 'UNMEASURED',
+    },
+    {
+      id: 'internal_static_import',
+      family: 'exact_symbol',
+      requiredEvidence: ['repository scope', 'resolved module path', 'imported symbol'],
+      promotionState: 'UNMEASURED',
+    },
+    {
+      id: 'internal_dynamic_import',
+      family: 'fallback_identity',
+      requiredEvidence: ['repository-local import pattern', 'source location'],
+      promotionState: 'UNMEASURED',
+    },
   ],
   externalTools: [],
   limitations: [
     'Computed exports, reflective access, and namespace-member selection remain unresolved.',
     'Complex type-system compatibility is conservative and may be potentially breaking or unknown.',
     'Package export targets that cannot be mapped to supplied source artifacts force partial coverage.',
+    'Repository-local analysis resolves static named imports only; computed and namespace member use remains preview evidence.',
   ],
   resourceBudget: {
     timeoutMs: 20_000,

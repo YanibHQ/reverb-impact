@@ -6,7 +6,7 @@ Reverb versions three independent surfaces:
 2. canonical JSON/storage schema major/minor;
 3. adapter extraction and identity versions.
 
-The current release is pre-v1 package version `0.3.0`, schema `1.0`, SQLite migration 7, and
+The current release candidate is pre-v1 package version `0.4.0`, schema `1.0`, SQLite migration 7, and
 PostgreSQL migration 3. There is no previous public schema major: schema v0 is explicitly
 unsupported rather than silently treated as a historical format. The schema-major envelope accepts
 supported major 1; each concrete schema validator still requires its declared minor contract.
@@ -40,6 +40,11 @@ require re-indexing. Protobuf adapter 0.2.0 likewise introduces descriptor-fact 
 new extraction fingerprint, so `reverb.protobuf` observations and snapshots require re-indexing.
 All three identity versions remain 1, and every affected stratum was already `UNMEASURED`, so no
 promoted calibration state is carried forward or reset.
+
+Version `0.4.0` adds repository-scoped TypeScript module definitions and references, bounded
+`tsconfig`/`jsconfig` path resolution, hash-only implementation evidence, and partitioning version 2. TypeScript adapter 0.3.0 requires a TypeScript-only re-index. Its npm-public canonical identities
+remain unchanged, so identity version 1 is retained. The new internal evidence strata and all prior
+TypeScript strata remain `UNMEASURED` until independently evaluated and promoted.
 
 ## Upgrade procedure
 

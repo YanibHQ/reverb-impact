@@ -1,6 +1,6 @@
 {
   "name": "reverb-impact-workspace",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "description": "Evidence-first cross-repository pull-request impact analysis",

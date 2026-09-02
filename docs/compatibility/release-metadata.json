@@ -1,8 +1,8 @@
 {
   "document_schema": "reverb.release-compatibility-metadata",
   "schema_version": "1.0",
-  "release_status": "pre_v1_published",
-  "package_version": "0.3.0",
+  "release_status": "pre_v1_release_candidate",
+  "package_version": "0.4.0",
   "schema": {
     "current_version": "1.0",
     "supported_majors": [1],
@@ -16,7 +16,7 @@
   "adapters": [
     {
       "id": "reverb.typescript",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "identity_version": 1
     },
     {
@@ -32,18 +32,18 @@
   ],
   "reindex": {
     "required": true,
-    "adapter_ids": ["reverb.openapi", "reverb.protobuf", "reverb.typescript"],
-    "reason": "TypeScript, OpenAPI, and Protobuf adapter 0.2.0 extraction fingerprints introduce persisted semantic partition state; existing observations and snapshots for all three adapters must be rebuilt."
+    "adapter_ids": ["reverb.typescript"],
+    "reason": "TypeScript adapter 0.3.0 adds repository-scoped module identities, compiler path mappings, implementation hashes, and partitioning version 2; existing TypeScript observations and snapshots must be rebuilt."
   },
   "calibration": {
     "reset_strata": [],
     "reason": "All evidence strata are already UNMEASURED; no compatibility claim is carried forward."
   },
   "publication": {
-    "npm": true,
+    "npm": false,
     "container": false,
     "signature": false,
     "provenance_workflow": true,
-    "reason": "All 13 version 0.3.0 npm packages were published with signed GitHub Actions provenance and clean-install verified on 2026-09-01; container publication and release signatures remain pending."
+    "reason": "Version 0.4.0 is a verified release candidate and has not yet been published."
   }
 }

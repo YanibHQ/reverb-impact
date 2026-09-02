@@ -7,6 +7,19 @@ explicit and package breaking changes may occur in minor releases.
 
 ## Unreleased
 
+## 0.4.0 - 2026-09-02
+
+- Added repository-scoped TypeScript module definitions and static references for same-repository
+  pull-request impact analysis without conflating private modules with npm-public contracts.
+- Added deterministic relative and `compilerOptions.paths` module resolution from persisted bounded
+  `tsconfig`/`jsconfig` facts, including changed-blob-only incremental equivalence.
+- Added hash-only implementation evidence so internal function, class, and variable behavior edits
+  become potentially breaking current-runtime review candidates without persisting source bodies.
+- Preserved one stable evidence reference per importing module and added static resolution for
+  literal dynamic imports with named destructuring.
+- Advanced the TypeScript adapter to 0.3.0 and partitioning version 2. TypeScript snapshots require
+  re-indexing; canonical npm identities remain on identity version 1.
+
 ## 0.3.0 - 2026-09-01
 
 - Published all 13 packages through the trusted GitHub Actions npm publisher with signed provenance.

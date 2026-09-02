@@ -2,7 +2,7 @@ import { posix } from 'node:path';
 
 import ts from 'typescript';
 
-import type { ContentHash, RepoPath } from '@yanib/reverb-domain';
+import { contentHash, sha256Text, type ContentHash, type RepoPath } from '@yanib/reverb-domain';
 import type { ArtifactInput, SourceRange } from '@yanib/reverb-adapter-sdk';
 
 import type { TypeScriptSymbolSpace } from './identity.js';
@@ -15,6 +15,8 @@ export interface ParsedSymbol {
   readonly range: SourceRange;
   readonly path: RepoPath;
   readonly contentHash: ContentHash;
+  /** Hash-only implementation evidence; source bodies are never persisted. */
+  readonly implementationHash?: ContentHash;
 }
 
 export interface ReExport {
@@ -43,6 +45,15 @@ export interface ParsedTypeScriptModule {
   readonly reExports: readonly ReExport[];
   readonly imports: readonly ParsedImport[];
   readonly parseErrors: number;
+}
+
+export interface ParsedTypeScriptConfig {
+  readonly path: RepoPath;
+  readonly baseUrl: string;
+  readonly paths: readonly {
+    readonly pattern: string;
+    readonly targets: readonly string[];
+  }[];
 }
 
 function range(source: ts.SourceFile, node: ts.Node): SourceRange {
@@ -92,6 +103,10 @@ function functionShape(node: ts.FunctionDeclaration, source: ts.SourceFile) {
   };
 }
 
+function implementationHash(node: ts.Node, source: ts.SourceFile): ContentHash {
+  return contentHash(sha256Text(normalizedText(node, source)));
+}
+
 function declarationSymbol(
   statement: ts.Statement,
   source: ts.SourceFile,
@@ -111,6 +126,9 @@ function declarationSymbol(
         range: range(source, statement),
         path: artifact.path,
         contentHash: artifact.contentHash,
+        ...(statement.body === undefined
+          ? {}
+          : { implementationHash: implementationHash(statement.body, source) }),
       },
     ];
   }
@@ -151,6 +169,7 @@ function declarationSymbol(
       range: range(source, statement),
       path: artifact.path,
       contentHash: artifact.contentHash,
+      implementationHash: implementationHash(statement, source),
     } as const;
     return [
       { ...common, space: 'value' },
@@ -187,6 +206,9 @@ function declarationSymbol(
         range: range(source, declaration),
         path: artifact.path,
         contentHash: artifact.contentHash,
+        ...(declaration.initializer === undefined
+          ? {}
+          : { implementationHash: implementationHash(declaration.initializer, source) }),
       });
     }
     return symbols;
@@ -231,11 +253,32 @@ function externalImports(source: ts.SourceFile): ParsedImport[] {
       }
     } else if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
       const argument = node.arguments[0];
-      imports.push({
-        source: argument !== undefined && ts.isStringLiteral(argument) ? argument.text : '*',
-        unresolvedReason: 'dynamic_import',
-        range: range(source, node),
-      });
+      const moduleName =
+        argument !== undefined && ts.isStringLiteral(argument) ? argument.text : undefined;
+      const awaited = ts.isAwaitExpression(node.parent) ? node.parent : node;
+      const parent = awaited.parent;
+      if (
+        moduleName !== undefined &&
+        ts.isVariableDeclaration(parent) &&
+        ts.isObjectBindingPattern(parent.name)
+      ) {
+        for (const element of parent.name.elements) {
+          if (!ts.isIdentifier(element.name)) continue;
+          imports.push({
+            source: moduleName,
+            symbol: element.propertyName?.getText(source) ?? element.name.text,
+            localName: element.name.text,
+            space: 'value',
+            range: range(source, element),
+          });
+        }
+      } else {
+        imports.push({
+          source: moduleName ?? '*',
+          unresolvedReason: 'dynamic_import',
+          range: range(source, node),
+        });
+      }
     } else if (
       ts.isCallExpression(node) &&
       ts.isIdentifier(node.expression) &&
@@ -342,6 +385,10 @@ export function resolveRelativeModule(
 ): string | undefined {
   if (!specifier.startsWith('.')) return undefined;
   const base = posix.normalize(posix.join(posix.dirname(from), specifier));
+  return resolveModuleCandidate(base, available);
+}
+
+function resolveModuleCandidate(base: string, available: ReadonlySet<string>): string | undefined {
   const withoutRuntimeExtension = base.replace(/\.(?:mjs|cjs|js|jsx)$/, '');
   const candidates = [
     base,
@@ -359,4 +406,87 @@ export function resolveRelativeModule(
     `${withoutRuntimeExtension}/index.tsx`,
   ];
   return candidates.find((candidate) => available.has(candidate));
+}
+
+function plainRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** Parse only the path-resolution facts required for deterministic module identity. */
+export function parseTypeScriptConfig(
+  artifact: ArtifactInput,
+  text: string,
+): ParsedTypeScriptConfig | undefined {
+  const parsed = ts.parseConfigFileTextToJson(artifact.path, text);
+  if (parsed.error !== undefined || !plainRecord(parsed.config)) return undefined;
+  const compilerOptions = parsed.config.compilerOptions;
+  if (!plainRecord(compilerOptions)) return undefined;
+  const rawPaths = compilerOptions.paths;
+  const paths = plainRecord(rawPaths)
+    ? Object.keys(rawPaths)
+        .sort()
+        .slice(0, 256)
+        .flatMap((pattern) => {
+          const rawTargets = rawPaths[pattern];
+          if (pattern.length === 0 || pattern.length > 512 || !Array.isArray(rawTargets)) {
+            return [];
+          }
+          const targets = rawTargets
+            .filter((target): target is string => typeof target === 'string')
+            .filter((target) => target.length > 0 && target.length <= 512)
+            .slice(0, 32);
+          return targets.length === 0 ? [] : [{ pattern, targets }];
+        })
+    : [];
+  const baseUrl =
+    typeof compilerOptions.baseUrl === 'string' && compilerOptions.baseUrl.length <= 512
+      ? compilerOptions.baseUrl
+      : '.';
+  return { path: artifact.path, baseUrl, paths };
+}
+
+function patternCapture(pattern: string, specifier: string): string | undefined {
+  const wildcard = pattern.indexOf('*');
+  if (wildcard < 0) return pattern === specifier ? '' : undefined;
+  if (pattern.indexOf('*', wildcard + 1) >= 0) return undefined;
+  const prefix = pattern.slice(0, wildcard);
+  const suffix = pattern.slice(wildcard + 1);
+  if (!specifier.startsWith(prefix) || !specifier.endsWith(suffix)) return undefined;
+  return specifier.slice(prefix.length, specifier.length - suffix.length);
+}
+
+/** Resolve a relative import or a `compilerOptions.paths` alias to an indexed module. */
+export function resolveTypeScriptModule(
+  from: string,
+  specifier: string,
+  available: ReadonlySet<string>,
+  configs: readonly ParsedTypeScriptConfig[] = [],
+): string | undefined {
+  const relative = resolveRelativeModule(from, specifier, available);
+  if (relative !== undefined) return relative;
+  const applicable = [...configs]
+    .filter((config) => {
+      const directory = posix.dirname(config.path);
+      return directory === '.' || from === directory || from.startsWith(`${directory}/`);
+    })
+    .sort((left, right) => {
+      const depth = posix.dirname(right.path).length - posix.dirname(left.path).length;
+      return depth === 0 ? left.path.localeCompare(right.path) : depth;
+    });
+  for (const config of applicable) {
+    const configDirectory = posix.dirname(config.path);
+    const baseDirectory = posix.normalize(posix.join(configDirectory, config.baseUrl));
+    for (const mapping of config.paths) {
+      const capture = patternCapture(mapping.pattern, specifier);
+      if (capture === undefined) continue;
+      for (const target of mapping.targets) {
+        const mapped = target.includes('*') ? target.replace('*', capture) : target;
+        const base = posix.normalize(posix.join(baseDirectory, mapped));
+        if (base === '..' || base.startsWith('../') || posix.isAbsolute(base)) continue;
+        const resolved = resolveModuleCandidate(base, available);
+        if (resolved !== undefined) return resolved;
+      }
+    }
+  }
+  return undefined;
 }

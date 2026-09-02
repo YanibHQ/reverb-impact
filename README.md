@@ -82,7 +82,7 @@ data; product integrations use Reverb's public package and host boundaries.
 Run the local CLI without adding it to a project:
 
 ```bash
-pnpm dlx reverb-impact@0.3.0 --help
+pnpm dlx reverb-impact@0.4.0 --help
 ```
 
 Hosted integrations such as Yanib should install the host-neutral core, selected contract adapters,
@@ -90,15 +90,15 @@ GitHub host, and PostgreSQL storage explicitly:
 
 ```bash
 pnpm add --save-exact \
-  @yanib/reverb-domain@0.3.0 \
-  @yanib/reverb-schema@0.3.0 \
-  @yanib/reverb-application@0.3.0 \
-  @yanib/reverb-adapter-sdk@0.3.0 \
-  @yanib/reverb-adapter-typescript@0.3.0 \
-  @yanib/reverb-adapter-openapi@0.3.0 \
-  @yanib/reverb-adapter-protobuf@0.3.0 \
-  @yanib/reverb-host-github@0.3.0 \
-  @yanib/reverb-storage-postgres@0.3.0
+  @yanib/reverb-domain@0.4.0 \
+  @yanib/reverb-schema@0.4.0 \
+  @yanib/reverb-application@0.4.0 \
+  @yanib/reverb-adapter-sdk@0.4.0 \
+  @yanib/reverb-adapter-typescript@0.4.0 \
+  @yanib/reverb-adapter-openapi@0.4.0 \
+  @yanib/reverb-adapter-protobuf@0.4.0 \
+  @yanib/reverb-host-github@0.4.0 \
+  @yanib/reverb-storage-postgres@0.4.0
 ```
 
 Install only the packages the host uses. SQLite, the local Git host, the CLI, and the testkit are

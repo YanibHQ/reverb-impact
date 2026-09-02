@@ -65,13 +65,16 @@ for (const directory of await readdir(resolve(root, 'packages'), { withFileTypes
     failures.push(`${manifest.name}: package version differs from release metadata`);
   }
 }
+const knownAdapterIds = expectedAdapters.map((adapter) => adapter.id).sort();
+const reindexAdapterIds = [...metadata.reindex.adapter_ids].sort();
 if (
   metadata.reindex.required !== true ||
-  JSON.stringify(metadata.reindex.adapter_ids) !==
-    JSON.stringify(['reverb.openapi', 'reverb.protobuf', 'reverb.typescript']) ||
+  reindexAdapterIds.length === 0 ||
+  new Set(reindexAdapterIds).size !== reindexAdapterIds.length ||
+  reindexAdapterIds.some((id) => !knownAdapterIds.includes(id)) ||
   metadata.calibration.reset_strata.length !== 0
 ) {
-  failures.push('release metadata does not declare the three-adapter re-index boundary');
+  failures.push('release metadata does not declare a valid adapter re-index boundary');
 }
 
 if (failures.length > 0) {
