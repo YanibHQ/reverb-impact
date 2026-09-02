@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.yanibhq.dev/reverb/analysis-scope/v2.json",
+  "title": "Reverb bounded analysis scope provenance",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "workspace_id",
+    "registry_revision",
+    "producer_repository_id",
+    "mode",
+    "requested_repository_ids",
+    "repositories",
+    "gaps",
+    "scope_hash"
+  ],
+  "properties": {
+    "schema": { "const": "reverb.analysis-scope" },
+    "schema_version": { "const": "2.0" },
+    "workspace_id": {
+      "type": "string",
+      "pattern": "^wsp_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "registry_revision": { "type": "string", "pattern": "^reg_sha256:[0-9a-f]{64}$" },
+    "producer_repository_id": {
+      "type": "string",
+      "pattern": "^(?:github:[1-9][0-9]*|local:sha256:[0-9a-f]{64})$"
+    },
+    "mode": { "enum": ["legacy", "allowlist"] },
+    "requested_repository_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^(?:github:[1-9][0-9]*|local:sha256:[0-9a-f]{64})$" }
+    },
+    "repositories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "repository_id",
+          "producer",
+          "requested",
+          "consent_revision",
+          "authorization_revision",
+          "authorization_decision_hash"
+        ],
+        "properties": {
+          "repository_id": {
+            "type": "string",
+            "pattern": "^(?:github:[1-9][0-9]*|local:sha256:[0-9a-f]{64})$"
+          },
+          "producer": { "type": "boolean" },
+          "requested": { "type": "boolean" },
+          "consent_revision": { "type": "string", "minLength": 1 },
+          "authorization_revision": { "type": "string", "pattern": "^reg_sha256:[0-9a-f]{64}$" },
+          "authorization_decision_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+        }
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["repository_id", "reason"],
+        "properties": {
+          "repository_id": {
+            "type": "string",
+            "pattern": "^(?:github:[1-9][0-9]*|local:sha256:[0-9a-f]{64})$"
+          },
+          "reason": {
+            "enum": [
+              "unknown_repository",
+              "repository_not_selected",
+              "consent_denied",
+              "authorization_denied",
+              "authorization_unavailable"
+            ]
+          }
+        }
+      }
+    },
+    "scope_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

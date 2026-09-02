@@ -1,15 +1,31 @@
 import Ajv2020, { type ValidateFunction } from 'ajv/dist/2020.js';
 
 import { FOUNDATION_SCHEMAS, type JsonSchema } from './foundation.js';
-import { assertReadableSchemaVersion, parseSchemaVersion } from './compatibility.js';
+import {
+  assertReadableSchemaVersion,
+  assertReadableSchemaVersionV2,
+  parseSchemaVersion,
+} from './compatibility.js';
 import { SchemaValidationError } from './schema-error.js';
+import { V2_SCHEMAS } from './v2.js';
 
 export { SchemaValidationError } from './schema-error.js';
 
 const ajv = new Ajv2020.default({ allErrors: true, strict: true });
 const validators = new Map<string, ValidateFunction>();
-for (const entry of FOUNDATION_SCHEMAS) {
+for (const entry of [...FOUNDATION_SCHEMAS, ...V2_SCHEMAS]) {
   validators.set(entry.schema.$id, ajv.compile(entry.schema as JsonSchema));
+}
+
+export function assertSupportedSchemaVersionV2(
+  value: unknown,
+): asserts value is { schema_version: string } {
+  if (!value || typeof value !== 'object' || !('schema_version' in value)) {
+    throw new SchemaValidationError('invalid_schema', 'Payload does not declare schema_version.');
+  }
+  const version = (value as { schema_version?: unknown }).schema_version;
+  parseSchemaVersion(version);
+  assertReadableSchemaVersionV2(version);
 }
 
 export function assertSupportedSchemaVersion(
