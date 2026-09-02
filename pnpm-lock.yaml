@@ -39,6 +39,15 @@ importers:
         specifier: workspace:*
         version: link:../../packages/domain
 
+  packages/adapter-database:
+    dependencies:
+      '@yanib/reverb-adapter-sdk':
+        specifier: workspace:*
+        version: link:../adapter-sdk
+      '@yanib/reverb-domain':
+        specifier: workspace:*
+        version: link:../domain
+
   packages/adapter-events:
     dependencies:
       '@yanib/reverb-adapter-sdk':
@@ -50,6 +59,15 @@ importers:
       yaml:
         specifier: 2.8.3
         version: 2.8.3
+
+  packages/adapter-http:
+    dependencies:
+      '@yanib/reverb-adapter-sdk':
+        specifier: workspace:*
+        version: link:../adapter-sdk
+      '@yanib/reverb-domain':
+        specifier: workspace:*
+        version: link:../domain
 
   packages/adapter-openapi:
     dependencies:

@@ -3,6 +3,8 @@ import { dirname, resolve } from 'node:path';
 
 import { OPENAPI_ADMISSION_REPORT } from '../packages/adapter-openapi/src/index.js';
 import { EVENTS_ADMISSION_REPORT } from '../packages/adapter-events/src/index.js';
+import { DATABASE_ADMISSION_REPORT } from '../packages/adapter-database/src/index.js';
+import { HTTP_ADMISSION_REPORT } from '../packages/adapter-http/src/index.js';
 import { PROTOBUF_ADMISSION_REPORT } from '../packages/adapter-protobuf/src/index.js';
 import { TYPESCRIPT_ADMISSION_REPORT } from '../packages/adapter-typescript/src/index.js';
 
@@ -12,7 +14,9 @@ if (mode !== '--check' && mode !== '--write') {
 }
 
 const reports = new Map([
+  ['database.json', DATABASE_ADMISSION_REPORT],
   ['events.json', EVENTS_ADMISSION_REPORT],
+  ['http.json', HTTP_ADMISSION_REPORT],
   ['openapi.json', OPENAPI_ADMISSION_REPORT],
   ['protobuf.json', PROTOBUF_ADMISSION_REPORT],
   ['typescript.json', TYPESCRIPT_ADMISSION_REPORT],

@@ -8,15 +8,15 @@
 
 ## Shared database
 
-- [ ] Identity/extraction/change/incremental implementation
-- [ ] SQL migration, schema, ORM/query backend-to-backend and same-repository fixtures
-- [ ] Dialect/dynamic SQL/partial/adversarial/admission/docs
+- [x] Identity/extraction/change/incremental implementation
+- [x] SQL migration, schema, ORM/query backend-to-backend and same-repository fixtures
+- [x] Dialect/dynamic SQL/partial/adversarial/admission/docs
 
 ## Implicit HTTP
 
-- [ ] Identity/extraction/change/incremental implementation
-- [ ] Framework route/client/alias backend-to-backend and same-repository fixtures
-- [ ] Dynamic URL/proxy/partial/adversarial/admission/docs
+- [x] Identity/extraction/change/incremental implementation
+- [x] Framework route/client/alias backend-to-backend and same-repository fixtures
+- [x] Dynamic URL/proxy/partial/adversarial/admission/docs
 
 ## Configuration
 

@@ -7,6 +7,14 @@ import {
   EVENTS_ADMISSION_REPORT,
 } from '../packages/adapter-events/src/index.js';
 import {
+  DATABASE_ADAPTER_MANIFEST,
+  DATABASE_ADMISSION_REPORT,
+} from '../packages/adapter-database/src/index.js';
+import {
+  HTTP_ADAPTER_MANIFEST,
+  HTTP_ADMISSION_REPORT,
+} from '../packages/adapter-http/src/index.js';
+import {
   PROTOBUF_ADAPTER_MANIFEST,
   PROTOBUF_ADMISSION_REPORT,
 } from '../packages/adapter-protobuf/src/index.js';
@@ -25,9 +33,11 @@ const manifests = [
   PROTOBUF_ADAPTER_MANIFEST,
   TYPESCRIPT_ADAPTER_MANIFEST,
 ];
-const manifestsV2 = [EVENTS_ADAPTER_MANIFEST];
+const manifestsV2 = [DATABASE_ADAPTER_MANIFEST, EVENTS_ADAPTER_MANIFEST, HTTP_ADAPTER_MANIFEST];
 const reports = [
+  DATABASE_ADMISSION_REPORT,
   EVENTS_ADMISSION_REPORT,
+  HTTP_ADMISSION_REPORT,
   OPENAPI_ADMISSION_REPORT,
   PROTOBUF_ADMISSION_REPORT,
   TYPESCRIPT_ADMISSION_REPORT,

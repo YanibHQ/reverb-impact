@@ -11,6 +11,8 @@ must not import storage internals or another host's implementation.
 | `@yanib/reverb-application`        | orchestration use cases and host-neutral ports                        |
 | `@yanib/reverb-adapter-sdk`        | adapter contract, validation, sandbox and admission helpers           |
 | `@yanib/reverb-adapter-events`     | Kafka, SQS/SNS, and Pub/Sub destination/payload evidence              |
+| `@yanib/reverb-adapter-database`   | PostgreSQL migration, table/column/enum, SQL, and Prisma evidence     |
+| `@yanib/reverb-adapter-http`       | implicit framework route and HTTP client-call evidence                |
 | `@yanib/reverb-adapter-typescript` | TypeScript/npm extraction and compatibility adapter                   |
 | `@yanib/reverb-adapter-openapi`    | OpenAPI operation extraction and compatibility adapter                |
 | `@yanib/reverb-adapter-protobuf`   | Protobuf/gRPC extraction and compatibility adapter                    |
@@ -86,6 +88,23 @@ bounded manifests and supported literal Kafka, SQS/SNS, and Pub/Sub calls. Dynam
 hashed and reported as partial unresolved evidence. V2 materialization and joining bind every edge
 to the resolved scope plus exact producer/consumer generations, commits, locations, content hashes,
 and adapter protocol versions. New strata remain preview-only and `UNMEASURED`.
+
+`@yanib/reverb-adapter-database` emits `database.table`, `database.column`, and `database.enum`
+evidence from bounded PostgreSQL DDL, migrations, literal SQL references, Prisma schema metadata,
+and configured Prisma client calls. The host supplies a stable database namespace and any client
+model/field mappings. Migration documents are applied in lexicographic repository-path order, so
+operators must use migration paths whose ordering matches deployment order. Dynamic SQL, missing
+migration bases, unsupported dialects, generated migrations, stored procedures, unresolved query
+columns, and absent client mappings produce partial coverage. The adapter does not connect to a
+database, execute repository code, or read provider state.
+
+`@yanib/reverb-adapter-http` emits `http.route` evidence from bounded Express, Fastify, and Hono
+route registrations plus `fetch`, Axios, and configured client calls. The host supplies immutable
+producer service IDs and exact hostname/client aliases. Route parameters and bounded template
+segments normalize to a shared identity; dynamic hosts or methods, arbitrary URL construction,
+mounted router prefixes, runtime registration, proxy rewrites, generated sources, and missing
+aliases produce partial coverage. The adapter performs no network access, and OpenAPI remains a
+separate higher-specificity evidence lane.
 
 ## Derived pull-request generations
 
