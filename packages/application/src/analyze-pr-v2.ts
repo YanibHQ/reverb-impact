@@ -2,12 +2,14 @@ import {
   finalizeAnalysisResultV2,
   type AnalysisResultV2,
   type ConsumerScopeV2,
+  type ExecutionBudgetLimitsV2,
   type RegistryRevision,
   type RegistrySnapshot,
   type WorkspaceId,
 } from '@yanib/reverb-domain';
 
 import { ResolveAnalysisScope } from './analysis-scope.js';
+import { ExecutionBudgetV2 } from './execution-budget-v2.js';
 import {
   AnalyzePullRequest,
   type AnalyzePullRequestDependencies,
@@ -26,6 +28,7 @@ export interface AnalyzePullRequestV2Input extends AnalyzePullRequestInput {
   readonly schemaMajor: 2;
   readonly subject: Subject;
   readonly consumerScope?: ConsumerScopeV2;
+  readonly executionBudget: ExecutionBudgetLimitsV2;
 }
 
 export interface AnalyzePullRequestV2Dependencies extends AnalyzePullRequestDependencies {
@@ -113,6 +116,13 @@ export class AnalyzePullRequestV2 {
         retryable: false,
       });
     }
+    const budget = new ExecutionBudgetV2(
+      'pull_request',
+      input.executionBudget,
+      this.dependencies.clock,
+    );
+    const registryReservation = budget.reserve({ storageQueries: 1 });
+    if (!registryReservation.ok) return registryReservation;
     const registry = await this.dependencies.registry.getRevision(
       input.workspaceId,
       input.registryRevision,
@@ -128,6 +138,14 @@ export class AnalyzePullRequestV2 {
     if (!resolved.ok) return resolved;
 
     const repositoryIds = resolved.value.capability.repositoryIds;
+    const deterministicReservation = budget.reserve({
+      storageQueries: 5 + Math.max(0, repositoryIds.length - 1) * 2,
+      artifacts:
+        input.changes.length +
+        input.producerDefinitions.length +
+        input.producerHeadObservation.references.length,
+    });
+    if (!deterministicReservation.ok) return deterministicReservation;
     const legacyInput: AnalyzePullRequestInput = input;
     const legacy = await new AnalyzePullRequest({
       ...this.dependencies,
@@ -139,10 +157,13 @@ export class AnalyzePullRequestV2 {
       ),
     }).execute(legacyInput);
     if (!legacy.ok) return legacy;
+    const budgetReport = budget.complete();
     const state =
       legacy.value.state === 'superseded'
         ? 'superseded'
-        : legacy.value.state === 'partial' || resolved.value.provenance.gaps.length > 0
+        : legacy.value.state === 'partial' ||
+            resolved.value.provenance.gaps.length > 0 ||
+            budgetReport.exhaustedDimensions.length > 0
           ? 'partial'
           : 'complete';
     return portSuccess(
@@ -152,6 +173,7 @@ export class AnalyzePullRequestV2 {
         legacyResult: legacy.value,
         scope: resolved.value.provenance,
         state,
+        executionBudgets: [budgetReport],
         deterministicFindings: legacy.value.findings,
         reasoningHypotheses: [],
       }),

@@ -3,6 +3,7 @@ export * from './analysis-scope.js';
 export * from './analysis-v2.js';
 export * from './adapter-snapshot.js';
 export * from './errors.js';
+export * from './execution-v2.js';
 export * from './finding.js';
 export * from './graph.js';
 export * from './id-factory.js';

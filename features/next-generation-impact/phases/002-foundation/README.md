@@ -1,6 +1,6 @@
 # Phase 002 — scoped analysis foundation
 
-**Status:** Planned  
+**Status:** In progress
 **Depends on:** [001](../001-design-contract/)
 
 ## Goal

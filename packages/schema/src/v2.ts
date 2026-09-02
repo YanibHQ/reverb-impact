@@ -99,6 +99,70 @@ const reasoningHypothesis = {
   },
 } as const satisfies JsonSchema;
 
+const budgetCounters = {
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'provider_requests',
+    'source_bytes',
+    'storage_queries',
+    'artifacts',
+    'model_tokens',
+    'latency_ms',
+  ],
+  properties: {
+    provider_requests: { type: 'integer', minimum: 0 },
+    source_bytes: { type: 'integer', minimum: 0 },
+    storage_queries: { type: 'integer', minimum: 0 },
+    artifacts: { type: 'integer', minimum: 0 },
+    model_tokens: { type: 'integer', minimum: 0 },
+    latency_ms: { type: 'integer', minimum: 0 },
+  },
+} as const satisfies JsonSchema;
+
+export const executionBudgetV2Schema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  $id: 'https://schemas.yanibhq.dev/reverb/execution-budget/v2.json',
+  title: 'Reverb bounded execution budget report',
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'schema',
+    'schema_version',
+    'lane',
+    'limits',
+    'usage',
+    'exhausted_dimensions',
+    'started_at',
+    'completed_at',
+    'output_hash',
+  ],
+  properties: {
+    schema: { const: 'reverb.execution-budget' },
+    schema_version: { const: '2.0' },
+    lane: { enum: ['bootstrap_index', 'incremental_index', 'pull_request', 'reasoning'] },
+    limits: budgetCounters,
+    usage: budgetCounters,
+    exhausted_dimensions: {
+      type: 'array',
+      uniqueItems: true,
+      items: {
+        enum: [
+          'provider_requests',
+          'source_bytes',
+          'storage_queries',
+          'artifacts',
+          'model_tokens',
+          'latency_ms',
+        ],
+      },
+    },
+    started_at: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}T.*Z$' },
+    completed_at: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}T.*Z$' },
+    output_hash: { type: 'string', pattern: hashPattern },
+  },
+} as const satisfies JsonSchema;
+
 export const analysisResultV2Schema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   $id: 'https://schemas.yanibhq.dev/reverb/analysis-result/v2.json',
@@ -111,6 +175,7 @@ export const analysisResultV2Schema = {
     'legacy_result',
     'scope',
     'state',
+    'execution_budgets',
     'deterministic_findings',
     'reasoning_hypotheses',
     'output_hash',
@@ -121,6 +186,7 @@ export const analysisResultV2Schema = {
     legacy_result: { type: 'object' },
     scope: analysisScopeV2Schema,
     state: { enum: ['complete', 'partial', 'superseded'] },
+    execution_budgets: { type: 'array', items: executionBudgetV2Schema },
     deterministic_findings: { type: 'array', items: { type: 'object' } },
     reasoning_hypotheses: { type: 'array', items: reasoningHypothesis },
     output_hash: { type: 'string', pattern: hashPattern },
@@ -129,5 +195,6 @@ export const analysisResultV2Schema = {
 
 export const V2_SCHEMAS = Object.freeze([
   { file: 'reverb-analysis-scope-v2.schema.json', schema: analysisScopeV2Schema },
+  { file: 'reverb-execution-budget-v2.schema.json', schema: executionBudgetV2Schema },
   { file: 'reverb-analysis-result-v2.schema.json', schema: analysisResultV2Schema },
 ]);

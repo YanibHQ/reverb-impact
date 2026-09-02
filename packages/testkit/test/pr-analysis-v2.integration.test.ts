@@ -118,6 +118,14 @@ async function fixture() {
 function input(id: string) {
   return {
     schemaMajor: 2 as const,
+    executionBudget: {
+      providerRequests: 0,
+      sourceBytes: 0,
+      storageQueries: 32,
+      artifacts: 32,
+      modelTokens: 0,
+      latencyMs: 1_000,
+    },
     analysisId: analysisId(id),
     workspaceId: workspace,
     registryRevision: snapshot.revision.revision,
@@ -179,6 +187,7 @@ describe('AnalyzePullRequestV2 bounded scope', () => {
         legacyResult: { consumers: [{ repositoryId: producer }] },
         deterministicFindings: [],
         reasoningHypotheses: [],
+        executionBudgets: [{ lane: 'pull_request' }],
       },
     });
     expect(selectGeneration).not.toHaveBeenCalled();
