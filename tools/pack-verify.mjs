@@ -1,16 +1,18 @@
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const destination = resolve(root, 'artifacts/packages');
+const consumerDestination = resolve(root, 'artifacts/v0.4-host-consumer');
 const workspaceManifest = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'));
 const packageDirectories = (
   await readdir(resolve(root, 'packages'), { withFileTypes: true })
 ).filter((entry) => entry.isDirectory());
 await rm(destination, { recursive: true, force: true });
+await rm(consumerDestination, { recursive: true, force: true });
 await mkdir(destination, { recursive: true });
 
 execFileSync(
@@ -28,6 +30,7 @@ if (archives.length !== packageDirectories.length) {
 }
 
 const checksums = [];
+const packedPackages = [];
 for (const archive of archives) {
   const listing = execFileSync('tar', ['-tzf', resolve(destination, archive)], {
     cwd: root,
@@ -57,6 +60,7 @@ for (const archive of archives) {
   if (packedManifest.publishConfig?.provenance !== true) {
     throw new Error(`${archive} does not require npm provenance for trusted-publisher releases.`);
   }
+  packedPackages.push({ name: packedManifest.name, archive: resolve(destination, archive) });
   for (const dependencyGroup of [
     'dependencies',
     'optionalDependencies',
@@ -76,4 +80,71 @@ for (const archive of archives) {
   checksums.push(`${createHash('sha256').update(bytes).digest('hex')}  ${basename(archive)}`);
 }
 await writeFile(resolve(root, 'artifacts/packages/SHA256SUMS'), `${checksums.join('\n')}\n`);
-process.stdout.write(`Packed and checksummed ${archives.length} release packages.\n`);
+
+await mkdir(consumerDestination, { recursive: true });
+await copyFile(
+  resolve(root, 'type-tests/v0.4-host-compatibility.ts'),
+  resolve(consumerDestination, 'v0.4-host-compatibility.ts'),
+);
+await writeFile(
+  resolve(consumerDestination, 'package.json'),
+  `${JSON.stringify(
+    {
+      name: 'reverb-v0.4-packed-host-compatibility',
+      version: '0.0.0',
+      private: true,
+      type: 'module',
+      packageManager: workspaceManifest.packageManager,
+      dependencies: Object.fromEntries(
+        packedPackages
+          .sort((left, right) => left.name.localeCompare(right.name))
+          .map(({ name, archive }) => [name, `file:${archive}`]),
+      ),
+      devDependencies: {
+        '@types/node': workspaceManifest.devDependencies['@types/node'],
+        typescript: workspaceManifest.devDependencies.typescript,
+      },
+      pnpm: {
+        overrides: {
+          ...Object.fromEntries(
+            packedPackages.map(({ name, archive }) => [name, `file:${archive}`]),
+          ),
+          '@types/node': workspaceManifest.devDependencies['@types/node'],
+        },
+      },
+    },
+    null,
+    2,
+  )}\n`,
+);
+await writeFile(
+  resolve(consumerDestination, 'tsconfig.json'),
+  `${JSON.stringify(
+    {
+      compilerOptions: {
+        module: 'NodeNext',
+        moduleResolution: 'NodeNext',
+        target: 'ES2023',
+        strict: true,
+        noEmit: true,
+        skipLibCheck: false,
+      },
+      include: ['v0.4-host-compatibility.ts'],
+    },
+    null,
+    2,
+  )}\n`,
+);
+execFileSync(
+  'pnpm',
+  ['install', '--offline', '--ignore-scripts', '--ignore-workspace', '--no-frozen-lockfile'],
+  { cwd: consumerDestination, stdio: 'inherit' },
+);
+execFileSync('pnpm', ['exec', 'tsc', '--pretty', 'false'], {
+  cwd: consumerDestination,
+  stdio: 'inherit',
+});
+
+process.stdout.write(
+  `Packed and checksummed ${archives.length} release packages; the v0.4 host fixture compiled from tarballs.\n`,
+);

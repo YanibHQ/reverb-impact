@@ -1,0 +1,84 @@
+{
+  "schema": "reverb.compatibility-baseline",
+  "schemaVersion": "1.0",
+  "release": "0.4.0",
+  "git": {
+    "tag": "v0.4.0",
+    "commit": "8e80ff02604dcbbd97cee5bf2768005e33d4d73c"
+  },
+  "packages": [
+    "@yanib/reverb-adapter-openapi",
+    "@yanib/reverb-adapter-protobuf",
+    "@yanib/reverb-adapter-sdk",
+    "@yanib/reverb-adapter-typescript",
+    "@yanib/reverb-application",
+    "@yanib/reverb-domain",
+    "@yanib/reverb-host-github",
+    "@yanib/reverb-host-local",
+    "@yanib/reverb-schema",
+    "@yanib/reverb-storage-postgres",
+    "@yanib/reverb-storage-sqlite",
+    "@yanib/reverb-testkit",
+    "reverb-impact"
+  ],
+  "requiredPackageExports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "schemas": {
+    "reverb-adapter-extraction.schema.json": "6e4fed09782893e0772a6390102dcfc9d10bceaadf08edf28e8d989f7f942600",
+    "reverb-adapter-generation-snapshot.schema.json": "da7a64f27cb06aa4a2d7538cc27079dcba03be70e2b35b5e1f6492755f6d78e0",
+    "reverb-adapter-manifest.schema.json": "3b66c946f2709174c6e5f8f7cb8af56c008683689885c8a7a4887c805ff5f7e9",
+    "reverb-adapter-semantic-partition.schema.json": "9f31076e92367ec2535ee2a010fbb5ee91ae75a10ab5ee598385b57257d4c609",
+    "reverb-analysis-result.schema.json": "bd59e0789f303e60fde861e6d6d46291660aa5ab230526d2107776b4ec87bca3",
+    "reverb-corpus-manifest.schema.json": "c3c51ddfaf841d11a25b1cadd8a9e80588cfd4db452391f90abcb2bad2ee75ab",
+    "reverb-coverage-record.schema.json": "97991485888c497e244a28b71f8de88e9fd5a0e23080a8c66d882d65cca28d21",
+    "reverb-evaluation-report.schema.json": "c1d41d15f7550620b39e00f82bd472cfe5d758122fe27ee0a8feed84f770f39a",
+    "reverb-evidence-edge.schema.json": "39dd507760ac55d594d4f9091d8b39346553ff739cdb2eb512a69061a15fc9c8",
+    "reverb-finding-disclosure-projection.schema.json": "89528db9e6b1e6bf4591a49b70a53438a2336bed17eb8600b86956ba869be4a7",
+    "reverb-github-check-projection.schema.json": "7c8d51a29dc5ba8307881551dfdc1384f67e320135692bf4cc3175cc0f21372f",
+    "reverb-impact-case.schema.json": "26d5de07f0f0f0e5c2a1c26e57124168569fc459860aea0448ab6b729949b20a",
+    "reverb-policy-simulation.schema.json": "a86e3d219e8f1efdcf1ffdd1390b393648db66a58db5aee76c3b133c3d6d8934",
+    "reverb-project.schema.json": "2b4af4b873237e844dc094458c3a453487d70ade02b970d833816bdfe3240cdc",
+    "reverb-promotion-record.schema.json": "77d3af744fd4a9be82f4c4de340fd92434b0bcfbbd49e07aaa8014be96e38f06",
+    "reverb-pull-request-overlay.schema.json": "0b65564cf06398efbed2970478395a07c0ce57a598b34edc5c90c75b35a43725",
+    "reverb-repository-generation.schema.json": "453d72c1f7ef8cee40079ed49db6b509bc6a0234cbd909e9da334bc03bfc7bdd",
+    "reverb-review-event.schema.json": "ff2eb6b562e3516e5adf4c2ef6faca86fff5f19cf810ed7f4d8c712b2aaa2543",
+    "reverb-suppression-rule.schema.json": "9d1f88f5dafd28c8b5de48a7593c284af3042526f66220131f698e42e7091b66",
+    "reverb-value-types.schema.json": "900a5fdb3b50c6ea594689d487818085c8338da98489938bf7551f9edcff90a8",
+    "reverb-workspace-registry.schema.json": "6b1d2818f76c001444cdbc1ab25aabee57a2ad69e234c9b93a656d953c25144f"
+  },
+  "storage": {
+    "sqliteMigrationLevel": 7,
+    "postgresMigrationLevel": 3
+  },
+  "adapters": [
+    {
+      "id": "reverb.openapi",
+      "version": "0.2.0",
+      "identityVersion": 1,
+      "contractKinds": ["openapi_operation"]
+    },
+    {
+      "id": "reverb.protobuf",
+      "version": "0.2.0",
+      "identityVersion": 1,
+      "contractKinds": ["protobuf_method", "protobuf_field"]
+    },
+    {
+      "id": "reverb.typescript",
+      "version": "0.3.0",
+      "identityVersion": 1,
+      "contractKinds": ["typescript_symbol"]
+    }
+  ],
+  "evidenceBases": [
+    "exact",
+    "registry_resolved",
+    "heuristic",
+    "declared_context",
+    "behavioural_context"
+  ]
+}
