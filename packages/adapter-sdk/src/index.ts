@@ -1,5 +1,6 @@
 export * from './admission.js';
 export * from './harness.js';
+export * from './incremental.js';
 export * from './identity.js';
 export * from './materialize.js';
 export * from './sandbox.js';

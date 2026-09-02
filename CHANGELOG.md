@@ -7,6 +7,10 @@ explicit and package breaking changes may occur in minor releases.
 
 ## Unreleased
 
+- Added the `IncrementalContractAdapter` partition lifecycle, deterministic path-ownership and
+  reverse-dependency invalidation planning, and fail-closed handling for unowned changed paths.
+- Added `BudgetedRepositoryReader`, which atomically enforces per-run metadata-call, blob-read, and
+  byte ceilings without widening the provider source set.
 - Added workspace-scoped, content-addressed adapter semantic partitions and immutable generation
   snapshot manifests with base-plus-delta resolution, compatibility validation, and shared
   in-memory/SQLite conformance.
