@@ -62,7 +62,7 @@ compatibility, sandboxing, and admission interfaces.
 
 ## Release status
 
-Reverb `0.3.0` is the current pre-1.0 release candidate. Public APIs and storage formats may change in a
+Reverb `0.3.0` is the current public pre-1.0 release. Public APIs and storage formats may change in a
 future minor release, so downstream users should pin an exact package version. Analysis output is
 advisory: evidence classes must be calibrated with representative, human-reviewed data before they
 are used for automated delivery or policy decisions.

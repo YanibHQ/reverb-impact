@@ -9,6 +9,7 @@ explicit and package breaking changes may occur in minor releases.
 
 ## 0.3.0 - 2026-09-01
 
+- Published all 13 packages through the trusted GitHub Actions npm publisher with signed provenance.
 - Added Protobuf partitioning v1: one normalized method/field fact partition per discovered
   descriptor-set artifact, changed-blob discovery, replacements/tombstones, and clean-versus-
   incremental equivalence for edits, additions, deletions, renames, and non-descriptor changes.
