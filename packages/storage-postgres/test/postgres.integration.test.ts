@@ -46,7 +46,7 @@ describe('Postgres hosted control-plane integration', () => {
     await admin.end();
   });
 
-  it('upgrades the oldest hosted schema to the current pointer migration', async () => {
+  it('upgrades the v0.4 hosted schema and preserves canonical data', async () => {
     const upgradeSchema = `reverb_upgrade_${randomUUID().replaceAll('-', '')}`;
     await admin.query(`CREATE SCHEMA ${upgradeSchema}`);
     const legacyPool = new Pool({
@@ -58,20 +58,47 @@ describe('Postgres hosted control-plane integration', () => {
       options: `-c search_path=${upgradeSchema},public`,
     });
     try {
-      await legacyPool.query(POSTGRES_MIGRATIONS[0]!.sql);
+      for (const migration of POSTGRES_MIGRATIONS.slice(0, 3)) {
+        await legacyPool.query(migration.sql);
+        await legacyPool.query(
+          'INSERT INTO reverb_schema_migrations(version, name) VALUES ($1, $2)',
+          [migration.version, migration.name],
+        );
+      }
+      const legacyHash = contentHash(`sha256:${'9'.repeat(64)}`);
       await legacyPool.query(
-        'INSERT INTO reverb_schema_migrations(version, name) VALUES ($1, $2)',
-        [POSTGRES_MIGRATIONS[0]!.version, POSTGRES_MIGRATIONS[0]!.name],
+        `INSERT INTO reverb_canonical_records(
+          workspace_id, record_type, record_id, repository_id, payload_hash, payload, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7)`,
+        [
+          workspaceA,
+          'analysis',
+          'v0.4-canary',
+          'github:101',
+          legacyHash,
+          JSON.stringify({ legacyCanary: 'v0.4-readable' }),
+          now,
+        ],
       );
       await upgradeStore.migrate();
       const versions = await legacyPool.query<{ version: number }>(
         'SELECT version FROM reverb_schema_migrations ORDER BY version',
       );
-      expect(versions.rows.map((row) => row.version)).toEqual([1, 2, 3]);
+      expect(versions.rows.map((row) => row.version)).toEqual([1, 2, 3, 4]);
       const pointerTable = await legacyPool.query<{ name: string | null }>(
         "SELECT to_regclass('reverb_canonical_pointers')::text AS name",
       );
       expect(pointerTable.rows[0]?.name).toBe('reverb_canonical_pointers');
+      expect(
+        await upgradeStore.getCanonicalRecord({
+          workspaceId: workspaceA,
+          recordType: 'analysis',
+          recordId: 'v0.4-canary',
+        }),
+      ).toMatchObject({
+        payloadHash: legacyHash,
+        payload: { legacyCanary: 'v0.4-readable' },
+      });
     } finally {
       await upgradeStore.close();
       await legacyPool.end();
@@ -92,7 +119,7 @@ describe('Postgres hosted control-plane integration', () => {
        ORDER BY c.relname`,
       [schema],
     );
-    expect(result.rows).toHaveLength(8);
+    expect(result.rows).toHaveLength(11);
     expect(result.rows.every((row) => row.relrowsecurity && row.relforcerowsecurity)).toBe(true);
   });
 

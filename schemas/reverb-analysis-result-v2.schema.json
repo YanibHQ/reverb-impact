@@ -9,6 +9,7 @@
     "schema_version",
     "legacy_result",
     "scope",
+    "state",
     "deterministic_findings",
     "reasoning_hypotheses",
     "output_hash"
@@ -114,6 +115,7 @@
         "scope_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
       }
     },
+    "state": { "enum": ["complete", "partial", "superseded"] },
     "deterministic_findings": { "type": "array", "items": { "type": "object" } },
     "reasoning_hypotheses": {
       "type": "array",

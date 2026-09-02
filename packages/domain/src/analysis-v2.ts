@@ -17,6 +17,7 @@ export interface AnalysisResultV2 {
   readonly schemaVersion: '2.0';
   readonly legacyResult: AnalysisResult;
   readonly scope: AnalysisScopeProvenanceV2;
+  readonly state: Extract<AnalysisResult['state'], 'complete' | 'partial' | 'superseded'>;
   readonly deterministicFindings: AnalysisResult['findings'];
   readonly reasoningHypotheses: readonly ReasoningHypothesisV2[];
   readonly outputHash: ContentHash;

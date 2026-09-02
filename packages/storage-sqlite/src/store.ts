@@ -82,7 +82,7 @@ import {
   type ReviewEvaluationStore,
 } from '@yanib/reverb-application';
 
-export const SQLITE_SCHEMA_VERSION = 7;
+export const SQLITE_SCHEMA_VERSION = 8;
 
 interface GenerationRow {
   generation_id: string;
@@ -615,6 +615,58 @@ CREATE INDEX adapter_generation_snapshots_generation_idx
   ON adapter_generation_snapshots (workspace_id, repository_id, generation_id, adapter_id);
 `;
 
+const MIGRATION_008 = `
+CREATE TABLE analysis_scopes_v2 (
+  workspace_id TEXT NOT NULL,
+  scope_hash TEXT NOT NULL,
+  producer_repository_id TEXT NOT NULL,
+  registry_revision TEXT NOT NULL,
+  mode TEXT NOT NULL CHECK (mode IN ('legacy', 'allowlist')),
+  payload_hash TEXT NOT NULL,
+  scope_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (workspace_id, scope_hash)
+) STRICT;
+CREATE INDEX analysis_scopes_v2_producer_idx
+  ON analysis_scopes_v2 (workspace_id, producer_repository_id, registry_revision);
+
+CREATE TABLE analysis_results_v2 (
+  workspace_id TEXT NOT NULL,
+  analysis_id TEXT NOT NULL,
+  producer_repository_id TEXT NOT NULL,
+  scope_hash TEXT NOT NULL,
+  state TEXT NOT NULL CHECK (state IN ('complete', 'partial', 'superseded')),
+  output_hash TEXT NOT NULL,
+  result_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (workspace_id, analysis_id),
+  FOREIGN KEY (workspace_id, scope_hash)
+    REFERENCES analysis_scopes_v2 (workspace_id, scope_hash)
+) STRICT;
+CREATE INDEX analysis_results_v2_scope_idx
+  ON analysis_results_v2 (workspace_id, scope_hash, state);
+
+CREATE TABLE reasoning_runs_v2 (
+  workspace_id TEXT NOT NULL,
+  reasoning_run_id TEXT NOT NULL,
+  analysis_id TEXT NOT NULL,
+  scope_hash TEXT NOT NULL,
+  state TEXT NOT NULL CHECK (state IN ('complete', 'partial', 'failed', 'deleted')),
+  input_hash TEXT NOT NULL,
+  output_hash TEXT,
+  run_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  deleted_at TEXT,
+  PRIMARY KEY (workspace_id, reasoning_run_id),
+  FOREIGN KEY (workspace_id, analysis_id)
+    REFERENCES analysis_results_v2 (workspace_id, analysis_id),
+  FOREIGN KEY (workspace_id, scope_hash)
+    REFERENCES analysis_scopes_v2 (workspace_id, scope_hash)
+) STRICT;
+CREATE INDEX reasoning_runs_v2_analysis_idx
+  ON reasoning_runs_v2 (workspace_id, analysis_id, state);
+`;
+
 function infrastructureFailure(code: string, message: string, retryable = false): PortFailure {
   return { kind: 'infrastructure', code, safeMessage: message, retryable };
 }
@@ -809,6 +861,18 @@ export class SqliteStore
         this.#database
           .prepare('INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)')
           .run(7, new Date(0).toISOString());
+        return portSuccess(undefined);
+      });
+    }
+    const eighth = this.#database
+      .prepare('SELECT version FROM schema_migrations WHERE version = 8')
+      .get();
+    if (!eighth) {
+      this.#transaction<void>(() => {
+        this.#database.exec(MIGRATION_008);
+        this.#database
+          .prepare('INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)')
+          .run(8, new Date(0).toISOString());
         return portSuccess(undefined);
       });
     }
