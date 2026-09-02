@@ -2,6 +2,23 @@
 
 TypeScript and npm contract analysis for Reverb.
 
+## Incremental package partitions
+
+Adapter version 0.2.0 implements `IncrementalContractAdapter` partitioning version 1. A host invokes
+the adapter once per package root and persists the returned package partition during normal branch
+indexing. The payload contains normalized parser facts and package metadata; it does not contain
+source bytes.
+
+For a pull request, supply the persisted base partition, the exact changed-path manifest, and only
+the changed eligible head artifacts. The adapter removes deletions, applies replacements and
+renames, reparses those changed blobs, and rematerializes exports and imports from the logical fact
+set. A missing base partition, tampered payload, or missing required changed blob yields incomplete
+or failed coverage. It never requests a repository scan.
+
+Hosts must retain the same configuration context for clean and incremental materialization,
+including `packageRegistry`, `packageRoot`, explicit `entrypoints`, and lock evidence. Snapshot
+compatibility also requires the same adapter, identity, partitioning, config, and registry versions.
+
 ## Installation
 
 ```bash

@@ -29,8 +29,10 @@ adapter code and fails when it is stale.
 
 Version `0.2.0` intentionally requires `AnalyzePullRequestInput.producerHeadObservation` so the
 producer can be analyzed as a consumer at the exact PR head. Hosted PostgreSQL deployments apply
-migration 3 to add reclaimable webhook-worker leases. Neither change requires adapter re-indexing
-or a calibration reset.
+migration 3 to add reclaimable webhook-worker leases. TypeScript adapter 0.2.0 also changes its
+source fingerprint and adds package-partition semantic state, so `reverb.typescript` observations
+and snapshots require re-indexing. Its identity version remains 1, and every affected stratum was
+already `UNMEASURED`, so no promoted calibration state is carried forward or reset.
 
 ## Upgrade procedure
 

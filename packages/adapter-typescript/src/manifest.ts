@@ -5,7 +5,7 @@ export const TYPESCRIPT_ADAPTER_MANIFEST: AdapterManifest = validateAdapterManif
   schema: 'reverb.adapter-manifest',
   schemaVersion: '1.0',
   id: adapterId('reverb.typescript'),
-  version: '0.1.0',
+  version: '0.2.0',
   identityVersion: 1,
   contractKinds: ['typescript_symbol'],
   capabilityTiers: [

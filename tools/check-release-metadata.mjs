@@ -65,8 +65,12 @@ for (const directory of await readdir(resolve(root, 'packages'), { withFileTypes
     failures.push(`${manifest.name}: package version differs from release metadata`);
   }
 }
-if (metadata.reindex.required !== false || metadata.calibration.reset_strata.length !== 0) {
-  failures.push('release metadata claims an undeclared re-index or calibration reset');
+if (
+  metadata.reindex.required !== true ||
+  JSON.stringify(metadata.reindex.adapter_ids) !== JSON.stringify(['reverb.typescript']) ||
+  metadata.calibration.reset_strata.length !== 0
+) {
+  failures.push('release metadata does not declare the TypeScript-only re-index boundary');
 }
 
 if (failures.length > 0) {

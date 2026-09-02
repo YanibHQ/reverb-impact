@@ -7,6 +7,11 @@ explicit and package breaking changes may occur in minor releases.
 
 ## Unreleased
 
+- Added TypeScript/npm partitioning v1: package-scoped persisted AST-derived facts, changed-blob
+  delta updates, fail-closed missing-input handling, and clean-versus-incremental equivalence for
+  edits, additions, deletions, renames, barrel changes, imports, and package metadata.
+- Advanced the TypeScript adapter manifest to 0.2.0 so older semantic snapshots cannot be reused
+  across the incremental state boundary.
 - Added the `IncrementalContractAdapter` partition lifecycle, deterministic path-ownership and
   reverse-dependency invalidation planning, and fail-closed handling for unowned changed paths.
 - Added `BudgetedRepositoryReader`, which atomically enforces per-run metadata-call, blob-read, and
