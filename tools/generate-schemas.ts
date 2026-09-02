@@ -4,6 +4,7 @@ import { fileURLToPath, URL } from 'node:url';
 import { format } from 'oxfmt';
 
 import { FOUNDATION_SCHEMAS } from '../packages/schema/src/foundation.js';
+import { V2_SCHEMAS } from '../packages/schema/src/v2.js';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const schema = {
@@ -20,7 +21,11 @@ const schema = {
     repository: { const: 'YanibHQ/reverb-impact' },
   },
 } as const;
-const outputs = [{ file: 'reverb-project.schema.json', schema }, ...FOUNDATION_SCHEMAS] as const;
+const outputs = [
+  { file: 'reverb-project.schema.json', schema },
+  ...FOUNDATION_SCHEMAS,
+  ...V2_SCHEMAS,
+] as const;
 
 if (!process.argv.includes('--write') && !process.argv.includes('--check')) {
   process.stderr.write('Use --write or --check.\n');

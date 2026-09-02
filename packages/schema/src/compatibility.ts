@@ -33,3 +33,21 @@ export function assertReadableSchemaVersion(value: unknown): ParsedSchemaVersion
   }
   return parsed;
 }
+
+export const SCHEMA_V2_COMPATIBILITY = Object.freeze({
+  currentVersion: '2.0',
+  currentMajor: 2,
+  supportedMajors: [1, 2] as const,
+  previousSupportedMajors: [1] as const,
+});
+
+export function assertReadableSchemaVersionV2(value: unknown): ParsedSchemaVersion {
+  const parsed = parseSchemaVersion(value);
+  if (!(SCHEMA_V2_COMPATIBILITY.supportedMajors as readonly number[]).includes(parsed.major)) {
+    throw new SchemaValidationError(
+      'unsupported_schema_major',
+      `Schema major ${parsed.major} is unsupported; supported majors: ${SCHEMA_V2_COMPATIBILITY.supportedMajors.join(', ')}.`,
+    );
+  }
+  return parsed;
+}
