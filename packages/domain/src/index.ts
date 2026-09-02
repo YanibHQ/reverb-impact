@@ -1,6 +1,7 @@
 export * from './canonical.js';
 export * from './analysis-scope.js';
 export * from './analysis-v2.js';
+export * from './coverage-v2.js';
 export * from './adapter-snapshot.js';
 export * from './errors.js';
 export * from './execution-v2.js';

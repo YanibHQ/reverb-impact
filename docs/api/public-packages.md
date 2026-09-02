@@ -49,6 +49,24 @@ the exact analyzed head. The producer participates in consumer selection through
 Reverb never substitutes the base or latest default-branch generation for same-repository
 references.
 
+## Negotiated v2 scope, coverage, and budgets
+
+`AnalyzePullRequestV2` is additive and requires `schemaMajor: 2`, an explicit execution budget, the
+enabled set of new adapter families, and an `AnalysisResultStoreV2`. The five v2 family identifiers
+are `events`, `database`, `implicit_http`, `configuration`, and `infrastructure`; an empty set keeps
+the new adapters disabled and does not query their coverage source.
+
+The use case resolves authorization and consent before it invokes `RepositoryCoverageSourceV2`.
+Every returned record must match the scoped repository, immutable registry revision, exact
+generation and commit, selection freshness, and enabled families. Missing, failed, thrown,
+mismatched, or non-canonical records become explicit `not_analysed` family limitations and force
+the v2 result partial. They never weaken or replace the nested v1 deterministic result.
+
+`AnalysisCoverageV2` records per-repository selection provenance and per-family artifact counts,
+limitations, configuration, hashes, and adapter/extraction/identity/partitioning/compatibility
+versions. `SqliteStore`, `PostgresHostedStore`, and `InMemoryAnalysisResultStoreV2` implement the
+immutable v2 result-store contract. The testkit exports the shared storage conformance suite.
+
 ## Derived pull-request generations
 
 `GenerationStore.deriveGeneration` atomically creates a non-selected logical head from a completed,

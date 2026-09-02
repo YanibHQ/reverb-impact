@@ -1,5 +1,13 @@
 import { hashCanonical } from '@yanib/reverb-domain';
-import type { ContentHash, Instant, WorkspaceId } from '@yanib/reverb-domain';
+import type {
+  AnalysisId,
+  AnalysisResultV2,
+  ContentHash,
+  Instant,
+  WorkspaceId,
+} from '@yanib/reverb-domain';
+import { portFailure, portSuccess } from '@yanib/reverb-application';
+import type { AnalysisResultStoreV2, PortResult } from '@yanib/reverb-application';
 import { Pool } from 'pg';
 import type { PoolClient, PoolConfig, QueryResultRow } from 'pg';
 
@@ -112,7 +120,7 @@ function jsonRecord(value: unknown): Readonly<Record<string, unknown>> {
   throw new Error('Postgres returned a non-object JSON value.');
 }
 
-export class PostgresHostedStore {
+export class PostgresHostedStore implements AnalysisResultStoreV2 {
   readonly #pool: Pool;
   readonly #ownsPool: boolean;
 
@@ -236,6 +244,125 @@ export class PostgresHostedStore {
         createdAt: dateString(row.created_at),
       };
     });
+  }
+
+  public async persistAnalysisV2(result: AnalysisResultV2): Promise<PortResult<void>> {
+    const workspace = result.legacyResult.workspaceId;
+    if (
+      result.scope.workspaceId !== workspace ||
+      result.coverage.workspaceId !== workspace ||
+      result.scope.scopeHash !== result.coverage.scopeHash ||
+      result.scope.registryRevision !== result.coverage.registryRevision
+    ) {
+      return portFailure({
+        kind: 'domain',
+        code: 'analysis_v2_provenance_mismatch',
+        safeMessage: 'A v2 analysis result has inconsistent scope or coverage provenance.',
+        retryable: false,
+      });
+    }
+    try {
+      return await this.#workspace(workspace, async (client) => {
+        const scope = await client.query<{ payload_hash: ContentHash }>(
+          `INSERT INTO reverb_analysis_scopes_v2(
+             workspace_id, scope_hash, producer_repository_id, registry_revision,
+             mode, payload_hash, payload, created_at
+           ) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8)
+           ON CONFLICT (workspace_id, scope_hash) DO NOTHING
+           RETURNING payload_hash`,
+          [
+            workspace,
+            result.scope.scopeHash,
+            result.scope.producerRepositoryId,
+            result.scope.registryRevision,
+            result.scope.mode,
+            result.scope.scopeHash,
+            JSON.stringify(result.scope),
+            result.legacyResult.startedAt,
+          ],
+        );
+        if (scope.rowCount === 0) {
+          const existingScope = await client.query<{ payload_hash: ContentHash }>(
+            `SELECT payload_hash FROM reverb_analysis_scopes_v2
+             WHERE workspace_id = $1 AND scope_hash = $2`,
+            [workspace, result.scope.scopeHash],
+          );
+          if (existingScope.rows[0]?.payload_hash !== result.scope.scopeHash) {
+            return portFailure({
+              kind: 'conflict',
+              code: 'immutable_scope_conflict',
+              safeMessage: 'A v2 analysis scope is immutable for its scope hash.',
+              retryable: false,
+            });
+          }
+        }
+        const inserted = await client.query<{ output_hash: ContentHash }>(
+          `INSERT INTO reverb_analysis_results_v2(
+             workspace_id, analysis_id, producer_repository_id, scope_hash,
+             state, output_hash, payload, created_at
+           ) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8)
+           ON CONFLICT (workspace_id, analysis_id) DO NOTHING
+           RETURNING output_hash`,
+          [
+            workspace,
+            result.legacyResult.analysisId,
+            result.legacyResult.producerRepositoryId,
+            result.scope.scopeHash,
+            result.state,
+            result.outputHash,
+            JSON.stringify(result),
+            result.legacyResult.completedAt,
+          ],
+        );
+        if (inserted.rowCount === 1) return portSuccess(undefined);
+        const existing = await client.query<{ output_hash: ContentHash }>(
+          `SELECT output_hash FROM reverb_analysis_results_v2
+           WHERE workspace_id = $1 AND analysis_id = $2`,
+          [workspace, result.legacyResult.analysisId],
+        );
+        return existing.rows[0]?.output_hash === result.outputHash
+          ? portSuccess(undefined)
+          : portFailure({
+              kind: 'conflict',
+              code: 'immutable_analysis_v2_conflict',
+              safeMessage: 'A v2 analysis result is immutable for its analysis ID.',
+              retryable: false,
+            });
+      });
+    } catch {
+      return portFailure({
+        kind: 'infrastructure',
+        code: 'postgres_analysis_v2_write_failed',
+        safeMessage: 'PostgreSQL could not persist the v2 analysis result.',
+        retryable: true,
+      });
+    }
+  }
+
+  public async getAnalysisV2(
+    workspaceId: WorkspaceId,
+    analysisId: AnalysisId,
+  ): Promise<PortResult<AnalysisResultV2 | null>> {
+    try {
+      return await this.#workspace(workspaceId, async (client) => {
+        const result = await client.query<{ payload: unknown }>(
+          `SELECT payload FROM reverb_analysis_results_v2
+           WHERE workspace_id = $1 AND analysis_id = $2`,
+          [workspaceId, analysisId],
+        );
+        const payload = result.rows[0]?.payload;
+        return portSuccess(
+          payload === undefined ? null : (jsonRecord(payload) as unknown as AnalysisResultV2),
+        );
+      });
+    } catch {
+      return portFailure({
+        kind: 'infrastructure',
+        code: 'postgres_analysis_v2_read_failed',
+        safeMessage: 'PostgreSQL could not read the v2 analysis result.',
+        retryable: true,
+      });
+    }
   }
 
   public async putCanonicalPointer(pointer: CanonicalHostedPointer): Promise<void> {

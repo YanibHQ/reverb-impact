@@ -1,6 +1,7 @@
 import type {
   AnalysisId,
   AnalysisResult,
+  AnalysisResultV2,
   AdapterGenerationSnapshot,
   AdapterId,
   AdapterSemanticPartition,
@@ -258,6 +259,14 @@ export interface EvidenceGraphStore {
   ): Promise<
     PortResult<{ readonly analysis: AnalysisResult; readonly finding: FindingOccurrence }>
   >;
+}
+
+export interface AnalysisResultStoreV2 {
+  persistAnalysisV2(result: AnalysisResultV2): Promise<PortResult<void>>;
+  getAnalysisV2(
+    workspaceId: WorkspaceId,
+    analysisId: AnalysisId,
+  ): Promise<PortResult<AnalysisResultV2 | null>>;
 }
 
 export interface ReviewEvaluationStore {

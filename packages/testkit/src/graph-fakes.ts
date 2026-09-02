@@ -4,6 +4,7 @@ import {
   finalizeAnalysisResult,
   type AnalysisId,
   type AnalysisResult,
+  type AnalysisResultV2,
   type ContentHash,
   type ContractGenerationObservation,
   type EvidenceEdge,
@@ -27,6 +28,7 @@ import {
   type DefinitionQuery,
   type EdgeQuery,
   type EvidenceGraphStore,
+  type AnalysisResultStoreV2,
   type PortResult,
   type ReferenceQuery,
   type ReviewEvaluationStore,
@@ -426,5 +428,28 @@ export class InMemoryEvidenceGraphStore implements EvidenceGraphStore, ReviewEva
         .filter((value) => value.stratumKey === stratumKey)
         .sort((left, right) => left.decidedAt.localeCompare(right.decidedAt)),
     );
+  }
+}
+
+export class InMemoryAnalysisResultStoreV2 implements AnalysisResultStoreV2 {
+  readonly #analyses = new Map<string, AnalysisResultV2>();
+
+  public async persistAnalysisV2(result: AnalysisResultV2): Promise<PortResult<void>> {
+    const key = `${result.legacyResult.workspaceId}\0${result.legacyResult.analysisId}`;
+    const existing = this.#analyses.get(key);
+    if (existing !== undefined) {
+      return existing.outputHash === result.outputHash
+        ? portSuccess(undefined)
+        : conflict('A v2 analysis result is immutable.');
+    }
+    this.#analyses.set(key, result);
+    return portSuccess(undefined);
+  }
+
+  public async getAnalysisV2(
+    workspaceId: WorkspaceId,
+    analysisId: AnalysisId,
+  ): Promise<PortResult<AnalysisResultV2 | null>> {
+    return portSuccess(this.#analyses.get(`${workspaceId}\0${analysisId}`) ?? null);
   }
 }
