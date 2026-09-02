@@ -89,4 +89,15 @@ describe('ExecutionBudgetV2', () => {
     expect(queues.incremental_index.enqueue).not.toHaveBeenCalled();
     expect(queues.reasoning.enqueue).not.toHaveBeenCalled();
   });
+
+  it('bounds unknown dimensions and supports settling reserved capacity', () => {
+    const budget = new ExecutionBudgetV2('bootstrap_index', limits, new Clock());
+    expect(budget.remaining().sourceBytes).toBe(100);
+    expect(budget.reserve({ sourceBytes: 100 })).toMatchObject({ ok: true });
+    budget.release({ sourceBytes: 60 });
+    expect(budget.usage().sourceBytes).toBe(40);
+    expect(budget.remaining().sourceBytes).toBe(60);
+    expect(() => budget.release({ sourceBytes: 41 })).toThrow(RangeError);
+    expect(() => budget.reserve({ unknown: 1 } as never)).toThrow(RangeError);
+  });
 });

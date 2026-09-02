@@ -6,6 +6,7 @@ export * from './analyze-pr-v2.js';
 export * from './create-overlay.js';
 export * from './execution-budget-v2.js';
 export * from './index-generation.js';
+export * from './index-execution-v2.js';
 export * from './ports.js';
 export * from './review.js';
 export * from './source-budget.js';
