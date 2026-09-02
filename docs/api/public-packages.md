@@ -10,6 +10,7 @@ must not import storage internals or another host's implementation.
 | `@yanib/reverb-schema`             | canonical JSON Schemas, compatibility policy, runtime validation      |
 | `@yanib/reverb-application`        | orchestration use cases and host-neutral ports                        |
 | `@yanib/reverb-adapter-sdk`        | adapter contract, validation, sandbox and admission helpers           |
+| `@yanib/reverb-adapter-events`     | Kafka, SQS/SNS, and Pub/Sub destination/payload evidence              |
 | `@yanib/reverb-adapter-typescript` | TypeScript/npm extraction and compatibility adapter                   |
 | `@yanib/reverb-adapter-openapi`    | OpenAPI operation extraction and compatibility adapter                |
 | `@yanib/reverb-adapter-protobuf`   | Protobuf/gRPC extraction and compatibility adapter                    |
@@ -74,6 +75,17 @@ pull-request lane. Each result contains the exact legacy result plus closed, sou
 for provider requests, source bytes, storage queries, artifacts, model tokens, latency, and exhausted
 dimensions. Budget failures remain explicit incomplete-provider failures, and cleanup operations
 still close failed leases.
+
+The additive v2 adapter protocol uses `ContractKindV2`, `AdapterManifestV2`, and
+`IncrementalContractAdapterV2`; it does not widen the frozen v1 contract-kind enum or validators.
+Its canonical wire envelopes are published independently as the v2 adapter manifest, extraction,
+and diff JSON Schemas, so a host can reject unknown fields and invalid protocol/version stamps
+before persisting adapter output.
+`@yanib/reverb-adapter-events` emits `event.destination` and `event.payload_schema` evidence for
+bounded manifests and supported literal Kafka, SQS/SNS, and Pub/Sub calls. Dynamic destinations are
+hashed and reported as partial unresolved evidence. V2 materialization and joining bind every edge
+to the resolved scope plus exact producer/consumer generations, commits, locations, content hashes,
+and adapter protocol versions. New strata remain preview-only and `UNMEASURED`.
 
 ## Derived pull-request generations
 

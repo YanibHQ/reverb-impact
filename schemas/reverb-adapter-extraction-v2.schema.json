@@ -1,0 +1,288 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.yanibhq.dev/reverb/adapter-extraction/v2.json",
+  "title": "Reverb deterministic adapter extraction v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "family",
+    "adapter_id",
+    "adapter_version",
+    "extraction_version",
+    "identity_version",
+    "partitioning_version",
+    "compatibility_version",
+    "config_revision",
+    "definitions",
+    "references",
+    "coverage",
+    "diagnostics",
+    "source_fingerprint",
+    "output_hash"
+  ],
+  "properties": {
+    "schema": { "const": "reverb.adapter-extraction" },
+    "schema_version": { "const": "2.0" },
+    "family": {
+      "enum": ["events", "database", "implicit_http", "configuration", "infrastructure"]
+    },
+    "adapter_id": { "type": "string", "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)+$" },
+    "adapter_version": {
+      "type": "string",
+      "pattern": "^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:-[0-9A-Za-z.-]+)?$"
+    },
+    "extraction_version": { "type": "string", "pattern": "^[0-9A-Za-z][0-9A-Za-z._-]{0,127}$" },
+    "identity_version": { "type": "integer", "minimum": 1 },
+    "partitioning_version": { "type": "integer", "minimum": 1 },
+    "compatibility_version": { "type": "string", "pattern": "^[0-9A-Za-z][0-9A-Za-z._-]{0,127}$" },
+    "config_revision": { "type": "string", "pattern": "^cfg_sha256:[0-9a-f]{64}$" },
+    "definitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "contract_kind",
+          "canonical_key",
+          "display_name",
+          "path",
+          "content_hash",
+          "shape_hash",
+          "shape",
+          "extractor_id",
+          "extractor_version",
+          "extraction_version",
+          "identity_version",
+          "partitioning_version",
+          "compatibility_version",
+          "config_revision",
+          "evidence_stratum"
+        ],
+        "properties": {
+          "contract_kind": {
+            "enum": [
+              "event.destination",
+              "event.payload_schema",
+              "database.table",
+              "database.column",
+              "database.enum",
+              "http.route",
+              "configuration.key",
+              "configuration.feature_flag",
+              "infrastructure.service",
+              "infrastructure.endpoint",
+              "infrastructure.output"
+            ]
+          },
+          "canonical_key": { "type": "string", "minLength": 1, "maxLength": 2048 },
+          "display_name": { "type": "string", "minLength": 1, "maxLength": 512 },
+          "path": {
+            "type": "string",
+            "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*\\\\)(?!.*\\u0000).+(?<!/)$"
+          },
+          "range": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["start_line", "start_column", "end_line", "end_column"],
+            "properties": {
+              "start_line": { "type": "integer", "minimum": 1 },
+              "start_column": { "type": "integer", "minimum": 1 },
+              "end_line": { "type": "integer", "minimum": 1 },
+              "end_column": { "type": "integer", "minimum": 1 }
+            }
+          },
+          "content_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+          "shape_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+          "shape": { "type": "object" },
+          "extractor_id": { "type": "string", "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)+$" },
+          "extractor_version": {
+            "type": "string",
+            "pattern": "^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:-[0-9A-Za-z.-]+)?$"
+          },
+          "extraction_version": {
+            "type": "string",
+            "pattern": "^[0-9A-Za-z][0-9A-Za-z._-]{0,127}$"
+          },
+          "identity_version": { "type": "integer", "minimum": 1 },
+          "partitioning_version": { "type": "integer", "minimum": 1 },
+          "compatibility_version": {
+            "type": "string",
+            "pattern": "^[0-9A-Za-z][0-9A-Za-z._-]{0,127}$"
+          },
+          "config_revision": { "type": "string", "pattern": "^cfg_sha256:[0-9a-f]{64}$" },
+          "evidence_stratum": { "type": "string", "minLength": 1, "maxLength": 128 }
+        }
+      }
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "contract_kind",
+          "path",
+          "content_hash",
+          "extractor_id",
+          "extractor_version",
+          "extraction_version",
+          "identity_version",
+          "partitioning_version",
+          "compatibility_version",
+          "config_revision",
+          "evidence_stratum",
+          "activation"
+        ],
+        "properties": {
+          "contract_kind": {
+            "enum": [
+              "event.destination",
+              "event.payload_schema",
+              "database.table",
+              "database.column",
+              "database.enum",
+              "http.route",
+              "configuration.key",
+              "configuration.feature_flag",
+              "infrastructure.service",
+              "infrastructure.endpoint",
+              "infrastructure.output"
+            ]
+          },
+          "canonical_key": { "type": "string", "minLength": 1, "maxLength": 2048 },
+          "unresolved_pattern": { "type": "string", "minLength": 1, "maxLength": 2048 },
+          "unresolved_reason": { "type": "string", "minLength": 1, "maxLength": 256 },
+          "semantic_owner": { "type": "string", "minLength": 1 },
+          "path": {
+            "type": "string",
+            "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*\\\\)(?!.*\\u0000).+(?<!/)$"
+          },
+          "range": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["start_line", "start_column", "end_line", "end_column"],
+            "properties": {
+              "start_line": { "type": "integer", "minimum": 1 },
+              "start_column": { "type": "integer", "minimum": 1 },
+              "end_line": { "type": "integer", "minimum": 1 },
+              "end_column": { "type": "integer", "minimum": 1 }
+            }
+          },
+          "content_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+          "extractor_id": { "type": "string", "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)+$" },
+          "extractor_version": {
+            "type": "string",
+            "pattern": "^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:-[0-9A-Za-z.-]+)?$"
+          },
+          "extraction_version": {
+            "type": "string",
+            "pattern": "^[0-9A-Za-z][0-9A-Za-z._-]{0,127}$"
+          },
+          "identity_version": { "type": "integer", "minimum": 1 },
+          "partitioning_version": { "type": "integer", "minimum": 1 },
+          "compatibility_version": {
+            "type": "string",
+            "pattern": "^[0-9A-Za-z][0-9A-Za-z._-]{0,127}$"
+          },
+          "config_revision": { "type": "string", "pattern": "^cfg_sha256:[0-9a-f]{64}$" },
+          "evidence_stratum": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "activation": { "enum": ["current_runtime", "on_upgrade", "on_deploy", "unknown"] }
+        },
+        "oneOf": [
+          {
+            "required": ["canonical_key"],
+            "properties": {
+              "canonical_key": { "type": "string" },
+              "unresolved_pattern": false,
+              "unresolved_reason": false
+            }
+          },
+          {
+            "required": ["unresolved_pattern", "unresolved_reason"],
+            "properties": {
+              "canonical_key": false,
+              "unresolved_pattern": { "type": "string" },
+              "unresolved_reason": { "type": "string" }
+            }
+          }
+        ]
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "eligible_artifacts",
+        "processed_artifacts",
+        "skipped_artifacts",
+        "failed_artifacts",
+        "limitations"
+      ],
+      "properties": {
+        "state": { "enum": ["complete", "partial", "failed", "unsupported"] },
+        "eligible_artifacts": { "type": "integer", "minimum": 0 },
+        "processed_artifacts": { "type": "integer", "minimum": 0 },
+        "skipped_artifacts": { "type": "integer", "minimum": 0 },
+        "failed_artifacts": { "type": "integer", "minimum": 0 },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["code"],
+            "properties": {
+              "code": { "type": "string", "minLength": 1, "maxLength": 192 },
+              "scope": {
+                "type": "string",
+                "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*\\\\)(?!.*\\u0000).+(?<!/)$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "severity", "safe_message"],
+        "properties": {
+          "code": {
+            "enum": [
+              "binary_file",
+              "oversized_file",
+              "generated_path",
+              "vendored_path",
+              "symlink_entry",
+              "submodule_entry",
+              "unsupported_language",
+              "unreadable_blob",
+              "parse_failure",
+              "source_truncated",
+              "missing_blob",
+              "incomplete_tree",
+              "ambiguous_alias",
+              "overlapping_validity",
+              "incremental_divergence",
+              "cache_corrupt",
+              "cancelled"
+            ]
+          },
+          "severity": { "enum": ["info", "warning", "error"] },
+          "scope": {
+            "type": "string",
+            "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*\\\\)(?!.*\\u0000).+(?<!/)$"
+          },
+          "detail_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+          "safe_message": { "type": "string", "minLength": 1, "maxLength": 256 }
+        }
+      }
+    },
+    "source_fingerprint": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "output_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

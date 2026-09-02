@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 
 import { OPENAPI_ADMISSION_REPORT } from '../packages/adapter-openapi/src/index.js';
+import { EVENTS_ADMISSION_REPORT } from '../packages/adapter-events/src/index.js';
 import { PROTOBUF_ADMISSION_REPORT } from '../packages/adapter-protobuf/src/index.js';
 import { TYPESCRIPT_ADMISSION_REPORT } from '../packages/adapter-typescript/src/index.js';
 
@@ -11,6 +12,7 @@ if (mode !== '--check' && mode !== '--write') {
 }
 
 const reports = new Map([
+  ['events.json', EVENTS_ADMISSION_REPORT],
   ['openapi.json', OPENAPI_ADMISSION_REPORT],
   ['protobuf.json', PROTOBUF_ADMISSION_REPORT],
   ['typescript.json', TYPESCRIPT_ADMISSION_REPORT],

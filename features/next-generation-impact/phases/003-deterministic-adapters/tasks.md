@@ -2,9 +2,9 @@
 
 ## Events/queues
 
-- [ ] Identity/extraction/change/incremental implementation
-- [ ] Kafka, SQS/SNS, Pub/Sub backend-to-backend and same-repository fixtures
-- [ ] Payload schema, dynamic destination, partial, adversarial, admission, and docs
+- [x] Identity/extraction/change/incremental implementation
+- [x] Kafka, SQS/SNS, Pub/Sub backend-to-backend and same-repository fixtures
+- [x] Payload schema, dynamic destination, partial, adversarial, admission, and docs
 
 ## Shared database
 
@@ -32,5 +32,5 @@
 
 ## Cross-family
 
-- [ ] Disabled adapters preserve exact v1 golden
+- [x] Disabled adapters preserve exact v1 golden
 - [ ] Every package passes SDK conformance and packed public-entry validation

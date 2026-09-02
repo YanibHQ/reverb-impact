@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.yanibhq.dev/reverb/adapter-manifest/v2.json",
+  "title": "Reverb deterministic adapter manifest v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "id",
+    "family",
+    "version",
+    "extraction_version",
+    "identity_version",
+    "partitioning_version",
+    "compatibility_version",
+    "contract_kinds",
+    "capability_tiers",
+    "evidence_strata",
+    "external_tools",
+    "limitations",
+    "resource_budget",
+    "maintainer"
+  ],
+  "properties": {
+    "schema": { "const": "reverb.adapter-manifest" },
+    "schema_version": { "const": "2.0" },
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)+$" },
+    "family": {
+      "enum": ["events", "database", "implicit_http", "configuration", "infrastructure"]
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:-[0-9A-Za-z.-]+)?$"
+    },
+    "extraction_version": { "type": "string", "pattern": "^[0-9A-Za-z][0-9A-Za-z._-]{0,127}$" },
+    "identity_version": { "type": "integer", "minimum": 1 },
+    "partitioning_version": { "type": "integer", "minimum": 1 },
+    "compatibility_version": { "type": "string", "pattern": "^[0-9A-Za-z][0-9A-Za-z._-]{0,127}$" },
+    "contract_kinds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "event.destination",
+          "event.payload_schema",
+          "database.table",
+          "database.column",
+          "database.enum",
+          "http.route",
+          "configuration.key",
+          "configuration.feature_flag",
+          "infrastructure.service",
+          "infrastructure.endpoint",
+          "infrastructure.output"
+        ]
+      }
+    },
+    "capability_tiers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["input", "tier"],
+        "properties": {
+          "input": { "type": "string", "minLength": 1 },
+          "tier": { "enum": ["contract_grade", "structural", "preview"] }
+        }
+      }
+    },
+    "evidence_strata": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "family", "required_evidence", "promotion_state"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$" },
+          "family": { "enum": ["exact_schema", "exact_symbol", "fallback_identity"] },
+          "required_evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "promotion_state": { "const": "UNMEASURED" }
+        }
+      }
+    },
+    "external_tools": { "type": "array", "maxItems": 0 },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 512 }
+    },
+    "resource_budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "timeout_ms",
+        "memory_mib",
+        "maximum_input_bytes",
+        "maximum_output_bytes",
+        "maximum_items"
+      ],
+      "properties": {
+        "timeout_ms": { "type": "integer", "minimum": 1 },
+        "memory_mib": { "type": "integer", "minimum": 1 },
+        "maximum_input_bytes": { "type": "integer", "minimum": 1 },
+        "maximum_output_bytes": { "type": "integer", "minimum": 1 },
+        "maximum_items": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "maintainer": { "type": "string", "minLength": 1, "maxLength": 256 }
+  }
+}
