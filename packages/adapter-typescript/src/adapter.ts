@@ -33,12 +33,19 @@ import {
   type IncrementalContractAdapter,
 } from '@yanib/reverb-adapter-sdk';
 
-import { normalizeNpmSubpath, parseNpmSpecifier, typeScriptSymbolKey } from './identity.js';
+import {
+  normalizeNpmSubpath,
+  parseNpmSpecifier,
+  typeScriptRepositorySymbolKey,
+  typeScriptSymbolKey,
+} from './identity.js';
 import { TYPESCRIPT_ADAPTER_MANIFEST } from './manifest.js';
 import {
   parseTypeScriptModule,
-  resolveRelativeModule,
+  parseTypeScriptConfig,
+  resolveTypeScriptModule,
   type ParsedSymbol,
+  type ParsedTypeScriptConfig,
   type ParsedTypeScriptModule,
 } from './parser.js';
 
@@ -46,6 +53,7 @@ const manifest = TYPESCRIPT_ADAPTER_MANIFEST;
 const decoder = new TextDecoder('utf-8', { fatal: true });
 const TS_PATH = /(?:\.d)?\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs)$/;
 const PACKAGE_JSON_PATH = /(?:^|\/)package\.json$/;
+const TYPESCRIPT_CONFIG_PATH = /(?:^|\/)(?:tsconfig|jsconfig)(?:\.[a-z0-9_-]+)?\.json$/i;
 
 type ArtifactClassification = ArtifactInput['classification'];
 type FailureReason = 'byte_limit' | 'syntax_error' | 'unsafe_input' | 'missing_changed_blob';
@@ -66,12 +74,13 @@ interface TypeScriptSemanticState {
   readonly artifacts: Map<string, SemanticArtifactDescriptor>;
   readonly modules: Map<string, ParsedTypeScriptModule>;
   readonly packageJson: Map<string, Readonly<Record<string, unknown>>>;
+  readonly typeScriptConfig: Map<string, ParsedTypeScriptConfig>;
   readonly failures: Map<string, SemanticFailure>;
 }
 
 interface TypeScriptPartitionPayload extends Readonly<Record<string, unknown>> {
   readonly schema: 'reverb.typescript-package-partition';
-  readonly schemaVersion: '1.0';
+  readonly schemaVersion: '1.1';
   readonly packageRoot: string;
   readonly artifacts: readonly SemanticArtifactDescriptor[];
   readonly modules: readonly {
@@ -84,6 +93,7 @@ interface TypeScriptPartitionPayload extends Readonly<Record<string, unknown>> {
     readonly path: RepoPath;
     readonly raw: Readonly<Record<string, unknown>>;
   }[];
+  readonly typeScriptConfig: readonly ParsedTypeScriptConfig[];
   readonly failures: readonly SemanticFailure[];
 }
 
@@ -137,7 +147,7 @@ function normalizedPackageJson(raw: Readonly<Record<string, unknown>>) {
 }
 
 function relevantPath(path: RepoPath): boolean {
-  return TS_PATH.test(path) || PACKAGE_JSON_PATH.test(path);
+  return TS_PATH.test(path) || PACKAGE_JSON_PATH.test(path) || TYPESCRIPT_CONFIG_PATH.test(path);
 }
 
 function packageRoot(context: Readonly<Record<string, unknown>>): string {
@@ -157,6 +167,7 @@ function emptyState(root: string): TypeScriptSemanticState {
     artifacts: new Map(),
     modules: new Map(),
     packageJson: new Map(),
+    typeScriptConfig: new Map(),
     failures: new Map(),
   };
 }
@@ -167,6 +178,7 @@ function cloneState(state: TypeScriptSemanticState): TypeScriptSemanticState {
     artifacts: new Map(state.artifacts),
     modules: new Map(state.modules),
     packageJson: new Map(state.packageJson),
+    typeScriptConfig: new Map(state.typeScriptConfig),
     failures: new Map(state.failures),
   };
 }
@@ -175,6 +187,7 @@ function removeStatePath(state: TypeScriptSemanticState, path: RepoPath): void {
   state.artifacts.delete(path);
   state.modules.delete(path);
   state.packageJson.delete(path);
+  state.typeScriptConfig.delete(path);
   state.failures.delete(path);
 }
 
@@ -192,6 +205,14 @@ function addArtifactToState(state: TypeScriptSemanticState, artifact: ArtifactIn
       if (record(raw)) state.packageJson.set(artifact.path, normalizedPackageJson(raw));
     } catch {
       // Invalid package metadata is represented by the descriptor without a parsed record.
+    }
+  }
+  if (TYPESCRIPT_CONFIG_PATH.test(artifact.path)) {
+    try {
+      const parsed = parseTypeScriptConfig(artifact, decoder.decode(artifact.bytes));
+      if (parsed !== undefined) state.typeScriptConfig.set(artifact.path, parsed);
+    } catch {
+      // Invalid configuration remains represented by its artifact descriptor.
     }
   }
   if (
@@ -342,10 +363,14 @@ function aggregateSymbols(symbols: readonly ParsedSymbol[]): readonly ParsedSymb
   }
   return [...grouped.values()].map((values) => {
     const first = values[0]!;
+    const implementationHash = values.find(
+      (value) => value.implementationHash !== undefined,
+    )?.implementationHash;
     return values.length === 1
       ? first
       : {
           ...first,
+          ...(implementationHash === undefined ? {} : { implementationHash }),
           shape: {
             declarationKind: first.declarationKind,
             overloads: values.map((value) => value.shape),
@@ -357,6 +382,7 @@ function aggregateSymbols(symbols: readonly ParsedSymbol[]): readonly ParsedSymb
 function resolvePublicSymbols(
   entrypoint: Entrypoint,
   modules: ReadonlyMap<string, ParsedTypeScriptModule>,
+  configs: readonly ParsedTypeScriptConfig[] = [],
 ): { readonly symbols: readonly ParsedSymbol[]; readonly unresolved: number } {
   const available = new Set(modules.keys());
   const visit = (
@@ -370,7 +396,7 @@ function resolvePublicSymbols(
     const symbols = [...module.symbols];
     let unresolved = 0;
     for (const reExport of module.reExports) {
-      const targetPath = resolveRelativeModule(path, reExport.source, available);
+      const targetPath = resolveTypeScriptModule(path, reExport.source, available, configs);
       if (targetPath === undefined) {
         const imported = reExport.imported;
         if (!reExport.star && imported !== undefined && reExport.exported !== undefined) {
@@ -419,18 +445,154 @@ function lockedPackages(context: Readonly<Record<string, unknown>>): ReadonlySet
   return record(value) ? new Set(Object.keys(value)) : new Set();
 }
 
+function repositoryScope(context: Readonly<Record<string, unknown>>): string | undefined {
+  const value = contextString(context, 'repositoryScope');
+  if (value === undefined) return undefined;
+  if (value.length > 512 || value.includes('\0')) {
+    throw new AdapterValidationError(
+      'invalid_repository_scope',
+      'TypeScript repository scope must be a bounded printable identity.',
+    );
+  }
+  return value;
+}
+
+function configuredSpecifier(
+  specifier: string,
+  configs: readonly ParsedTypeScriptConfig[],
+): boolean {
+  return configs.some((config) =>
+    config.paths.some(({ pattern }) => {
+      const wildcard = pattern.indexOf('*');
+      if (wildcard < 0) return pattern === specifier;
+      const prefix = pattern.slice(0, wildcard);
+      const suffix = pattern.slice(wildcard + 1);
+      return specifier.startsWith(prefix) && specifier.endsWith(suffix);
+    }),
+  );
+}
+
+function codeLikeLocalSpecifier(specifier: string): boolean {
+  const normalized = specifier.split(/[?#]/, 1)[0] ?? specifier;
+  const extension = normalized.match(/\.([a-z0-9]+)$/i)?.[1]?.toLowerCase();
+  return (
+    extension === undefined ||
+    ['ts', 'tsx', 'mts', 'cts', 'js', 'jsx', 'mjs', 'cjs'].includes(extension)
+  );
+}
+
+function internalSemanticOwner(
+  path: RepoPath,
+  space: string | undefined,
+  symbol: string | undefined,
+): string {
+  return `importer:${hashCanonical({ path })}:${space ?? 'unknown'}:${symbol ?? 'unknown'}`;
+}
+
 function references(
   config: ConfigRevision,
   context: Readonly<Record<string, unknown>>,
   modules: ReadonlyMap<string, ParsedTypeScriptModule>,
   metadata: PackageMetadata | undefined,
   registry: string,
-): { readonly values: readonly ContractReference[]; readonly dynamic: number } {
+  configs: readonly ParsedTypeScriptConfig[],
+): {
+  readonly values: readonly ContractReference[];
+  readonly dynamic: number;
+  readonly unresolvedLocal: number;
+} {
   const values: ContractReference[] = [];
   const locked = lockedPackages(context);
+  const scope = repositoryScope(context);
+  const available = new Set(modules.keys());
   let dynamic = 0;
+  let unresolvedLocal = 0;
   for (const module of modules.values()) {
     for (const imported of module.imports) {
+      const localTarget =
+        scope === undefined
+          ? undefined
+          : resolveTypeScriptModule(module.artifact.path, imported.source, available, configs);
+      if (scope !== undefined && localTarget !== undefined) {
+        if (
+          imported.unresolvedReason !== undefined ||
+          imported.symbol === undefined ||
+          imported.space === undefined
+        ) {
+          unresolvedLocal += 1;
+          values.push({
+            contractKind: 'typescript_symbol',
+            unresolvedPattern: imported.source,
+            unresolvedReason: imported.unresolvedReason ?? 'local_import_identity_unknown',
+            semanticOwner: internalSemanticOwner(
+              module.artifact.path,
+              imported.space,
+              imported.symbol,
+            ),
+            path: module.artifact.path,
+            range: imported.range,
+            contentHash: module.artifact.contentHash,
+            extractorId: manifest.id,
+            extractorVersion: manifest.version,
+            identityVersion: manifest.identityVersion,
+            configRevision: config,
+            evidenceStratum: 'internal_dynamic_import',
+            activation: 'unknown',
+          });
+        } else {
+          values.push({
+            contractKind: 'typescript_symbol',
+            canonicalKey: typeScriptRepositorySymbolKey(
+              scope,
+              localTarget,
+              imported.space,
+              imported.symbol,
+            ),
+            semanticOwner: internalSemanticOwner(
+              module.artifact.path,
+              imported.space,
+              imported.symbol,
+            ),
+            path: module.artifact.path,
+            range: imported.range,
+            contentHash: module.artifact.contentHash,
+            extractorId: manifest.id,
+            extractorVersion: manifest.version,
+            identityVersion: manifest.identityVersion,
+            configRevision: config,
+            evidenceStratum: 'internal_static_import',
+            activation: 'current_runtime',
+          });
+        }
+        continue;
+      }
+      if (
+        scope !== undefined &&
+        codeLikeLocalSpecifier(imported.source) &&
+        (imported.source.startsWith('.') || configuredSpecifier(imported.source, configs))
+      ) {
+        unresolvedLocal += 1;
+        values.push({
+          contractKind: 'typescript_symbol',
+          unresolvedPattern: imported.source,
+          unresolvedReason: 'local_module_unresolved',
+          semanticOwner: internalSemanticOwner(
+            module.artifact.path,
+            imported.space,
+            imported.symbol,
+          ),
+          path: module.artifact.path,
+          range: imported.range,
+          contentHash: module.artifact.contentHash,
+          extractorId: manifest.id,
+          extractorVersion: manifest.version,
+          identityVersion: manifest.identityVersion,
+          configRevision: config,
+          evidenceStratum: 'internal_dynamic_import',
+          activation: 'unknown',
+        });
+        continue;
+      }
       const parsed = parseNpmSpecifier(imported.source);
       if (parsed === null && imported.source !== '*') continue;
       if (
@@ -485,7 +647,7 @@ function references(
       });
     }
   }
-  return { values, dynamic };
+  return { values, dynamic, unresolvedLocal };
 }
 
 function sourceFingerprint(
@@ -508,6 +670,7 @@ function sourceFingerprint(
   return contentHash(
     hashCanonical({
       registry,
+      repositoryScope: repositoryScope(context) ?? null,
       packageRoot: state.packageRoot,
       artifacts: [...state.artifacts.values()]
         .map(({ path, contentHash: hash, classification }) => ({
@@ -559,13 +722,64 @@ function materializeState(
   const failed = eligibleFailures;
   const metadata = packageMetadata(state);
   const registry = contextString(context, 'packageRegistry') ?? 'npm';
+  const configs = [...state.typeScriptConfig.values()];
+  const scope = repositoryScope(context);
   const publicEntrypoints = entrypoints(context, metadata, modules);
   const definitions = new Map<string, ContractDefinition>();
   const ambiguousDefinitions = new Set<string>();
   let unresolvedExports = publicEntrypoints.unresolved;
+  let unresolvedInternal = 0;
+  if (scope !== undefined) {
+    for (const path of [...modules.keys()].sort()) {
+      const resolved = resolvePublicSymbols(
+        { path: repoPath(path), subpath: path },
+        modules,
+        configs,
+      );
+      unresolvedInternal += resolved.unresolved;
+      for (const symbol of resolved.symbols) {
+        if (definitions.size >= manifest.resourceBudget.maximumItems) {
+          unresolvedInternal += 1;
+          break;
+        }
+        const shape = canonicalShape({
+          namespace: symbol.space,
+          declarationKind: symbol.declarationKind,
+          ...symbol.shape,
+          ...(symbol.implementationHash === undefined
+            ? {}
+            : { implementationHash: symbol.implementationHash }),
+        });
+        const key = typeScriptRepositorySymbolKey(scope, path, symbol.space, symbol.name);
+        const candidate: ContractDefinition = {
+          contractKind: 'typescript_symbol',
+          canonicalKey: key,
+          displayName: symbol.name,
+          path: symbol.path,
+          range: symbol.range,
+          contentHash: symbol.contentHash,
+          shapeHash: shape.shapeHash,
+          shape: shape.shape,
+          extractorId: manifest.id,
+          extractorVersion: manifest.version,
+          identityVersion: manifest.identityVersion,
+          configRevision: config,
+          evidenceStratum: 'internal_module_export',
+        };
+        if (ambiguousDefinitions.has(key)) continue;
+        const prior = definitions.get(key);
+        if (prior === undefined) definitions.set(key, candidate);
+        else if (prior.shapeHash !== candidate.shapeHash) {
+          definitions.delete(key);
+          ambiguousDefinitions.add(key);
+          unresolvedInternal += 1;
+        }
+      }
+    }
+  }
   if (metadata !== undefined) {
     for (const entrypoint of publicEntrypoints.values) {
-      const resolved = resolvePublicSymbols(entrypoint, modules);
+      const resolved = resolvePublicSymbols(entrypoint, modules, configs);
       unresolvedExports += resolved.unresolved;
       for (const symbol of resolved.symbols) {
         if (definitions.size >= manifest.resourceBudget.maximumItems) {
@@ -623,14 +837,26 @@ function materializeState(
       ),
     );
   }
-  const imported = references(config, context, modules, metadata, registry);
+  const imported = references(config, context, modules, metadata, registry, configs);
   if (imported.dynamic > 0) {
     diagnostics.push(
       diagnostic('warning', 'Dynamic or namespace imports were retained as unresolved references.'),
     );
   }
+  if (unresolvedInternal > 0 || imported.unresolvedLocal > 0) {
+    diagnostics.push(
+      diagnostic(
+        'warning',
+        'Some repository-local exports or imports could not be resolved exactly.',
+      ),
+    );
+  }
   const partial =
-    state.failures.size > 0 || failed > 0 || unresolvedExports > 0 || imported.dynamic > 0;
+    state.failures.size > 0 ||
+    failed > 0 ||
+    unresolvedExports > 0 ||
+    unresolvedInternal > 0 ||
+    imported.unresolvedLocal > 0;
   const coverageState: AdapterCoverage['state'] =
     eligible === 0
       ? 'unsupported'
@@ -657,6 +883,9 @@ function materializeState(
       limitations: [
         ...(unresolvedExports > 0 ? [{ code: 'unresolved_public_export' }] : []),
         ...(imported.dynamic > 0 ? [{ code: 'dynamic_or_reflective_use' }] : []),
+        ...(unresolvedInternal > 0 || imported.unresolvedLocal > 0
+          ? [{ code: 'unresolved_internal_module' }]
+          : []),
         ...(state.failures.size > failed ? [{ code: 'incomplete_input' }] : []),
       ],
     },
@@ -668,7 +897,7 @@ function materializeState(
 function encodeState(state: TypeScriptSemanticState): TypeScriptPartitionPayload {
   return {
     schema: 'reverb.typescript-package-partition',
-    schemaVersion: '1.0',
+    schemaVersion: '1.1',
     packageRoot: state.packageRoot,
     artifacts: [...state.artifacts.values()].sort((left, right) =>
       left.path.localeCompare(right.path),
@@ -684,6 +913,9 @@ function encodeState(state: TypeScriptSemanticState): TypeScriptPartitionPayload
     packageJson: [...state.packageJson.entries()]
       .map(([path, raw]) => ({ path: repoPath(path), raw }))
       .sort((left, right) => left.path.localeCompare(right.path)),
+    typeScriptConfig: [...state.typeScriptConfig.values()].sort((left, right) =>
+      left.path.localeCompare(right.path),
+    ),
     failures: [...state.failures.values()].sort((left, right) =>
       left.path.localeCompare(right.path),
     ),
@@ -696,7 +928,8 @@ function requirePayload(condition: unknown, message: string): asserts condition 
 
 function decodeState(payload: Readonly<Record<string, unknown>>): TypeScriptSemanticState {
   requirePayload(
-    payload.schema === 'reverb.typescript-package-partition' && payload.schemaVersion === '1.0',
+    payload.schema === 'reverb.typescript-package-partition' &&
+      (payload.schemaVersion === '1.0' || payload.schemaVersion === '1.1'),
     'TypeScript partition payload schema is unsupported.',
   );
   requirePayload(
@@ -707,6 +940,7 @@ function decodeState(payload: Readonly<Record<string, unknown>>): TypeScriptSema
     Array.isArray(payload.artifacts) &&
       Array.isArray(payload.modules) &&
       Array.isArray(payload.packageJson) &&
+      (payload.schemaVersion === '1.0' || Array.isArray(payload.typeScriptConfig)) &&
       Array.isArray(payload.failures),
     'TypeScript partition payload collections are invalid.',
   );
@@ -761,6 +995,40 @@ function decodeState(payload: Readonly<Record<string, unknown>>): TypeScriptSema
       'TypeScript partition package metadata path is invalid.',
     );
     state.packageJson.set(path, value.raw);
+  }
+  for (const value of payload.schemaVersion === '1.1'
+    ? (payload.typeScriptConfig as unknown[])
+    : []) {
+    requirePayload(
+      record(value) &&
+        typeof value.path === 'string' &&
+        typeof value.baseUrl === 'string' &&
+        Array.isArray(value.paths),
+      'TypeScript partition compiler configuration is invalid.',
+    );
+    const path = repoPath(value.path);
+    const mappings = value.paths.map((mapping) => {
+      requirePayload(
+        record(mapping) &&
+          typeof mapping.pattern === 'string' &&
+          Array.isArray(mapping.targets) &&
+          mapping.targets.every((target) => typeof target === 'string'),
+        'TypeScript partition path mapping is invalid.',
+      );
+      return {
+        pattern: mapping.pattern,
+        targets: mapping.targets as string[],
+      };
+    });
+    requirePayload(
+      state.artifacts.has(path) && !state.typeScriptConfig.has(path),
+      'TypeScript partition compiler configuration path is invalid.',
+    );
+    state.typeScriptConfig.set(path, {
+      path,
+      baseUrl: value.baseUrl,
+      paths: mappings,
+    });
   }
   for (const value of payload.failures) {
     requirePayload(record(value), 'TypeScript partition failure is invalid.');
@@ -837,7 +1105,7 @@ function differMetadata(): DifferMetadata {
       hashCanonical({ adapter: manifest.id, version: manifest.version, typescript: '5.9.2' }),
     ),
     toolLicense: 'Apache-2.0',
-    category: 'typescript-public-api',
+    category: 'typescript-symbol-contract',
   };
 }
 
@@ -865,6 +1133,12 @@ function changedCompatibility(
 ): ContractChange['compatibility'] {
   const beforeCounts = requiredParameterCounts(before.shape);
   const afterCounts = requiredParameterCounts(after.shape);
+  const implementationChanged =
+    before.evidenceStratum === 'internal_module_export' &&
+    after.evidenceStratum === 'internal_module_export' &&
+    typeof before.shape.implementationHash === 'string' &&
+    typeof after.shape.implementationHash === 'string' &&
+    before.shape.implementationHash !== after.shape.implementationHash;
   if (beforeCounts !== null && afterCounts !== null) {
     if (Math.min(...afterCounts) > Math.max(...beforeCounts)) return 'breaking';
     const priorShapes = Array.isArray(before.shape.overloads)
@@ -878,7 +1152,7 @@ function changedCompatibility(
         nextShapes.some((next) => hashCanonical(next) === hashCanonical(shape)),
       )
     ) {
-      return 'compatible';
+      return implementationChanged ? 'potentially_breaking' : 'compatible';
     }
     return 'potentially_breaking';
   }
@@ -887,7 +1161,7 @@ function changedCompatibility(
 
 export class TypeScriptContractAdapter implements IncrementalContractAdapter {
   public readonly manifest = manifest;
-  public readonly partitioningVersion = 1;
+  public readonly partitioningVersion = 2;
 
   public async extract(request: ExtractRequest) {
     return materializeState(prepareState(request), request.configRevision, request.context);
@@ -1086,6 +1360,9 @@ export class TypeScriptContractAdapter implements IncrementalContractAdapter {
       const before = base.get(key);
       const after = head.get(key);
       if (before?.shapeHash === after?.shapeHash) continue;
+      const internal =
+        before?.evidenceStratum === 'internal_module_export' ||
+        after?.evidenceStratum === 'internal_module_export';
       let compatibility: ContractChange['compatibility'] = 'unknown';
       if (complete) {
         compatibility =
@@ -1100,19 +1377,32 @@ export class TypeScriptContractAdapter implements IncrementalContractAdapter {
         canonicalKey: key,
         changeKind:
           before === undefined
-            ? 'export_added'
+            ? internal
+              ? 'module_export_added'
+              : 'export_added'
             : after === undefined
-              ? 'export_removed'
-              : 'export_changed',
+              ? internal
+                ? 'module_export_removed'
+                : 'export_removed'
+              : internal
+                ? 'module_export_changed'
+                : 'export_changed',
         compatibility,
-        activation: 'on_upgrade',
+        activation: internal ? 'current_runtime' : 'on_upgrade',
         ...(before === undefined ? {} : { baseShapeHash: before.shapeHash }),
         ...(after === undefined ? {} : { headShapeHash: after.shapeHash }),
-        coverageDependencies: ['base.package_exports', 'head.package_exports', 'typescript.ast'],
-        remedy: {
-          kind: 'preserve_or_version_public_api',
-          text: 'Preserve the prior exported shape or publish and coordinate an intentional package upgrade.',
-        },
+        coverageDependencies: internal
+          ? ['base.repository_modules', 'head.repository_modules', 'typescript.ast']
+          : ['base.package_exports', 'head.package_exports', 'typescript.ast'],
+        remedy: internal
+          ? {
+              kind: 'review_or_update_internal_consumers',
+              text: 'Review the named repository-local consumers and update them with this module change.',
+            }
+          : {
+              kind: 'preserve_or_version_public_api',
+              text: 'Preserve the prior exported shape or publish and coordinate an intentional package upgrade.',
+            },
         differ: differMetadata(),
       });
     }

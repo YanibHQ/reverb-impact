@@ -72,12 +72,15 @@ delta updates, and logical extraction materialization. `planPathPartitionInvalid
 conservative default: it invalidates direct path owners plus their reverse dependency closure, and
 marks any unowned changed path incomplete. It never requests a repository-wide fallback.
 
-The TypeScript/npm adapter implements partitioning version 1 at one npm package root per adapter
+The TypeScript/npm adapter implements partitioning version 2 at one npm package root per adapter
 invocation. Its persisted payload contains normalized AST-derived symbols, re-exports, imports,
-artifact identities, failure facts, and package metadata—not source bytes. Its delta updater accepts
-only changed eligible head artifacts and rematerializes the package's logical extraction from base
-facts plus those changes. Missing state or required blobs makes coverage incomplete; it cannot
-authorize a full-source fallback.
+bounded compiler path mappings, artifact identities, failure facts, and package metadata—not source
+bytes. A host-provided stable `repositoryScope` adds repository-local module identities for relative
+and `compilerOptions.paths` imports without weakening npm-public cross-repository identities.
+Implementation evidence is hash-only. Its delta updater accepts only changed eligible head
+artifacts and rematerializes the package's logical extraction from base facts plus those changes.
+Missing state or required blobs makes coverage incomplete; it cannot authorize a full-source
+fallback.
 
 The OpenAPI adapter implements partitioning version 1 with one partition per content-discovered
 specification document. It stores normalized operation and reference-state facts, discovers changed

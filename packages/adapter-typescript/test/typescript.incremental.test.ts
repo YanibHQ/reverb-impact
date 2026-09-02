@@ -65,17 +65,19 @@ async function incremental(input: {
   readonly head: readonly ArtifactInput[];
   readonly changes: readonly AdapterPathChange[];
   readonly changedArtifacts: readonly ArtifactInput[];
+  readonly context?: Readonly<Record<string, unknown>>;
 }) {
+  const activeContext = input.context ?? context;
   const built = await typeScriptAdapter.buildPartitions({
     artifacts: input.base,
     configRevision: revision,
-    context,
+    context: activeContext,
   });
   const basePartitions = built.partitions.map(view);
   const plan = typeScriptAdapter.planInvalidation({
     partitions: basePartitions,
     changes: input.changes,
-    context,
+    context: activeContext,
   });
   const updated = await typeScriptAdapter.updatePartitions({
     basePartitions,
@@ -83,7 +85,7 @@ async function incremental(input: {
     changes: input.changes,
     changedArtifacts: input.changedArtifacts,
     configRevision: revision,
-    context,
+    context: activeContext,
   });
   const partitions = new Map(
     basePartitions.map((partition) => [partition.partitionKey, partition]),
@@ -95,12 +97,12 @@ async function incremental(input: {
   const materialized = await typeScriptAdapter.materializePartitions({
     partitions: [...partitions.values()],
     configRevision: revision,
-    context,
+    context: activeContext,
   });
   const clean = await typeScriptAdapter.extract({
     artifacts: input.head,
     configRevision: revision,
-    context,
+    context: activeContext,
   });
   return { built, plan, updated, materialized, clean };
 }
@@ -277,5 +279,38 @@ describe('TypeScript incremental package partitions', () => {
     expect(payload).not.toContain("return id + '-secret'");
     expect(payload).not.toContain('privateReleaseCommand');
     expect(payload).not.toContain('send-private-token');
+  });
+
+  it('preserves repository-local alias resolution across a changed-blob-only update', async () => {
+    const base = [
+      artifact('package.json', JSON.stringify({ name: '@acme/storefront', private: true })),
+      artifact('tsconfig.json', JSON.stringify({ compilerOptions: { paths: { '@/*': ['./*'] } } })),
+      artifact(
+        'lib/checkout.ts',
+        'export function calculateTotal(value: number): number { return value; }',
+      ),
+      artifact(
+        'app/cart.ts',
+        `import { calculateTotal } from '@/lib/checkout'; void calculateTotal(1);`,
+      ),
+    ];
+    const changed = artifact(
+      'lib/checkout.ts',
+      'export function calculateTotal(value: number): number { return value * 2; }',
+    );
+    const result = await incremental({
+      base,
+      head: replace(base, 'lib/checkout.ts', changed),
+      changes: [{ kind: 'modified', path: repoPath('lib/checkout.ts') }],
+      changedArtifacts: [changed],
+      context: { packageRegistry: 'npm', packageRoot: '.', repositoryScope: 'repo_storefront' },
+    });
+
+    expect(canonicalJson(result.materialized)).toBe(canonicalJson(result.clean));
+    expect(
+      result.materialized.references.some(
+        (reference) => reference.evidenceStratum === 'internal_static_import',
+      ),
+    ).toBe(true);
   });
 });

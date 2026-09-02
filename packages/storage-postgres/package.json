@@ -1,6 +1,6 @@
 {
   "name": "@yanib/reverb-storage-postgres",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "PostgreSQL storage adapter for Reverb reference hosts",
   "type": "module",
   "license": "Apache-2.0",
