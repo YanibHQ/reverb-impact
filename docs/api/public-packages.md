@@ -4,25 +4,26 @@ All publishable packages expose one documented root entry point (`.`) and includ
 their tarball. Internal file paths are deliberately unavailable through package `exports`; hosts
 must not import storage internals or another host's implementation.
 
-| Package                            | Public role                                                           |
-| ---------------------------------- | --------------------------------------------------------------------- |
-| `@yanib/reverb-domain`             | immutable values, canonical records, graph/evaluation/delivery policy |
-| `@yanib/reverb-schema`             | canonical JSON Schemas, compatibility policy, runtime validation      |
-| `@yanib/reverb-application`        | orchestration use cases and host-neutral ports                        |
-| `@yanib/reverb-adapter-sdk`        | adapter contract, validation, sandbox and admission helpers           |
-| `@yanib/reverb-adapter-events`     | Kafka, SQS/SNS, and Pub/Sub destination/payload evidence              |
-| `@yanib/reverb-adapter-database`   | PostgreSQL migration, table/column/enum, SQL, and Prisma evidence     |
-| `@yanib/reverb-adapter-http`       | implicit framework route and HTTP client-call evidence                |
-| `@yanib/reverb-adapter-config`     | configuration, feature-flag, and hashed secret-reference evidence     |
-| `@yanib/reverb-adapter-typescript` | TypeScript/npm extraction and compatibility adapter                   |
-| `@yanib/reverb-adapter-openapi`    | OpenAPI operation extraction and compatibility adapter                |
-| `@yanib/reverb-adapter-protobuf`   | Protobuf/gRPC extraction and compatibility adapter                    |
-| `@yanib/reverb-storage-sqlite`     | local durable storage adapter                                         |
-| `@yanib/reverb-storage-postgres`   | hosted scoped records, webhook/jobs/outbox/projection/purge adapter   |
-| `@yanib/reverb-host-local`         | exact local Git/filesystem host primitives                            |
-| `@yanib/reverb-host-github`        | GitHub source, durable runtime, review, and check-delivery adapters   |
-| `@yanib/reverb-testkit`            | conformance v1, fakes, fixtures, and host capability declarations     |
-| `reverb-impact`                    | `reverb` CLI and embeddable CLI construction                          |
+| Package                                | Public role                                                           |
+| -------------------------------------- | --------------------------------------------------------------------- |
+| `@yanib/reverb-domain`                 | immutable values, canonical records, graph/evaluation/delivery policy |
+| `@yanib/reverb-schema`                 | canonical JSON Schemas, compatibility policy, runtime validation      |
+| `@yanib/reverb-application`            | orchestration use cases and host-neutral ports                        |
+| `@yanib/reverb-adapter-sdk`            | adapter contract, validation, sandbox and admission helpers           |
+| `@yanib/reverb-adapter-events`         | Kafka, SQS/SNS, and Pub/Sub destination/payload evidence              |
+| `@yanib/reverb-adapter-database`       | PostgreSQL migration, table/column/enum, SQL, and Prisma evidence     |
+| `@yanib/reverb-adapter-http`           | implicit framework route and HTTP client-call evidence                |
+| `@yanib/reverb-adapter-config`         | configuration, feature-flag, and hashed secret-reference evidence     |
+| `@yanib/reverb-adapter-infrastructure` | static Kubernetes, Helm, and Terraform deployment-wiring evidence     |
+| `@yanib/reverb-adapter-typescript`     | TypeScript/npm extraction and compatibility adapter                   |
+| `@yanib/reverb-adapter-openapi`        | OpenAPI operation extraction and compatibility adapter                |
+| `@yanib/reverb-adapter-protobuf`       | Protobuf/gRPC extraction and compatibility adapter                    |
+| `@yanib/reverb-storage-sqlite`         | local durable storage adapter                                         |
+| `@yanib/reverb-storage-postgres`       | hosted scoped records, webhook/jobs/outbox/projection/purge adapter   |
+| `@yanib/reverb-host-local`             | exact local Git/filesystem host primitives                            |
+| `@yanib/reverb-host-github`            | GitHub source, durable runtime, review, and check-delivery adapters   |
+| `@yanib/reverb-testkit`                | conformance v1, fakes, fixtures, and host capability declarations     |
+| `reverb-impact`                        | `reverb` CLI and embeddable CLI construction                          |
 
 ## Errors and states
 
@@ -115,6 +116,16 @@ before persistence or output; secret values and value-bearing environment files 
 Computed keys, missing salt/namespace, generated sources, and unsupported provider resolution
 produce partial coverage. Feature-flag activation is runtime-specific while ordinary configuration
 and secret-reference activation occurs on deployment.
+
+`@yanib/reverb-adapter-infrastructure` emits `infrastructure.service`,
+`infrastructure.endpoint`, and `infrastructure.output` evidence from static Kubernetes Services,
+Ingress backends, workloads and containers, declared scalar Helm values, and bounded Terraform
+Kubernetes service/output/remote-state forms. The host supplies an environment and service scope;
+remote-state consumers additionally require an explicit alias-to-scope mapping. The adapter never
+executes Helm or Terraform, loads provider plugins, reads state/plans/variable values, contacts a
+cluster or cloud API, or retains Kubernetes Secret content. Unknown templates, generated inputs,
+missing scopes, unsupported runtime mutation, and unresolved remote-state aliases produce partial
+coverage.
 
 ## Derived pull-request generations
 

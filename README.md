@@ -60,6 +60,7 @@ were generated locally from repository-backed references.
 | Shared databases (0.5.0) | PostgreSQL migrations, tables, columns, enums, literal SQL, and Prisma consumers |
 | Implicit HTTP (0.5.0) | Framework routes, client calls, service aliases, and normalized route templates |
 | Configuration (0.5.0) | Environment/config keys, feature flags, and value-free hashed secret references |
+| Infrastructure (0.5.0) | Kubernetes services, ingress wiring, workloads, bounded Helm templates, and Terraform outputs |
 
 Additional contract types can be implemented through the public adapter SDK and its validation,
 compatibility, sandboxing, and admission interfaces.
@@ -178,6 +179,7 @@ promotion decisions, status, and diagnostics.
 | `@yanib/reverb-adapter-database` | PostgreSQL migration, schema, query, and Prisma impact analysis (available in 0.5.0) |
 | `@yanib/reverb-adapter-http` | Implicit framework route and HTTP client impact analysis (available in 0.5.0) |
 | `@yanib/reverb-adapter-config` | Configuration, feature-flag, and secret-reference impact analysis (available in 0.5.0) |
+| `@yanib/reverb-adapter-infrastructure` | Static Kubernetes, Helm, and Terraform deployment-wiring impact analysis (available in 0.5.0) |
 | `@yanib/reverb-adapter-typescript` | TypeScript and npm contract analysis |
 | `@yanib/reverb-adapter-openapi` | OpenAPI and HTTP contract analysis |
 | `@yanib/reverb-adapter-protobuf` | Protobuf and gRPC contract analysis |

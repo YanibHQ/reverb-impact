@@ -2,7 +2,7 @@
 
 **Target release:** `0.5.0-rc.1`  
 **Compatibility baseline:** `v0.4.0` at `8e80ff02604dcbbd97cee5bf2768005e33d4d73c`  
-**Status:** Phases 000–002 complete; Phase 003 in progress
+**Status:** Phases 000–003 complete; Phase 004 in progress
 
 This feature expands Reverb from source/API contract analysis into a provider-neutral dependency
 impact engine for events, shared databases, implicit HTTP calls, configuration, and infrastructure.
