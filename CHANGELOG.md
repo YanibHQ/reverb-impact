@@ -7,6 +7,10 @@ explicit and package breaking changes may occur in minor releases.
 
 ## Unreleased
 
+- Added Protobuf partitioning v1: one normalized method/field fact partition per discovered
+  descriptor-set artifact, changed-blob discovery, replacements/tombstones, and clean-versus-
+  incremental equivalence for edits, additions, deletions, renames, and non-descriptor changes.
+- Advanced the Protobuf adapter manifest to 0.2.0 and included it in the declared adapter re-index.
 - Added OpenAPI partitioning v1: one normalized document-fact partition per discovered spec,
   changed-blob content discovery, document replacement/tombstones, and clean-versus-incremental
   equivalence for edits, additions, deletions, renames, and non-spec changes.

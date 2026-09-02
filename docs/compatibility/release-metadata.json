@@ -26,14 +26,14 @@
     },
     {
       "id": "reverb.protobuf",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "identity_version": 1
     }
   ],
   "reindex": {
     "required": true,
-    "adapter_ids": ["reverb.openapi", "reverb.typescript"],
-    "reason": "TypeScript and OpenAPI adapter 0.2.0 extraction fingerprints introduce persisted semantic partition state; existing observations and snapshots for both adapters must be rebuilt."
+    "adapter_ids": ["reverb.openapi", "reverb.protobuf", "reverb.typescript"],
+    "reason": "TypeScript, OpenAPI, and Protobuf adapter 0.2.0 extraction fingerprints introduce persisted semantic partition state; existing observations and snapshots for all three adapters must be rebuilt."
   },
   "calibration": {
     "reset_strata": [],
