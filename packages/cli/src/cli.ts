@@ -273,7 +273,7 @@ export async function createCli(): Promise<Command> {
     new Command()
       .name('reverb')
       .description('Evidence-first cross-repository pull-request impact analysis')
-      .version('0.2.0'),
+      .version('0.3.0'),
   );
 
   program

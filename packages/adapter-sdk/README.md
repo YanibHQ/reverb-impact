@@ -5,7 +5,7 @@ Contract-adapter interfaces, validation, and admission helpers for Reverb.
 ## Installation
 
 ```bash
-pnpm add --save-exact @yanib/reverb-adapter-sdk@0.2.0
+pnpm add --save-exact @yanib/reverb-adapter-sdk@0.3.0
 ```
 
 Import only the documented package root. See the

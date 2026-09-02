@@ -22,7 +22,7 @@ compatibility also requires the same adapter, identity, partitioning, config, an
 ## Installation
 
 ```bash
-pnpm add --save-exact @yanib/reverb-adapter-typescript@0.2.0
+pnpm add --save-exact @yanib/reverb-adapter-typescript@0.3.0
 ```
 
 Import only the documented package root. See the
