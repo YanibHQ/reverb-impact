@@ -12,6 +12,7 @@ must not import storage internals or another host's implementation.
 | `@yanib/reverb-adapter-sdk`        | adapter contract, validation, sandbox and admission helpers           |
 | `@yanib/reverb-adapter-events`     | Kafka, SQS/SNS, and Pub/Sub destination/payload evidence              |
 | `@yanib/reverb-adapter-database`   | PostgreSQL migration, table/column/enum, SQL, and Prisma evidence     |
+| `@yanib/reverb-adapter-http`       | implicit framework route and HTTP client-call evidence                |
 | `@yanib/reverb-adapter-typescript` | TypeScript/npm extraction and compatibility adapter                   |
 | `@yanib/reverb-adapter-openapi`    | OpenAPI operation extraction and compatibility adapter                |
 | `@yanib/reverb-adapter-protobuf`   | Protobuf/gRPC extraction and compatibility adapter                    |
@@ -96,6 +97,14 @@ operators must use migration paths whose ordering matches deployment order. Dyna
 migration bases, unsupported dialects, generated migrations, stored procedures, unresolved query
 columns, and absent client mappings produce partial coverage. The adapter does not connect to a
 database, execute repository code, or read provider state.
+
+`@yanib/reverb-adapter-http` emits `http.route` evidence from bounded Express, Fastify, and Hono
+route registrations plus `fetch`, Axios, and configured client calls. The host supplies immutable
+producer service IDs and exact hostname/client aliases. Route parameters and bounded template
+segments normalize to a shared identity; dynamic hosts or methods, arbitrary URL construction,
+mounted router prefixes, runtime registration, proxy rewrites, generated sources, and missing
+aliases produce partial coverage. The adapter performs no network access, and OpenAPI remains a
+separate higher-specificity evidence lane.
 
 ## Derived pull-request generations
 

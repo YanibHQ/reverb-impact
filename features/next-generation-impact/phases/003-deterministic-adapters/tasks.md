@@ -14,9 +14,9 @@
 
 ## Implicit HTTP
 
-- [ ] Identity/extraction/change/incremental implementation
-- [ ] Framework route/client/alias backend-to-backend and same-repository fixtures
-- [ ] Dynamic URL/proxy/partial/adversarial/admission/docs
+- [x] Identity/extraction/change/incremental implementation
+- [x] Framework route/client/alias backend-to-backend and same-repository fixtures
+- [x] Dynamic URL/proxy/partial/adversarial/admission/docs
 
 ## Configuration
 
