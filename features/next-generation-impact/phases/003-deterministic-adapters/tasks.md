@@ -26,11 +26,11 @@
 
 ## Infrastructure
 
-- [ ] Identity/extraction/change/incremental implementation
-- [ ] Kubernetes/Helm/Terraform/service/ingress/output backend-to-backend fixtures
-- [ ] Template/provider-state/partial/adversarial/admission/docs
+- [x] Identity/extraction/change/incremental implementation
+- [x] Kubernetes/Helm/Terraform/service/ingress/output backend-to-backend fixtures
+- [x] Template/provider-state/partial/adversarial/admission/docs
 
 ## Cross-family
 
 - [x] Disabled adapters preserve exact v1 golden
-- [ ] Every package passes SDK conformance and packed public-entry validation
+- [x] Every package passes SDK conformance and packed public-entry validation

@@ -1,0 +1,48 @@
+{
+  "schema": "reverb.adapter-admission",
+  "schemaVersion": "1.0",
+  "adapterId": "reverb.infrastructure",
+  "adapterVersion": "0.1.0",
+  "identityVersion": 1,
+  "demand": "Static deployment, service-discovery, endpoint, and Terraform-output impact.",
+  "designPartner": "none",
+  "identitySummary": "Environment, service scope, identity kind, service/port, or output name.",
+  "compatibilitySummary": "Removal is breaking; additions are compatible; deployment activation remains explicit.",
+  "evidenceRendering": "Exact static paths, ranges, immutable hashes, versions, coverage, and remedy.",
+  "latencyResourceSummary": "timeout=10000ms memory=256MiB output=8388608B",
+  "dependenciesAndLicenses": [
+    "yaml@2.8.3: ISC"
+  ],
+  "limitations": [
+    "Helm supports only declared scalar .Values substitutions; templates are never executed.",
+    "Terraform state, plans, variable values, modules, provider APIs, and commands are excluded.",
+    "Unknown templates, dynamic names, and runtime controller mutations remain partial coverage."
+  ],
+  "maintainer": "YanibHQ/reverb-impact maintainers",
+  "checks": [
+    {
+      "id": "adversarial_fixtures",
+      "state": "pass",
+      "evidence": "Package adversarial suite"
+    },
+    {
+      "id": "determinism",
+      "state": "pass",
+      "evidence": "Repeated extraction conformance test"
+    },
+    {
+      "id": "identity_round_trip",
+      "state": "pass",
+      "evidence": "Kubernetes/Helm/Terraform fixtures"
+    },
+    {
+      "id": "real_labelled_corpus",
+      "state": "not_measured",
+      "evidence": "No approved corpus yet"
+    }
+  ],
+  "realLabelledCorpusState": "absent",
+  "promotionState": "UNMEASURED",
+  "deliveryReady": false,
+  "outputHash": "sha256:2166e3e1a3cce5c63d6b978abb4bf6886041857ee5ecb5d4c4bb0a8bcb58bd74"
+}

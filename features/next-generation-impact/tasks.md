@@ -34,9 +34,9 @@
 - [x] Shared database/migrations vertical slice and backend-to-backend fixtures
 - [x] HTTP-without-OpenAPI vertical slice and backend-to-backend fixtures
 - [x] Configuration/flags/secret-reference vertical slice and backend-to-backend fixtures
-- [ ] Infrastructure/deployment vertical slice and backend-to-backend fixtures
-- [ ] Same-repository, partial, adversarial, incremental, and scope tests for every family
-- [ ] Admission, license, documentation, and performance evidence for every package
+- [x] Infrastructure/deployment vertical slice and backend-to-backend fixtures
+- [x] Same-repository, partial, adversarial, incremental, and scope tests for every family
+- [x] Admission, license, documentation, and performance evidence for every package
 
 ## Phase 004 — optional reasoning
 
