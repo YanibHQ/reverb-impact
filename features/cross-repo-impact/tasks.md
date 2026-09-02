@@ -116,7 +116,7 @@ Detailed tasks: [phases/001-repository-index/tasks.md](phases/001-repository-ind
 - [ ] Persist adapter-owned semantic partitions/snapshots so incremental PR analysis does not recreate unchanged extraction input
   - [x] TypeScript/npm package partitions and clean-versus-incremental equivalence
   - [x] OpenAPI document/reference partitions and equivalence
-  - [ ] Protobuf file/import-closure partitions and equivalence
+  - [x] Protobuf descriptor-set partitions and equivalence
 
 ### 1F. Overlay primitives
 
@@ -167,6 +167,7 @@ Detailed tasks: [phases/002-contract-change-detection/tasks.md](phases/002-contr
 - [x] generated-client dependency/reference extraction
 - [x] pinned `buf` category/config wrapper
 - [x] reserved fields, number reuse, JSON versus wire semantics fixtures
+- [x] descriptor-fact partitions, changed-blob discovery, tombstones, and incremental equivalence
 
 ### 2E. Admission
 

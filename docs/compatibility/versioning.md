@@ -33,8 +33,10 @@ migration 3 to add reclaimable webhook-worker leases. TypeScript adapter 0.2.0 a
 source fingerprint and adds package-partition semantic state, so `reverb.typescript` observations
 and snapshots require re-indexing. OpenAPI adapter 0.2.0 similarly introduces document-fact
 partitions and a new extraction fingerprint, so `reverb.openapi` observations and snapshots also
-require re-indexing. Both identity versions remain 1, and every affected stratum was already
-`UNMEASURED`, so no promoted calibration state is carried forward or reset.
+require re-indexing. Protobuf adapter 0.2.0 likewise introduces descriptor-fact partitions and a
+new extraction fingerprint, so `reverb.protobuf` observations and snapshots require re-indexing.
+All three identity versions remain 1, and every affected stratum was already `UNMEASURED`, so no
+promoted calibration state is carried forward or reset.
 
 ## Upgrade procedure
 

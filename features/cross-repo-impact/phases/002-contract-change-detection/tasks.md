@@ -33,6 +33,9 @@
 - [x] Provider method/message and consumer stub references
 - [x] Pinned `buf` wrapper/category config
 - [x] Reserved/deleted/renamed/reused-number/wire-JSON fixtures
+- [x] Descriptor-set partitions contain normalized method/field facts without source bytes
+- [x] Changed-only edit/add/delete/rename/non-descriptor equivalence with clean extraction
+- [x] Missing changed blobs make coverage partial without a repository scan
 - [x] Remedies and admission report
 
 ## E. TypeScript/npm

@@ -2,7 +2,7 @@
   "schema": "reverb.adapter-admission",
   "schemaVersion": "1.0",
   "adapterId": "reverb.protobuf",
-  "adapterVersion": "0.1.0",
+  "adapterVersion": "0.2.0",
   "identityVersion": 1,
   "demand": "Cross-repository Protobuf message and gRPC service contract changes.",
   "designPartner": "none",
@@ -44,5 +44,5 @@
   "realLabelledCorpusState": "absent",
   "promotionState": "UNMEASURED",
   "deliveryReady": false,
-  "outputHash": "sha256:9e5b8914dba796dde4bb4ae3c6f10215fc7c28620d800ae2057fd7a0a5885acf"
+  "outputHash": "sha256:97a770c892d0562d763732e90adde5c6d5e2184cfc9477e1b77f3c94577089d9"
 }

@@ -85,6 +85,11 @@ documents from the bounded PR blob set, and represents deletion or loss of OpenA
 partition tombstone. Untouched specifications require no provider read; unavailable changed blobs
 make the update partial.
 
+The Protobuf adapter implements partitioning version 1 with one partition per content-discovered
+canonical descriptor-set JSON artifact. It stores normalized method/field facts and rematerializes
+generated-stub references from versioned context. Changed artifacts create replacements or
+tombstones; untouched descriptor sets and consumers require no provider read.
+
 ## Provider source budgets
 
 `BudgetedRepositoryReader` wraps any source adapter with hard per-run ceilings for metadata calls,
