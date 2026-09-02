@@ -1,7 +1,7 @@
 {
   "document_schema": "reverb.release-compatibility-metadata",
   "schema_version": "1.0",
-  "release_status": "pre_v1_release_candidate",
+  "release_status": "pre_v1_published",
   "package_version": "0.3.0",
   "schema": {
     "current_version": "1.0",
@@ -40,10 +40,10 @@
     "reason": "All evidence strata are already UNMEASURED; no compatibility claim is carried forward."
   },
   "publication": {
-    "npm": false,
+    "npm": true,
     "container": false,
     "signature": false,
     "provenance_workflow": true,
-    "reason": "Version 0.3.0 is a verified release candidate; npm publication, container publication, and release signatures have not yet been recorded."
+    "reason": "All 13 version 0.3.0 npm packages were published with signed GitHub Actions provenance and clean-install verified on 2026-09-01; container publication and release signatures remain pending."
   }
 }
