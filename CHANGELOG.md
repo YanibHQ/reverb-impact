@@ -7,6 +7,10 @@ explicit and package breaking changes may occur in minor releases.
 
 ## Unreleased
 
+- Added OpenAPI partitioning v1: one normalized document-fact partition per discovered spec,
+  changed-blob content discovery, document replacement/tombstones, and clean-versus-incremental
+  equivalence for edits, additions, deletions, renames, and non-spec changes.
+- Advanced the OpenAPI adapter manifest to 0.2.0 and included it in the declared adapter re-index.
 - Added TypeScript/npm partitioning v1: package-scoped persisted AST-derived facts, changed-blob
   delta updates, fail-closed missing-input handling, and clean-versus-incremental equivalence for
   edits, additions, deletions, renames, barrel changes, imports, and package metadata.

@@ -67,10 +67,11 @@ for (const directory of await readdir(resolve(root, 'packages'), { withFileTypes
 }
 if (
   metadata.reindex.required !== true ||
-  JSON.stringify(metadata.reindex.adapter_ids) !== JSON.stringify(['reverb.typescript']) ||
+  JSON.stringify(metadata.reindex.adapter_ids) !==
+    JSON.stringify(['reverb.openapi', 'reverb.typescript']) ||
   metadata.calibration.reset_strata.length !== 0
 ) {
-  failures.push('release metadata does not declare the TypeScript-only re-index boundary');
+  failures.push('release metadata does not declare the OpenAPI/TypeScript re-index boundary');
 }
 
 if (failures.length > 0) {

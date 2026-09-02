@@ -21,7 +21,7 @@
     },
     {
       "id": "reverb.openapi",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "identity_version": 1
     },
     {
@@ -32,8 +32,8 @@
   ],
   "reindex": {
     "required": true,
-    "adapter_ids": ["reverb.typescript"],
-    "reason": "TypeScript adapter 0.2.0 changes extraction fingerprints and introduces persisted package-partition state; existing TypeScript observations and snapshots must be rebuilt."
+    "adapter_ids": ["reverb.openapi", "reverb.typescript"],
+    "reason": "TypeScript and OpenAPI adapter 0.2.0 extraction fingerprints introduce persisted semantic partition state; existing observations and snapshots for both adapters must be rebuilt."
   },
   "calibration": {
     "reset_strata": [],

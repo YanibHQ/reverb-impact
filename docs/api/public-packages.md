@@ -79,6 +79,12 @@ only changed eligible head artifacts and rematerializes the package's logical ex
 facts plus those changes. Missing state or required blobs makes coverage incomplete; it cannot
 authorize a full-source fallback.
 
+The OpenAPI adapter implements partitioning version 1 with one partition per content-discovered
+specification document. It stores normalized operation and reference-state facts, discovers changed
+documents from the bounded PR blob set, and represents deletion or loss of OpenAPI identity with a
+partition tombstone. Untouched specifications require no provider read; unavailable changed blobs
+make the update partial.
+
 ## Provider source budgets
 
 `BudgetedRepositoryReader` wraps any source adapter with hard per-run ceilings for metadata calls,

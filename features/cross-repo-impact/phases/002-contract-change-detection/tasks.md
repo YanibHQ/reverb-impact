@@ -22,6 +22,9 @@
 - [x] Generated-client reference mapping
 - [x] Pinned differ wrapper and request/response change mapping
 - [x] Unresolved/remote ref, drift, fallback-lane, formatting fixtures
+- [x] Document-fact partitions contain operations/reference state without source bytes
+- [x] Changed-only edit/add/delete/rename/non-spec equivalence with clean extraction
+- [x] Missing changed blobs make coverage partial without a repository scan
 - [x] Remedies and admission report
 
 ## D. Protobuf/gRPC

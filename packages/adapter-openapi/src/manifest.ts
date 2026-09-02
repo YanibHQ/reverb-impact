@@ -5,7 +5,7 @@ export const OPENAPI_ADAPTER_MANIFEST: AdapterManifest = validateAdapterManifest
   schema: 'reverb.adapter-manifest',
   schemaVersion: '1.0',
   id: adapterId('reverb.openapi'),
-  version: '0.1.0',
+  version: '0.2.0',
   identityVersion: 1,
   contractKinds: ['openapi_operation'],
   capabilityTiers: [

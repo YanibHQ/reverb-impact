@@ -115,7 +115,7 @@ Detailed tasks: [phases/001-repository-index/tasks.md](phases/001-repository-ind
 - [x] Incremental content reuse and clean-rebuild equivalence
 - [ ] Persist adapter-owned semantic partitions/snapshots so incremental PR analysis does not recreate unchanged extraction input
   - [x] TypeScript/npm package partitions and clean-versus-incremental equivalence
-  - [ ] OpenAPI document/reference partitions and equivalence
+  - [x] OpenAPI document/reference partitions and equivalence
   - [ ] Protobuf file/import-closure partitions and equivalence
 
 ### 1F. Overlay primitives
@@ -159,6 +159,7 @@ Detailed tasks: [phases/002-contract-change-detection/tasks.md](phases/002-contr
 - [x] pinned `oasdiff` sandbox wrapper and exit mapping
 - [x] spec drift/unknown limitations and hand-built HTTP preview separation
 - [x] operation/path rename, unresolved refs, request/response variance fixtures
+- [x] document-fact partitions, changed-blob discovery, tombstones, and incremental equivalence
 
 ### 2D. Protobuf/gRPC
 
