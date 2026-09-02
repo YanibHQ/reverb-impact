@@ -3,6 +3,7 @@ import {
   SCHEMA_V2_COMPATIBILITY,
   analysisResultV2Schema,
   analysisScopeV2Schema,
+  executionBudgetV2Schema,
   assertReadableSchemaVersion,
   assertReadableSchemaVersionV2,
 } from '../src/index.js';
@@ -38,5 +39,6 @@ describe('schema-major 2 negotiation', () => {
   it('publishes separate v2 schema IDs without widening v1', () => {
     expect(analysisScopeV2Schema.$id).toMatch(/\/analysis-scope\/v2\.json$/);
     expect(analysisResultV2Schema.$id).toMatch(/\/analysis-result\/v2\.json$/);
+    expect(executionBudgetV2Schema.$id).toMatch(/\/execution-budget\/v2\.json$/);
   });
 });

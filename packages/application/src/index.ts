@@ -3,6 +3,7 @@ export * from './analysis-scope.js';
 export * from './analyze-pr.js';
 export * from './analyze-pr-v2.js';
 export * from './create-overlay.js';
+export * from './execution-budget-v2.js';
 export * from './index-generation.js';
 export * from './ports.js';
 export * from './review.js';
