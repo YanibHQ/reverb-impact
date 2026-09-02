@@ -1,6 +1,6 @@
 # Publishing a release
 
-Reverb packages use a fixed version across the workspace. The current candidate is `0.2.0`.
+Reverb packages use a fixed version across the workspace. The current candidate is `0.3.0`.
 Before publishing, confirm that every public manifest, the CLI version, schema compatibility record,
 changelog, and [release metadata](../compatibility/release-metadata.json) name the same version.
 

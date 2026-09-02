@@ -1,6 +1,6 @@
 {
   "name": "reverb-impact",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Local CLI for evidence-first cross-repository impact analysis",
   "type": "module",
   "license": "Apache-2.0",

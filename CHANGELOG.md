@@ -7,6 +7,8 @@ explicit and package breaking changes may occur in minor releases.
 
 ## Unreleased
 
+## 0.3.0 - 2026-09-01
+
 - Added Protobuf partitioning v1: one normalized method/field fact partition per discovered
   descriptor-set artifact, changed-blob discovery, replacements/tombstones, and clean-versus-
   incremental equivalence for edits, additions, deletions, renames, and non-descriptor changes.

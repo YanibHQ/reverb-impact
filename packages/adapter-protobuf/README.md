@@ -20,7 +20,7 @@ JSON during indexing. The pinned Buf compatibility differ remains a separate san
 ## Installation
 
 ```bash
-pnpm add --save-exact @yanib/reverb-adapter-protobuf@0.2.0
+pnpm add --save-exact @yanib/reverb-adapter-protobuf@0.3.0
 ```
 
 Import only the documented package root. See the

@@ -1,6 +1,6 @@
 {
   "name": "@yanib/reverb-adapter-sdk",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Contract adapter interfaces and validation for Reverb",
   "type": "module",
   "license": "Apache-2.0",

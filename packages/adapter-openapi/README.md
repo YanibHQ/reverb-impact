@@ -22,7 +22,7 @@ differ remains a separate sandboxed boundary.
 ## Installation
 
 ```bash
-pnpm add --save-exact @yanib/reverb-adapter-openapi@0.2.0
+pnpm add --save-exact @yanib/reverb-adapter-openapi@0.3.0
 ```
 
 Import only the documented package root. See the

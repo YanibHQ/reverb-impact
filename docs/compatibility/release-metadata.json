@@ -2,7 +2,7 @@
   "document_schema": "reverb.release-compatibility-metadata",
   "schema_version": "1.0",
   "release_status": "pre_v1_release_candidate",
-  "package_version": "0.2.0",
+  "package_version": "0.3.0",
   "schema": {
     "current_version": "1.0",
     "supported_majors": [1],
@@ -44,6 +44,6 @@
     "container": false,
     "signature": false,
     "provenance_workflow": true,
-    "reason": "Version 0.2.0 is a verified release candidate; npm publication, container publication, and release signatures have not yet been recorded."
+    "reason": "Version 0.3.0 is a verified release candidate; npm publication, container publication, and release signatures have not yet been recorded."
   }
 }
