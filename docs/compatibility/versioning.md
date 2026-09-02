@@ -31,8 +31,10 @@ Version `0.2.0` intentionally requires `AnalyzePullRequestInput.producerHeadObse
 producer can be analyzed as a consumer at the exact PR head. Hosted PostgreSQL deployments apply
 migration 3 to add reclaimable webhook-worker leases. TypeScript adapter 0.2.0 also changes its
 source fingerprint and adds package-partition semantic state, so `reverb.typescript` observations
-and snapshots require re-indexing. Its identity version remains 1, and every affected stratum was
-already `UNMEASURED`, so no promoted calibration state is carried forward or reset.
+and snapshots require re-indexing. OpenAPI adapter 0.2.0 similarly introduces document-fact
+partitions and a new extraction fingerprint, so `reverb.openapi` observations and snapshots also
+require re-indexing. Both identity versions remain 1, and every affected stratum was already
+`UNMEASURED`, so no promoted calibration state is carried forward or reset.
 
 ## Upgrade procedure
 

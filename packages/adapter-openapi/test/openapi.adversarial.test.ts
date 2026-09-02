@@ -1,5 +1,5 @@
 import { configRevision, contentHash, repoPath, sha256Bytes } from '@yanib/reverb-domain';
-import type { ArtifactInput } from '@yanib/reverb-adapter-sdk';
+import type { AdapterPartitionView, ArtifactInput } from '@yanib/reverb-adapter-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { openApiAdapter } from '../src/index.js';
@@ -57,5 +57,29 @@ copy: *info
 paths: {}
 `);
     expect(result.coverage.state).toBe('failed');
+  });
+
+  it('rejects tampered persisted document facts', async () => {
+    const built = await openApiAdapter.buildPartitions({
+      artifacts: [artifact('openapi: 3.1.0\ninfo: {title: Safe, version: 1}\npaths: {}\n')],
+      configRevision: revision,
+      context: { serviceId: 'svc.hostile' },
+    });
+    const partition = built.partitions[0]!;
+    const tampered: AdapterPartitionView = {
+      partitionKey: partition.partitionKey,
+      ownedPaths: partition.ownedPaths,
+      dependencyKeys: partition.dependencyKeys,
+      payload: { ...partition.payload, schema: 'tampered' },
+      outputHash: contentHash(`sha256:${'6'.repeat(64)}`),
+    };
+
+    await expect(
+      openApiAdapter.materializePartitions({
+        partitions: [tampered],
+        configRevision: revision,
+        context: { serviceId: 'svc.hostile' },
+      }),
+    ).rejects.toMatchObject({ code: 'invalid_partition_payload' });
   });
 });
