@@ -1,6 +1,7 @@
 import {
   SCHEMA_COMPATIBILITY,
   SCHEMA_V2_COMPATIBILITY,
+  analysisCoverageV2Schema,
   analysisResultV2Schema,
   analysisScopeV2Schema,
   executionBudgetV2Schema,
@@ -38,6 +39,7 @@ describe('schema-major 2 negotiation', () => {
 
   it('publishes separate v2 schema IDs without widening v1', () => {
     expect(analysisScopeV2Schema.$id).toMatch(/\/analysis-scope\/v2\.json$/);
+    expect(analysisCoverageV2Schema.$id).toMatch(/\/analysis-coverage\/v2\.json$/);
     expect(analysisResultV2Schema.$id).toMatch(/\/analysis-result\/v2\.json$/);
     expect(executionBudgetV2Schema.$id).toMatch(/\/execution-budget\/v2\.json$/);
   });

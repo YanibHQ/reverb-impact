@@ -31,9 +31,13 @@
     "build": "tsc -b"
   },
   "dependencies": {
+    "@yanib/reverb-application": "workspace:*",
     "@yanib/reverb-domain": "workspace:*",
     "@types/pg": "8.23.1",
     "pg": "8.23.0"
+  },
+  "devDependencies": {
+    "@yanib/reverb-testkit": "workspace:*"
   },
   "publishConfig": {
     "access": "public",

@@ -1,5 +1,6 @@
 import {
   finalizeAnalysisResultV2,
+  type AdapterFamilyV2,
   type AnalysisResultV2,
   type ConsumerScopeV2,
   type ExecutionBudgetLimitsV2,
@@ -9,6 +10,8 @@ import {
 } from '@yanib/reverb-domain';
 
 import { ResolveAnalysisScope } from './analysis-scope.js';
+import { composeAnalysisCoverageV2 } from './analysis-coverage-v2.js';
+import type { RepositoryCoverageSourceV2 } from './analysis-coverage-v2.js';
 import { ExecutionBudgetV2 } from './execution-budget-v2.js';
 import {
   AnalyzePullRequest,
@@ -18,6 +21,7 @@ import {
 import { portFailure, portSuccess } from './ports.js';
 import type {
   AuthorizationPort,
+  AnalysisResultStoreV2,
   DisclosureRequest,
   PortResult,
   Subject,
@@ -28,11 +32,14 @@ export interface AnalyzePullRequestV2Input extends AnalyzePullRequestInput {
   readonly schemaMajor: 2;
   readonly subject: Subject;
   readonly consumerScope?: ConsumerScopeV2;
+  readonly enabledAdapterFamilies: readonly AdapterFamilyV2[];
   readonly executionBudget: ExecutionBudgetLimitsV2;
 }
 
 export interface AnalyzePullRequestV2Dependencies extends AnalyzePullRequestDependencies {
   readonly authorization: AuthorizationPort;
+  readonly coverage?: RepositoryCoverageSourceV2;
+  readonly v2Results: AnalysisResultStoreV2;
 }
 
 function scopedRegistry(
@@ -139,7 +146,10 @@ export class AnalyzePullRequestV2 {
 
     const repositoryIds = resolved.value.capability.repositoryIds;
     const deterministicReservation = budget.reserve({
-      storageQueries: 5 + Math.max(0, repositoryIds.length - 1) * 2,
+      storageQueries:
+        6 +
+        Math.max(0, repositoryIds.length - 1) * 2 +
+        (input.enabledAdapterFamilies.length === 0 ? 0 : repositoryIds.length),
       artifacts:
         input.changes.length +
         input.producerDefinitions.length +
@@ -157,26 +167,35 @@ export class AnalyzePullRequestV2 {
       ),
     }).execute(legacyInput);
     if (!legacy.ok) return legacy;
+    const coverage = await composeAnalysisCoverageV2({
+      scope: resolved.value.provenance,
+      capability: resolved.value.capability,
+      enabledFamilies: input.enabledAdapterFamilies,
+      selections: legacy.value.consumers,
+      ...(this.dependencies.coverage === undefined ? {} : { source: this.dependencies.coverage }),
+    });
     const budgetReport = budget.complete();
     const state =
       legacy.value.state === 'superseded'
         ? 'superseded'
         : legacy.value.state === 'partial' ||
             resolved.value.provenance.gaps.length > 0 ||
+            coverage.state === 'partial' ||
             budgetReport.exhaustedDimensions.length > 0
           ? 'partial'
           : 'complete';
-    return portSuccess(
-      finalizeAnalysisResultV2({
-        schema: 'reverb.analysis-result',
-        schemaVersion: '2.0',
-        legacyResult: legacy.value,
-        scope: resolved.value.provenance,
-        state,
-        executionBudgets: [budgetReport],
-        deterministicFindings: legacy.value.findings,
-        reasoningHypotheses: [],
-      }),
-    );
+    const result = finalizeAnalysisResultV2({
+      schema: 'reverb.analysis-result',
+      schemaVersion: '2.0',
+      legacyResult: legacy.value,
+      scope: resolved.value.provenance,
+      coverage,
+      state,
+      executionBudgets: [budgetReport],
+      deterministicFindings: legacy.value.findings,
+      reasoningHypotheses: [],
+    });
+    const persisted = await this.dependencies.v2Results.persistAnalysisV2(result);
+    return persisted.ok ? portSuccess(result) : persisted;
   }
 }

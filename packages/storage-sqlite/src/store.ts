@@ -24,6 +24,7 @@ import {
   treeHash,
   workspaceId,
   type AnalysisResult,
+  type AnalysisResultV2,
   type AnalysisId,
   type AdapterGenerationSnapshot,
   type AdapterSemanticPartition,
@@ -63,6 +64,7 @@ import {
   portSuccess,
   type ArtifactCacheKey,
   type ArtifactCachePort,
+  type AnalysisResultStoreV2,
   type AdapterSnapshotQuery,
   type AdapterSnapshotStore,
   type BeginOverlay,
@@ -768,6 +770,7 @@ export class SqliteStore
     WorkspaceRegistry,
     ArtifactCachePort,
     EvidenceGraphStore,
+    AnalysisResultStoreV2,
     ReviewEvaluationStore
 {
   readonly #database: DatabaseSync;
@@ -2469,6 +2472,107 @@ export class SqliteStore
         return portSuccess(undefined);
       }),
     );
+  }
+
+  public async persistAnalysisV2(result: AnalysisResultV2): Promise<PortResult<void>> {
+    return this.#safe(() =>
+      this.#transaction(() => {
+        const workspace = result.legacyResult.workspaceId;
+        const analysis = result.legacyResult.analysisId;
+        if (
+          result.scope.workspaceId !== workspace ||
+          result.coverage.workspaceId !== workspace ||
+          result.scope.scopeHash !== result.coverage.scopeHash ||
+          result.scope.registryRevision !== result.coverage.registryRevision
+        ) {
+          return conflict('A v2 analysis result has inconsistent scope or coverage provenance.');
+        }
+        const existingScope = this.#database
+          .prepare(
+            `SELECT payload_hash, scope_json FROM analysis_scopes_v2
+             WHERE workspace_id = ? AND scope_hash = ?`,
+          )
+          .get(workspace, result.scope.scopeHash) as unknown as
+          | { payload_hash: string; scope_json: string }
+          | undefined;
+        const scopeJson = JSON.stringify(result.scope);
+        if (existingScope !== undefined) {
+          if (
+            existingScope.payload_hash !== result.scope.scopeHash ||
+            existingScope.scope_json !== scopeJson
+          ) {
+            return conflict('A v2 analysis scope is immutable for its scope hash.');
+          }
+        } else {
+          this.#database
+            .prepare(
+              `INSERT INTO analysis_scopes_v2(
+                workspace_id, scope_hash, producer_repository_id, registry_revision,
+                mode, payload_hash, scope_json, created_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            )
+            .run(
+              workspace,
+              result.scope.scopeHash,
+              result.scope.producerRepositoryId,
+              result.scope.registryRevision,
+              result.scope.mode,
+              result.scope.scopeHash,
+              scopeJson,
+              result.legacyResult.startedAt,
+            );
+        }
+        const existing = this.#database
+          .prepare(
+            `SELECT output_hash, result_json FROM analysis_results_v2
+             WHERE workspace_id = ? AND analysis_id = ?`,
+          )
+          .get(workspace, analysis) as unknown as
+          | { output_hash: string; result_json: string }
+          | undefined;
+        const resultJson = JSON.stringify(result);
+        if (existing !== undefined) {
+          return existing.output_hash === result.outputHash && existing.result_json === resultJson
+            ? portSuccess(undefined)
+            : conflict('A v2 analysis result is immutable for its analysis ID.');
+        }
+        this.#database
+          .prepare(
+            `INSERT INTO analysis_results_v2(
+              workspace_id, analysis_id, producer_repository_id, scope_hash,
+              state, output_hash, result_json, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .run(
+            workspace,
+            analysis,
+            result.legacyResult.producerRepositoryId,
+            result.scope.scopeHash,
+            result.state,
+            result.outputHash,
+            resultJson,
+            result.legacyResult.completedAt,
+          );
+        return portSuccess(undefined);
+      }),
+    );
+  }
+
+  public async getAnalysisV2(
+    workspace: WorkspaceId,
+    id: AnalysisId,
+  ): Promise<PortResult<AnalysisResultV2 | null>> {
+    return this.#safe(() => {
+      const row = this.#database
+        .prepare(
+          `SELECT result_json FROM analysis_results_v2
+           WHERE workspace_id = ? AND analysis_id = ?`,
+        )
+        .get(workspace, id) as unknown as { result_json: string } | undefined;
+      return portSuccess(
+        row === undefined ? null : (JSON.parse(row.result_json) as AnalysisResultV2),
+      );
+    });
   }
 
   public async getAnalysis(id: AnalysisId): Promise<PortResult<AnalysisResult>> {

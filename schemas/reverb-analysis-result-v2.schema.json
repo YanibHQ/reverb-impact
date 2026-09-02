@@ -9,6 +9,7 @@
     "schema_version",
     "legacy_result",
     "scope",
+    "coverage",
     "state",
     "execution_budgets",
     "deterministic_findings",
@@ -114,6 +115,195 @@
           }
         },
         "scope_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      }
+    },
+    "coverage": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schemas.yanibhq.dev/reverb/analysis-coverage/v2.json",
+      "title": "Reverb per-family and per-repository analysis coverage",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "schema_version",
+        "workspace_id",
+        "registry_revision",
+        "scope_hash",
+        "enabled_families",
+        "repositories",
+        "scope_gaps",
+        "state",
+        "output_hash"
+      ],
+      "properties": {
+        "schema": { "const": "reverb.analysis-coverage" },
+        "schema_version": { "const": "2.0" },
+        "workspace_id": {
+          "type": "string",
+          "pattern": "^wsp_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "registry_revision": { "type": "string", "pattern": "^reg_sha256:[0-9a-f]{64}$" },
+        "scope_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "enabled_families": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": ["events", "database", "implicit_http", "configuration", "infrastructure"]
+          }
+        },
+        "repositories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "workspace_id",
+              "registry_revision",
+              "repository_id",
+              "role",
+              "selection_state",
+              "families",
+              "output_hash"
+            ],
+            "properties": {
+              "workspace_id": {
+                "type": "string",
+                "pattern": "^wsp_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              },
+              "registry_revision": { "type": "string", "pattern": "^reg_sha256:[0-9a-f]{64}$" },
+              "repository_id": {
+                "type": "string",
+                "pattern": "^(?:github:[1-9][0-9]*|local:sha256:[0-9a-f]{64})$"
+              },
+              "role": { "enum": ["producer_consumer", "consumer"] },
+              "selection_state": {
+                "enum": ["current", "stale", "unauthorized", "unsupported", "failed", "not_indexed"]
+              },
+              "generation_id": {
+                "type": "string",
+                "pattern": "^gen_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              },
+              "commit_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+              "selected_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T.*Z$" },
+              "freshness_age_ms": { "type": "integer", "minimum": 0 },
+              "selection_reason": { "type": "string", "minLength": 1, "maxLength": 192 },
+              "families": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "family",
+                    "state",
+                    "eligible_artifacts",
+                    "processed_artifacts",
+                    "skipped_artifacts",
+                    "failed_artifacts",
+                    "adapters",
+                    "limitations",
+                    "output_hash"
+                  ],
+                  "properties": {
+                    "family": {
+                      "enum": [
+                        "events",
+                        "database",
+                        "implicit_http",
+                        "configuration",
+                        "infrastructure"
+                      ]
+                    },
+                    "state": {
+                      "enum": ["complete", "partial", "failed", "unsupported", "not_analysed"]
+                    },
+                    "eligible_artifacts": { "type": "integer", "minimum": 0 },
+                    "processed_artifacts": { "type": "integer", "minimum": 0 },
+                    "skipped_artifacts": { "type": "integer", "minimum": 0 },
+                    "failed_artifacts": { "type": "integer", "minimum": 0 },
+                    "adapters": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "adapter_id",
+                          "adapter_version",
+                          "extraction_version",
+                          "identity_version",
+                          "partitioning_version",
+                          "compatibility_version",
+                          "config_revision",
+                          "output_hash"
+                        ],
+                        "properties": {
+                          "adapter_id": { "type": "string", "pattern": "^adapter\\.[a-z0-9._-]+$" },
+                          "adapter_version": { "type": "string", "minLength": 1, "maxLength": 128 },
+                          "extraction_version": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128
+                          },
+                          "identity_version": { "type": "integer", "minimum": 1 },
+                          "partitioning_version": { "type": "integer", "minimum": 1 },
+                          "compatibility_version": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128
+                          },
+                          "config_revision": {
+                            "type": "string",
+                            "pattern": "^cfg_sha256:[0-9a-f]{64}$"
+                          },
+                          "output_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+                        }
+                      }
+                    },
+                    "limitations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["code", "source"],
+                        "properties": {
+                          "code": { "type": "string", "minLength": 1, "maxLength": 192 },
+                          "source": { "enum": ["source", "adapter", "selection", "budget"] },
+                          "detail_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+                        }
+                      }
+                    },
+                    "output_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+                  }
+                }
+              },
+              "output_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+            }
+          }
+        },
+        "scope_gaps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["repository_id", "reason"],
+            "properties": {
+              "repository_id": {
+                "type": "string",
+                "pattern": "^(?:github:[1-9][0-9]*|local:sha256:[0-9a-f]{64})$"
+              },
+              "reason": {
+                "enum": [
+                  "unknown_repository",
+                  "repository_not_selected",
+                  "consent_denied",
+                  "authorization_denied",
+                  "authorization_unavailable"
+                ]
+              }
+            }
+          }
+        },
+        "state": { "enum": ["complete", "partial"] },
+        "output_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
       }
     },
     "state": { "enum": ["complete", "partial", "superseded"] },

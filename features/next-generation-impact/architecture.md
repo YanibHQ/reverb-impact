@@ -101,6 +101,13 @@ names are not identity. Aliases are resolved only against the frozen registry re
 resolution records its basis. Adapter identity changes require a new identity version and re-index
 notice; they never reinterpret existing records.
 
+V2 coverage is canonical per authorized repository and enabled new-family adapter. Each record binds
+the exact generation, commit, immutable registry revision, selection freshness, adapter/extraction/
+identity/partitioning/compatibility versions, configuration revision, output hash, artifact counts,
+and bounded limitations. A missing, stale, failed, unsupported, or non-canonical family record makes
+coverage partial. Disabled new families produce no adapter reads or claims; the nested v1 result
+continues to carry the unchanged TypeScript, OpenAPI, and Protobuf behavior.
+
 ## 6. Storage
 
 SQLite and PostgreSQL receive matching additive migrations for:
@@ -114,6 +121,10 @@ SQLite and PostgreSQL receive matching additive migrations for:
 Existing tables and columns are not renamed or rewritten. V2 tables reference existing immutable
 generation IDs where possible. Readers select a schema/protocol major explicitly. Migration tests
 start from every supported `0.4.0` fixture and prove old records remain readable.
+
+`AnalyzePullRequestV2` persists its normalized scope and canonical result through a dedicated v2
+result-store port. SQLite and PostgreSQL implement the same immutable-ID, idempotency, conflict, and
+workspace-isolation conformance contract.
 
 ## 7. Optional reasoning boundary
 

@@ -1,5 +1,6 @@
 export * from './artifacts.js';
 export * from './analysis-scope.js';
+export * from './analysis-coverage-v2.js';
 export * from './analyze-pr.js';
 export * from './analyze-pr-v2.js';
 export * from './create-overlay.js';

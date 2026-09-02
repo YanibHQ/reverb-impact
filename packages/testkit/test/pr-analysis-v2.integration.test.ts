@@ -1,9 +1,12 @@
 import {
+  adapterId,
   analysisId,
   commitSha,
   configRevision,
   contentHash,
   createRegistrySnapshot,
+  finalizeAdapterFamilyCoverageV2,
+  finalizeRepositoryAnalysisCoverageV2,
   generationId,
   generationLeaseId,
   instant,
@@ -13,11 +16,12 @@ import {
   treeHash,
   workspaceId,
 } from '@yanib/reverb-domain';
-import { AnalyzePullRequestV2 } from '@yanib/reverb-application';
+import { AnalyzePullRequestV2, portSuccess } from '@yanib/reverb-application';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
   FakeClock,
+  InMemoryAnalysisResultStoreV2,
   InMemoryAuthorization,
   InMemoryEvidenceGraphStore,
   InMemoryGenerationStore,
@@ -62,6 +66,7 @@ async function fixture() {
   const evidence = new InMemoryEvidenceGraphStore();
   const registry = new InMemoryRegistry();
   const authorization = new InMemoryAuthorization();
+  const v2Results = new InMemoryAnalysisResultStoreV2();
   await registry.putRevision(snapshot);
   const generationLease = await generations.beginGeneration({
     generationId: baseGeneration,
@@ -112,12 +117,13 @@ async function fixture() {
     completedAt: now,
     resultHash: hash,
   });
-  return { generations, evidence, registry, authorization };
+  return { generations, evidence, registry, authorization, v2Results };
 }
 
 function input(id: string) {
   return {
     schemaMajor: 2 as const,
+    enabledAdapterFamilies: [],
     executionBudget: {
       providerRequests: 0,
       sourceBytes: 0,
@@ -162,6 +168,43 @@ function allow(authorization: InMemoryAuthorization, repositoryIds: readonly (ty
   }
 }
 
+function producerEventsCoverage() {
+  return finalizeRepositoryAnalysisCoverageV2({
+    workspaceId: workspace,
+    registryRevision: snapshot.revision.revision,
+    repositoryId: producer,
+    role: 'producer_consumer',
+    selectionState: 'current',
+    generationId: producerHeadGeneration,
+    commitSha: headSha,
+    selectedAt: now,
+    freshnessAgeMs: 0,
+    families: [
+      finalizeAdapterFamilyCoverageV2({
+        family: 'events',
+        state: 'complete',
+        eligibleArtifacts: 1,
+        processedArtifacts: 1,
+        skippedArtifacts: 0,
+        failedArtifacts: 0,
+        adapters: [
+          {
+            adapterId: adapterId('adapter.events'),
+            adapterVersion: '0.5.0',
+            extractionVersion: '1',
+            identityVersion: 1,
+            partitioningVersion: 1,
+            compatibilityVersion: '1',
+            configRevision: config,
+            outputHash: hash,
+          },
+        ],
+        limitations: [],
+      }),
+    ],
+  });
+}
+
 describe('AnalyzePullRequestV2 bounded scope', () => {
   it('treats an empty allowlist as exact-head producer-only analysis', async () => {
     const dependencies = await fixture();
@@ -184,11 +227,23 @@ describe('AnalyzePullRequestV2 bounded scope', () => {
           requestedRepositoryIds: [],
           repositories: [{ repositoryId: producer, producer: true }],
         },
+        coverage: {
+          state: 'complete',
+          enabledFamilies: [],
+          repositories: [{ repositoryId: producer }],
+        },
         legacyResult: { consumers: [{ repositoryId: producer }] },
         deterministicFindings: [],
         reasoningHypotheses: [],
         executionBudgets: [{ lane: 'pull_request' }],
       },
+    });
+    if (!result.ok) throw new Error(result.failure.code);
+    expect(
+      await dependencies.v2Results.getAnalysisV2(workspace, result.value.legacyResult.analysisId),
+    ).toEqual({
+      ok: true,
+      value: result.value,
     });
     expect(selectGeneration).not.toHaveBeenCalled();
   });
@@ -253,5 +308,68 @@ describe('AnalyzePullRequestV2 bounded scope', () => {
     expect(result).toMatchObject({ ok: false, failure: { kind: 'authorization_denied' } });
     expect(getGeneration).not.toHaveBeenCalled();
     expect(getOverlay).not.toHaveBeenCalled();
+  });
+
+  it('records exact enabled-family provenance and never treats missing coverage as clean', async () => {
+    const dependencies = await fixture();
+    allow(dependencies.authorization, [producer]);
+    const readRepositoryCoverage = vi.fn(async () => portSuccess(producerEventsCoverage()));
+    const complete = await new AnalyzePullRequestV2({
+      ...dependencies,
+      coverage: { readRepositoryCoverage },
+      clock: new FakeClock(now),
+    }).execute({
+      ...input('ana_01990f64-0000-7000-8000-000000000508'),
+      consumerScope: { mode: 'allowlist', repositoryIds: [] },
+      enabledAdapterFamilies: ['events'],
+    });
+    expect(complete).toMatchObject({
+      ok: true,
+      value: {
+        state: 'complete',
+        coverage: {
+          state: 'complete',
+          enabledFamilies: ['events'],
+          repositories: [
+            {
+              repositoryId: producer,
+              generationId: producerHeadGeneration,
+              commitSha: headSha,
+              families: [{ family: 'events', state: 'complete' }],
+            },
+          ],
+        },
+      },
+    });
+    expect(readRepositoryCoverage).toHaveBeenCalledOnce();
+
+    const missing = await new AnalyzePullRequestV2({
+      ...dependencies,
+      clock: new FakeClock(now),
+    }).execute({
+      ...input('ana_01990f64-0000-7000-8000-000000000509'),
+      consumerScope: { mode: 'allowlist', repositoryIds: [] },
+      enabledAdapterFamilies: ['events'],
+    });
+    expect(missing).toMatchObject({
+      ok: true,
+      value: {
+        state: 'partial',
+        coverage: {
+          state: 'partial',
+          repositories: [
+            {
+              families: [
+                {
+                  family: 'events',
+                  state: 'not_analysed',
+                  limitations: [{ code: 'repository_current' }],
+                },
+              ],
+            },
+          ],
+        },
+      },
+    });
   });
 });

@@ -1,6 +1,8 @@
 import { createHmac, randomUUID } from 'node:crypto';
 
 import { contentHash, instant, workspaceId } from '@yanib/reverb-domain';
+import { analysisId, repositoryStableId } from '@yanib/reverb-domain';
+import { runAnalysisResultStoreV2Conformance } from '@yanib/reverb-testkit';
 import { Pool } from 'pg';
 import type { PoolConfig } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -121,6 +123,16 @@ describe('Postgres hosted control-plane integration', () => {
     );
     expect(result.rows).toHaveLength(11);
     expect(result.rows.every((row) => row.relrowsecurity && row.relforcerowsecurity)).toBe(true);
+  });
+
+  it('persists immutable v2 analysis results with workspace isolation', async () => {
+    await runAnalysisResultStoreV2Conformance({
+      store,
+      workspaceId: workspaceC,
+      otherWorkspaceId: workspaceB,
+      analysisId: analysisId('ana_01990f64-0000-7000-8000-000000000532'),
+      producerRepositoryId: repositoryStableId('github:303'),
+    });
   });
 
   it('isolates tenant canaries and restores a hash-verified canonical backup', async () => {
