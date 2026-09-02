@@ -4,8 +4,8 @@ import type {
   RepositoryCoverageSourceV2,
 } from '@yanib/reverb-application';
 import type { AdapterFamilyV2, AnalysisCoverageV2 } from '@yanib/reverb-domain';
-import { PostgresHostedStore } from '@yanib/reverb-storage-postgres';
-import { SqliteStore } from '@yanib/reverb-storage-sqlite';
+import type { PostgresHostedStore } from '@yanib/reverb-storage-postgres';
+import type { SqliteStore } from '@yanib/reverb-storage-sqlite';
 import { InMemoryAnalysisResultStoreV2 } from '@yanib/reverb-testkit';
 
 const families = [
