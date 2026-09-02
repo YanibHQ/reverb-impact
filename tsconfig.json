@@ -7,6 +7,7 @@
     { "path": "packages/adapter-sdk" },
     { "path": "packages/adapter-events" },
     { "path": "packages/adapter-database" },
+    { "path": "packages/adapter-http" },
     { "path": "packages/adapter-typescript" },
     { "path": "packages/adapter-openapi" },
     { "path": "packages/adapter-protobuf" },

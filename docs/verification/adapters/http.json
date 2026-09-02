@@ -1,0 +1,46 @@
+{
+  "schema": "reverb.adapter-admission",
+  "schemaVersion": "1.0",
+  "adapterId": "reverb.implicit-http",
+  "adapterVersion": "0.1.0",
+  "identityVersion": 1,
+  "demand": "Implicit HTTP impact when no OpenAPI contract is available.",
+  "designPartner": "none",
+  "identitySummary": "Registry service identity, HTTP method, and normalized route template.",
+  "compatibilitySummary": "Route removal and identity changes are classified without network access.",
+  "evidenceRendering": "Exact route and call locations, immutable hashes, versions, coverage, and remedy.",
+  "latencyResourceSummary": "timeout=10000ms memory=256MiB output=8388608B",
+  "dependenciesAndLicenses": [],
+  "limitations": [
+    "Initial route parsing supports bounded Express, Fastify, and Hono registration forms.",
+    "Dynamic hosts, arbitrary URL construction, runtime registration, and proxy rewrites remain partial coverage.",
+    "Relative client calls require immutable client-to-service mappings in adapter context."
+  ],
+  "maintainer": "YanibHQ/reverb-impact maintainers",
+  "checks": [
+    {
+      "id": "adversarial_fixtures",
+      "state": "pass",
+      "evidence": "Package adversarial suite"
+    },
+    {
+      "id": "determinism",
+      "state": "pass",
+      "evidence": "Repeated extraction conformance test"
+    },
+    {
+      "id": "identity_round_trip",
+      "state": "pass",
+      "evidence": "Framework and client identity fixtures"
+    },
+    {
+      "id": "real_labelled_corpus",
+      "state": "not_measured",
+      "evidence": "No approved corpus yet"
+    }
+  ],
+  "realLabelledCorpusState": "absent",
+  "promotionState": "UNMEASURED",
+  "deliveryReady": false,
+  "outputHash": "sha256:4bd07c6e6637e5c5954bee37b00e23605f5fd6d7d4e6972d8de229393c46fc2d"
+}
