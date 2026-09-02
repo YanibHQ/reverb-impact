@@ -70,7 +70,7 @@ function family(state: 'complete' | 'partial' = 'complete') {
     failedArtifacts: state === 'complete' ? 0 : 1,
     adapters: [
       {
-        adapterId: adapterId('adapter.events'),
+        adapterId: adapterId('reverb.events'),
         adapterVersion: '0.5.0',
         extractionVersion: '1',
         identityVersion: 1,

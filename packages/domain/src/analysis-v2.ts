@@ -3,6 +3,8 @@ import { canonicalJson, hashCanonical } from './canonical.js';
 import { finalizeAnalysisCoverageV2, type AnalysisCoverageV2 } from './coverage-v2.js';
 import { invariant } from './errors.js';
 import type { AnalysisResult } from './finding.js';
+import type { FindingOccurrence } from './finding.js';
+import type { DeterministicFindingV2 } from './evidence-v2.js';
 import { finalizeExecutionBudgetReportV2, type ExecutionBudgetReportV2 } from './execution-v2.js';
 import { contentHash } from './values.js';
 import type { ContentHash } from './values.js';
@@ -23,7 +25,7 @@ export interface AnalysisResultV2 {
   readonly coverage: AnalysisCoverageV2;
   readonly state: Extract<AnalysisResult['state'], 'complete' | 'partial' | 'superseded'>;
   readonly executionBudgets: readonly ExecutionBudgetReportV2[];
-  readonly deterministicFindings: AnalysisResult['findings'];
+  readonly deterministicFindings: readonly (FindingOccurrence | DeterministicFindingV2)[];
   readonly reasoningHypotheses: readonly ReasoningHypothesisV2[];
   readonly outputHash: ContentHash;
 }
@@ -51,10 +53,34 @@ export function finalizeAnalysisResultV2(
     'invalid_schema',
     'V2 result coverage must be canonical.',
   );
+  const legacyFindings = input.deterministicFindings.filter(
+    (value): value is FindingOccurrence => !('schemaVersion' in value),
+  );
+  const newFamilyFindings = input.deterministicFindings.filter(
+    (value): value is DeterministicFindingV2 =>
+      'schemaVersion' in value && value.schemaVersion === '2.0',
+  );
   invariant(
-    canonicalJson(input.deterministicFindings) === canonicalJson(input.legacyResult.findings),
+    canonicalJson(legacyFindings) === canonicalJson(input.legacyResult.findings),
     'invalid_schema',
-    'V2 deterministic findings must remain identical to the legacy deterministic result.',
+    'The v1 subset of v2 deterministic findings must remain identical to the legacy result.',
+  );
+  const scopedRepositories = new Set(input.scope.repositories.map((value) => value.repositoryId));
+  const enabledFamilies = new Set(input.coverage.enabledFamilies);
+  invariant(
+    newFamilyFindings.every(
+      (finding) =>
+        finding.analysisId === input.legacyResult.analysisId &&
+        finding.change.workspaceId === input.scope.workspaceId &&
+        finding.change.producerRepositoryId === input.scope.producerRepositoryId &&
+        finding.edge.producerRepositoryId === input.scope.producerRepositoryId &&
+        finding.family === finding.change.family &&
+        finding.family === finding.edge.family &&
+        enabledFamilies.has(finding.family) &&
+        scopedRepositories.has(finding.edge.consumerRepositoryId),
+    ),
+    'invalid_schema',
+    'New-family deterministic findings must match the analysis, enabled families, and resolved scope.',
   );
   const incomplete =
     (input.legacyResult.state !== 'complete' && input.legacyResult.state !== 'superseded') ||

@@ -6,6 +6,7 @@ import {
   configRevision,
   contentHash,
   createRegistrySnapshot,
+  deriveStableReferenceIdV2,
   finalizeAdapterFamilyCoverageV2,
   finalizeRepositoryAnalysisCoverageV2,
   generationId,
@@ -13,6 +14,7 @@ import {
   instant,
   overlayId,
   policyRevision,
+  repoPath,
   repositoryStableId,
   treeHash,
   workspaceId,
@@ -190,8 +192,8 @@ function producerEventsCoverage() {
         failedArtifacts: 0,
         adapters: [
           {
-            adapterId: adapterId('adapter.events'),
-            adapterVersion: '0.5.0',
+            adapterId: adapterId('reverb.events'),
+            adapterVersion: '0.1.0',
             extractionVersion: '1',
             identityVersion: 1,
             partitioningVersion: 1,
@@ -269,6 +271,109 @@ describe('AnalyzePullRequestV2 bounded scope', () => {
       value: result.value,
     });
     expect(selectGeneration).not.toHaveBeenCalled();
+  });
+
+  it('adds scoped new-family findings without changing the nested legacy result', async () => {
+    const dependencies = await fixture();
+    allow(dependencies.authorization, [producer]);
+    const canonicalKey = 'event-destination-v1:kafka#prod#topic#orders';
+    const versions = {
+      adapterId: adapterId('reverb.events'),
+      adapterVersion: '0.1.0',
+      extractionVersion: '1',
+      identityVersion: 1,
+      partitioningVersion: 1,
+      compatibilityVersion: '1',
+    } as const;
+    const definition = {
+      workspaceId: workspace,
+      repositoryId: producer,
+      generationId: baseGeneration,
+      commitSha: baseSha,
+      family: 'events' as const,
+      contractKind: 'event.destination' as const,
+      canonicalKey,
+      path: repoPath('producer/events.yaml'),
+      contentHash: hash,
+      shapeHash: hash,
+      ...versions,
+      configRevision: config,
+      evidenceStratum: 'event_manifest',
+    };
+    const reference = {
+      workspaceId: workspace,
+      repositoryId: producer,
+      generationId: producerHeadGeneration,
+      commitSha: headSha,
+      family: 'events' as const,
+      contractKind: 'event.destination' as const,
+      canonicalKey,
+      semanticOwner: 'consumer:kafka:orders',
+      stableReferenceId: deriveStableReferenceIdV2({
+        family: 'events',
+        contractKind: 'event.destination',
+        canonicalKey,
+        semanticOwner: 'consumer:kafka:orders',
+        evidenceStratum: 'event_manifest',
+      }),
+      path: repoPath('consumer/events.yaml'),
+      contentHash: hash,
+      ...versions,
+      configRevision: config,
+      evidenceStratum: 'event_manifest',
+      activation: 'on_deploy' as const,
+    };
+    const change = {
+      workspaceId: workspace,
+      producerRepositoryId: producer,
+      baseGenerationId: baseGeneration,
+      headGenerationId: producerHeadGeneration,
+      baseSha,
+      headSha,
+      family: 'events' as const,
+      contractKind: 'event.destination' as const,
+      canonicalKey,
+      changeKind: 'destination_removed',
+      compatibility: 'breaking' as const,
+      activation: 'on_deploy' as const,
+      ...versions,
+      coverageState: 'complete' as const,
+      coverageDependencies: ['events.base.complete', 'events.head.complete'],
+      remedy: {
+        kind: 'coordinate_contract_rollout',
+        text: 'Coordinate event consumers before removal.',
+      },
+    };
+    const result = await new AnalyzePullRequestV2({
+      ...dependencies,
+      coverage: { readRepositoryCoverage: async () => portSuccess(producerEventsCoverage()) },
+      clock: new FakeClock(now),
+    }).execute({
+      ...input('ana_01990f64-0000-7000-8000-000000000504'),
+      consumerScope: { mode: 'allowlist', repositoryIds: [] },
+      enabledAdapterFamilies: ['events'],
+      deterministicEvidence: {
+        definitions: [definition],
+        references: [reference],
+        changes: [change],
+      },
+    });
+    expect(result).toMatchObject({
+      ok: true,
+      value: {
+        state: 'complete',
+        legacyResult: { findings: [] },
+        deterministicFindings: [
+          {
+            schemaVersion: '2.0',
+            family: 'events',
+            state: 'PREVIEW',
+            claims: { edge: 'candidate', impact: 'breaking', action: 'coordinate' },
+            edge: { producerRepositoryId: producer, consumerRepositoryId: producer },
+          },
+        ],
+      },
+    });
   });
 
   it('never selects or authorizes repositories omitted from an explicit allowlist', async () => {

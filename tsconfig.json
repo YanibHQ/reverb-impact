@@ -5,6 +5,7 @@
     { "path": "packages/schema" },
     { "path": "packages/application" },
     { "path": "packages/adapter-sdk" },
+    { "path": "packages/adapter-events" },
     { "path": "packages/adapter-typescript" },
     { "path": "packages/adapter-openapi" },
     { "path": "packages/adapter-protobuf" },

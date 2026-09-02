@@ -30,7 +30,7 @@
 
 ## Phase 003 — deterministic adapters
 
-- [ ] Events/queues vertical slice and backend-to-backend fixtures
+- [x] Events/queues vertical slice and backend-to-backend fixtures
 - [ ] Shared database/migrations vertical slice and backend-to-backend fixtures
 - [ ] HTTP-without-OpenAPI vertical slice and backend-to-backend fixtures
 - [ ] Configuration/flags/secret-reference vertical slice and backend-to-backend fixtures

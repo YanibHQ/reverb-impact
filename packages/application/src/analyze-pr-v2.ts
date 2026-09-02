@@ -1,9 +1,14 @@
 import {
   finalizeAnalysisResultV2,
+  createDeterministicFindingsV2,
+  joinChangedContractsV2,
   type AdapterFamilyV2,
   type AnalysisResultV2,
   type ConsumerScopeV2,
   type ExecutionBudgetLimitsV2,
+  type IndexedContractChangeV2,
+  type IndexedContractDefinitionV2,
+  type IndexedContractReferenceV2,
   type RegistryRevision,
   type RegistrySnapshot,
   type WorkspaceId,
@@ -34,6 +39,11 @@ export interface AnalyzePullRequestV2Input extends AnalyzePullRequestInput {
   readonly consumerScope?: ConsumerScopeV2;
   readonly enabledAdapterFamilies: readonly AdapterFamilyV2[];
   readonly executionBudget: ExecutionBudgetLimitsV2;
+  readonly deterministicEvidence?: {
+    readonly definitions: readonly IndexedContractDefinitionV2[];
+    readonly references: readonly IndexedContractReferenceV2[];
+    readonly changes: readonly IndexedContractChangeV2[];
+  };
 }
 
 export interface AnalyzePullRequestV2Dependencies extends AnalyzePullRequestDependencies {
@@ -153,7 +163,10 @@ export class AnalyzePullRequestV2 {
       artifacts:
         input.changes.length +
         input.producerDefinitions.length +
-        input.producerHeadObservation.references.length,
+        input.producerHeadObservation.references.length +
+        (input.deterministicEvidence?.definitions.length ?? 0) +
+        (input.deterministicEvidence?.references.length ?? 0) +
+        (input.deterministicEvidence?.changes.length ?? 0),
     });
     if (!deterministicReservation.ok) return deterministicReservation;
     const legacyInput: AnalyzePullRequestInput = input;
@@ -175,6 +188,38 @@ export class AnalyzePullRequestV2 {
       ...(this.dependencies.coverage === undefined ? {} : { source: this.dependencies.coverage }),
     });
     const budgetReport = budget.complete();
+    const newFamilyFindings =
+      input.deterministicEvidence === undefined
+        ? []
+        : createDeterministicFindingsV2({
+            analysisId: legacy.value.analysisId,
+            policyMajor: input.policyMajor,
+            changes: input.deterministicEvidence.changes,
+            edges: joinChangedContractsV2({
+              capability: resolved.value.capability,
+              workspaceId: input.workspaceId,
+              registryRevision: input.registryRevision,
+              observedAt: this.dependencies.clock.now(),
+              changes: input.deterministicEvidence.changes,
+              definitions: input.deterministicEvidence.definitions,
+              references: input.deterministicEvidence.references,
+              selectedGenerations: new Map(
+                legacy.value.consumers.flatMap((selection) =>
+                  selection.generationId === undefined
+                    ? []
+                    : [
+                        [
+                          selection.repositoryId,
+                          {
+                            generationId: selection.generationId,
+                            commitSha: selection.commitSha,
+                          },
+                        ] as const,
+                      ],
+                ),
+              ),
+            }),
+          });
     const state =
       legacy.value.state === 'superseded'
         ? 'superseded'
@@ -192,7 +237,7 @@ export class AnalyzePullRequestV2 {
       coverage,
       state,
       executionBudgets: [budgetReport],
-      deterministicFindings: legacy.value.findings,
+      deterministicFindings: [...legacy.value.findings, ...newFamilyFindings],
       reasoningHypotheses: [],
     });
     const persisted = await this.dependencies.v2Results.persistAnalysisV2(result);

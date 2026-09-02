@@ -3,6 +3,10 @@ import {
   OPENAPI_ADMISSION_REPORT,
 } from '../packages/adapter-openapi/src/index.js';
 import {
+  EVENTS_ADAPTER_MANIFEST,
+  EVENTS_ADMISSION_REPORT,
+} from '../packages/adapter-events/src/index.js';
+import {
   PROTOBUF_ADAPTER_MANIFEST,
   PROTOBUF_ADMISSION_REPORT,
 } from '../packages/adapter-protobuf/src/index.js';
@@ -10,7 +14,10 @@ import {
   TYPESCRIPT_ADAPTER_MANIFEST,
   TYPESCRIPT_ADMISSION_REPORT,
 } from '../packages/adapter-typescript/src/index.js';
-import { validateAdapterManifest } from '../packages/adapter-sdk/src/index.js';
+import {
+  validateAdapterManifest,
+  validateAdapterManifestV2,
+} from '../packages/adapter-sdk/src/index.js';
 
 const denied = /\b(?:AGPL|SSPL|BUSL|BSL|UNKNOWN|UNLICENSED)\b/i;
 const manifests = [
@@ -18,7 +25,13 @@ const manifests = [
   PROTOBUF_ADAPTER_MANIFEST,
   TYPESCRIPT_ADAPTER_MANIFEST,
 ];
-const reports = [OPENAPI_ADMISSION_REPORT, PROTOBUF_ADMISSION_REPORT, TYPESCRIPT_ADMISSION_REPORT];
+const manifestsV2 = [EVENTS_ADAPTER_MANIFEST];
+const reports = [
+  EVENTS_ADMISSION_REPORT,
+  OPENAPI_ADMISSION_REPORT,
+  PROTOBUF_ADMISSION_REPORT,
+  TYPESCRIPT_ADMISSION_REPORT,
+];
 
 for (const manifest of manifests) {
   validateAdapterManifest(manifest);
@@ -29,6 +42,8 @@ for (const manifest of manifests) {
     }
   }
 }
+
+for (const manifest of manifestsV2) validateAdapterManifestV2(manifest);
 
 for (const report of reports) {
   if (report.dependenciesAndLicenses.some((entry) => denied.test(entry))) {

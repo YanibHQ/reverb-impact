@@ -1,6 +1,6 @@
 # Phase 003 — deterministic adapter families
 
-**Status:** Planned  
+**Status:** In progress
 **Depends on:** [002](../002-foundation/)
 
 ## Goal

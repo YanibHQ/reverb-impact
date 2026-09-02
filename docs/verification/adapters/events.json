@@ -1,0 +1,48 @@
+{
+  "schema": "reverb.adapter-admission",
+  "schemaVersion": "1.0",
+  "adapterId": "reverb.events",
+  "adapterVersion": "0.1.0",
+  "identityVersion": 1,
+  "demand": "Backend-to-backend event and queue impact across Kafka, SQS/SNS, and Pub/Sub.",
+  "designPartner": "none",
+  "identitySummary": "Provider, broker namespace, destination kind, literal destination, and optional payload schema ID.",
+  "compatibilitySummary": "Destination removal and bounded payload-schema changes are classified without network access.",
+  "evidenceRendering": "Exact producer and consumer source locations, immutable content hashes, versions, activation, coverage, and remedy.",
+  "latencyResourceSummary": "timeout=10000ms memory=256MiB output=8388608B",
+  "dependenciesAndLicenses": [
+    "yaml@2.8.3: ISC"
+  ],
+  "limitations": [
+    "Dynamic destinations and broker namespaces remain unresolved and force partial coverage.",
+    "The adapter never contacts brokers, schema registries, cloud APIs, or source providers.",
+    "Payload compatibility is limited to the declared bounded schema subset."
+  ],
+  "maintainer": "YanibHQ/reverb-impact maintainers",
+  "checks": [
+    {
+      "id": "adversarial_fixtures",
+      "state": "pass",
+      "evidence": "Package adversarial suite"
+    },
+    {
+      "id": "determinism",
+      "state": "pass",
+      "evidence": "Repeated extraction conformance test"
+    },
+    {
+      "id": "identity_round_trip",
+      "state": "pass",
+      "evidence": "Provider identity fixture matrix"
+    },
+    {
+      "id": "real_labelled_corpus",
+      "state": "not_measured",
+      "evidence": "No approved corpus yet"
+    }
+  ],
+  "realLabelledCorpusState": "absent",
+  "promotionState": "UNMEASURED",
+  "deliveryReady": false,
+  "outputHash": "sha256:cbea10586a27468f7876e57edad0ccf1e7a28202faa079884ddcb5ddfa3b6ccd"
+}

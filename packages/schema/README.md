@@ -2,6 +2,10 @@
 
 Canonical Reverb JSON Schemas and runtime validation.
 
+Schema-major 2 additions use separate exported schema values and checked-in files. This includes
+the v2 analysis scope, coverage, budget, result, and deterministic adapter manifest, extraction,
+and diff envelopes; schema-major 1 remains unchanged.
+
 ## Installation
 
 ```bash

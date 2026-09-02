@@ -56,13 +56,14 @@ were generated locally from repository-backed references.
 | TypeScript/npm | Exported package symbols and downstream imports |
 | OpenAPI/HTTP | Operations, paths, methods, and service references |
 | Protobuf/gRPC | Services, methods, messages, fields, and generated-code references |
+| Events/queues (0.5.0) | Kafka, SQS/SNS, and Pub/Sub destinations and payload schemas |
 
 Additional contract types can be implemented through the public adapter SDK and its validation,
 compatibility, sandboxing, and admission interfaces.
 
 ## Release status
 
-Reverb `0.3.0` is the current public pre-1.0 release. Public APIs and storage formats may change in a
+Reverb `0.4.0` is the current public pre-1.0 release. Public APIs and storage formats may change in a
 future minor release, so downstream users should pin an exact package version. Analysis output is
 advisory: evidence classes must be calibrated with representative, human-reviewed data before they
 are used for automated delivery or policy decisions.
@@ -170,6 +171,7 @@ promotion decisions, status, and diagnostics.
 | `@yanib/reverb-schema` | Canonical JSON Schemas and runtime validation |
 | `@yanib/reverb-application` | Host-neutral use cases and ports |
 | `@yanib/reverb-adapter-sdk` | Contract-adapter interfaces, validation, and admission helpers |
+| `@yanib/reverb-adapter-events` | Kafka, SQS/SNS, and Pub/Sub contract analysis (available in 0.5.0) |
 | `@yanib/reverb-adapter-typescript` | TypeScript and npm contract analysis |
 | `@yanib/reverb-adapter-openapi` | OpenAPI and HTTP contract analysis |
 | `@yanib/reverb-adapter-protobuf` | Protobuf and gRPC contract analysis |
