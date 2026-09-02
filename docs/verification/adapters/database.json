@@ -1,0 +1,46 @@
+{
+  "schema": "reverb.adapter-admission",
+  "schemaVersion": "1.0",
+  "adapterId": "reverb.database",
+  "adapterVersion": "0.1.0",
+  "identityVersion": 1,
+  "demand": "Shared database impact from migrations and backend query consumers.",
+  "designPartner": "none",
+  "identitySummary": "Database namespace, schema, table, column, and enum names with PostgreSQL identifier folding.",
+  "compatibilitySummary": "Table/column/enum removal and bounded type, nullability, and enum-value changes are classified without a database connection.",
+  "evidenceRendering": "Exact producer and consumer paths, ranges, immutable hashes, versions, activation, coverage, and rollout remedy.",
+  "latencyResourceSummary": "timeout=10000ms memory=256MiB output=8388608B",
+  "dependenciesAndLicenses": [],
+  "limitations": [
+    "Initial SQL parsing supports bounded PostgreSQL DDL and literal DML forms only.",
+    "Dynamic SQL, stored procedures, generated migrations, and unresolved connection aliases remain partial coverage.",
+    "Prisma client calls require immutable model-to-table mappings in adapter context."
+  ],
+  "maintainer": "YanibHQ/reverb-impact maintainers",
+  "checks": [
+    {
+      "id": "adversarial_fixtures",
+      "state": "pass",
+      "evidence": "Package adversarial suite"
+    },
+    {
+      "id": "determinism",
+      "state": "pass",
+      "evidence": "Repeated extraction conformance test"
+    },
+    {
+      "id": "identity_round_trip",
+      "state": "pass",
+      "evidence": "SQL and ORM identity fixtures"
+    },
+    {
+      "id": "real_labelled_corpus",
+      "state": "not_measured",
+      "evidence": "No approved corpus yet"
+    }
+  ],
+  "realLabelledCorpusState": "absent",
+  "promotionState": "UNMEASURED",
+  "deliveryReady": false,
+  "outputHash": "sha256:244c3011c65b17330ee936bcbc35f6c447b650c8c6335341d8d2aa7d2b5ae2d9"
+}
