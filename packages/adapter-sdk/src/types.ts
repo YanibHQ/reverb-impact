@@ -1,5 +1,6 @@
 import type {
   AdapterId,
+  AdapterSemanticPartition,
   BoundedDiagnostic,
   ConfigRevision,
   ContractKind,
@@ -207,6 +208,87 @@ export interface ContractAdapter {
   readonly manifest: AdapterManifest;
   extract(request: ExtractRequest): Promise<AdapterExtractionResult>;
   diff(request: DiffRequest): Promise<AdapterDiffResult>;
+}
+
+export type AdapterPathChangeKind =
+  | 'added'
+  | 'modified'
+  | 'deleted'
+  | 'renamed'
+  | 'copied'
+  | 'type_changed';
+
+export interface AdapterPathChange {
+  readonly kind: AdapterPathChangeKind;
+  readonly path: RepoPath;
+  readonly previousPath?: RepoPath;
+}
+
+export type AdapterPartitionView = Pick<
+  AdapterSemanticPartition,
+  'partitionKey' | 'ownedPaths' | 'dependencyKeys' | 'payload' | 'outputHash'
+>;
+
+export interface AdapterPartitionDescriptor {
+  readonly partitionKey: string;
+  readonly ownedPaths: readonly RepoPath[];
+  readonly dependencyKeys: readonly string[];
+}
+
+export interface AdapterInvalidationPlan {
+  readonly changedPaths: readonly RepoPath[];
+  readonly directPartitionKeys: readonly string[];
+  readonly dependentPartitionKeys: readonly string[];
+  readonly invalidatedPartitionKeys: readonly string[];
+  readonly unmatchedPaths: readonly RepoPath[];
+  readonly complete: boolean;
+  readonly outputHash: ContentHash;
+}
+
+export interface AdapterPartitionBuild {
+  readonly partitionKey: string;
+  readonly ownedPaths: readonly RepoPath[];
+  readonly dependencyKeys: readonly string[];
+  readonly payload: Readonly<Record<string, unknown>>;
+  readonly extraction: AdapterExtractionResult;
+}
+
+export interface AdapterPartitionBuildResult {
+  readonly partitions: readonly AdapterPartitionBuild[];
+  readonly coverage: AdapterCoverage;
+  readonly diagnostics: readonly BoundedDiagnostic[];
+  readonly outputHash: ContentHash;
+}
+
+export interface AdapterPartitionUpdateResult {
+  readonly replacements: readonly AdapterPartitionBuild[];
+  readonly tombstones: readonly string[];
+  readonly coverage: AdapterCoverage;
+  readonly diagnostics: readonly BoundedDiagnostic[];
+  readonly outputHash: ContentHash;
+}
+
+export interface IncrementalContractAdapter extends ContractAdapter {
+  readonly partitioningVersion: number;
+  buildPartitions(request: ExtractRequest): Promise<AdapterPartitionBuildResult>;
+  planInvalidation(request: {
+    readonly partitions: readonly AdapterPartitionDescriptor[];
+    readonly changes: readonly AdapterPathChange[];
+    readonly context: Readonly<Record<string, unknown>>;
+  }): AdapterInvalidationPlan;
+  updatePartitions(request: {
+    readonly basePartitions: readonly AdapterPartitionView[];
+    readonly plan: AdapterInvalidationPlan;
+    readonly changes: readonly AdapterPathChange[];
+    readonly changedArtifacts: readonly ArtifactInput[];
+    readonly configRevision: ConfigRevision;
+    readonly context: Readonly<Record<string, unknown>>;
+  }): Promise<AdapterPartitionUpdateResult>;
+  materializePartitions(request: {
+    readonly partitions: readonly AdapterPartitionView[];
+    readonly configRevision: ConfigRevision;
+    readonly context: Readonly<Record<string, unknown>>;
+  }): Promise<AdapterExtractionResult>;
 }
 
 export interface AdmissionCheck {

@@ -67,6 +67,18 @@ partitions and rejects missing, cross-workspace, cross-repository, or version-in
 Partition payloads remain adapter-owned canonical records; the storage boundary does not interpret
 or weaken their evidence semantics.
 
+`IncrementalContractAdapter` defines clean partition builds, changed-path invalidation planning,
+delta updates, and logical extraction materialization. `planPathPartitionInvalidation` provides the
+conservative default: it invalidates direct path owners plus their reverse dependency closure, and
+marks any unowned changed path incomplete. It never requests a repository-wide fallback.
+
+## Provider source budgets
+
+`BudgetedRepositoryReader` wraps any source adapter with hard per-run ceilings for metadata calls,
+blob reads, and blob bytes. It reserves call counts before asynchronous provider access, bounds each
+blob request by the remaining byte allowance, records usage, and returns
+`provider_source_budget_exceeded` as incomplete provider data on exhaustion.
+
 ## GitHub hosted runtime
 
 `GitHubHostedRuntime` consumes the structural `GitHubHostedRuntimeStore` contract. A

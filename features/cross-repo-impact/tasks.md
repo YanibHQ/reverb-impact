@@ -120,7 +120,7 @@ Detailed tasks: [phases/001-repository-index/tasks.md](phases/001-repository-ind
 - [x] Complete diff manifest for add/modify/delete/rename/submodule/binary cases
 - [x] Overlay lookup semantics and tombstones
 - [x] Base/head/tree/config/bundle identity and supersession key
-- [ ] Derive a non-selected logical head generation from base + overlay with delta-backed artifact resolution
+- [x] Derive a non-selected logical head generation from base + overlay with delta-backed artifact resolution
 
 ### 1G. Security/fault verification
 
@@ -137,6 +137,7 @@ Detailed tasks: [phases/002-contract-change-detection/tasks.md](phases/002-contr
 ### 2A. SDK/testkit
 
 - [x] Adapter manifest, operations, coverage, diagnostics, resource/license declarations
+- [x] Incremental partition lifecycle and fail-closed path/dependency invalidation contract
 - [x] Identity round-trip, determinism, output-bound, sandbox, fixture, and mutation harness
 - [x] Admission report command
 

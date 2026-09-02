@@ -4,5 +4,6 @@ export * from './create-overlay.js';
 export * from './index-generation.js';
 export * from './ports.js';
 export * from './review.js';
+export * from './source-budget.js';
 
 export const APPLICATION_PACKAGE_ID = '@yanib/reverb-application';
