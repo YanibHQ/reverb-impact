@@ -11,6 +11,10 @@ import {
   DATABASE_ADMISSION_REPORT,
 } from '../packages/adapter-database/src/index.js';
 import {
+  CONFIG_ADAPTER_MANIFEST,
+  CONFIG_ADMISSION_REPORT,
+} from '../packages/adapter-config/src/index.js';
+import {
   HTTP_ADAPTER_MANIFEST,
   HTTP_ADMISSION_REPORT,
 } from '../packages/adapter-http/src/index.js';
@@ -33,8 +37,14 @@ const manifests = [
   PROTOBUF_ADAPTER_MANIFEST,
   TYPESCRIPT_ADAPTER_MANIFEST,
 ];
-const manifestsV2 = [DATABASE_ADAPTER_MANIFEST, EVENTS_ADAPTER_MANIFEST, HTTP_ADAPTER_MANIFEST];
+const manifestsV2 = [
+  CONFIG_ADAPTER_MANIFEST,
+  DATABASE_ADAPTER_MANIFEST,
+  EVENTS_ADAPTER_MANIFEST,
+  HTTP_ADAPTER_MANIFEST,
+];
 const reports = [
+  CONFIG_ADMISSION_REPORT,
   DATABASE_ADMISSION_REPORT,
   EVENTS_ADMISSION_REPORT,
   HTTP_ADMISSION_REPORT,

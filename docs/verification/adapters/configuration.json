@@ -1,0 +1,46 @@
+{
+  "schema": "reverb.adapter-admission",
+  "schemaVersion": "1.0",
+  "adapterId": "reverb.configuration",
+  "adapterVersion": "0.1.0",
+  "identityVersion": 1,
+  "demand": "Configuration, feature-flag, and value-free secret-reference impact.",
+  "designPartner": "none",
+  "identitySummary": "Configuration namespace plus literal key, with salted provider-qualified secret hashes.",
+  "compatibilitySummary": "Removal is breaking; additions are compatible; activation remains explicit.",
+  "evidenceRendering": "Exact paths, ranges, immutable hashes, versions, coverage, and value-free secret identity.",
+  "latencyResourceSummary": "timeout=10000ms memory=256MiB output=8388608B",
+  "dependenciesAndLicenses": [],
+  "limitations": [
+    "Secret values and value-bearing environment files are excluded before parsing.",
+    "Secret identifiers require a host salt and are persisted only as provider-qualified HMACs.",
+    "Computed keys and unsupported provider resolution remain partial coverage."
+  ],
+  "maintainer": "YanibHQ/reverb-impact maintainers",
+  "checks": [
+    {
+      "id": "adversarial_fixtures",
+      "state": "pass",
+      "evidence": "Package adversarial and secret canary suite"
+    },
+    {
+      "id": "determinism",
+      "state": "pass",
+      "evidence": "Repeated extraction conformance test"
+    },
+    {
+      "id": "identity_round_trip",
+      "state": "pass",
+      "evidence": "Declaration and read identity fixtures"
+    },
+    {
+      "id": "real_labelled_corpus",
+      "state": "not_measured",
+      "evidence": "No approved corpus yet"
+    }
+  ],
+  "realLabelledCorpusState": "absent",
+  "promotionState": "UNMEASURED",
+  "deliveryReady": false,
+  "outputHash": "sha256:67941e86f2c9f2c915c977775102e9627aeaf758da639969a4bcf1e845f865a7"
+}

@@ -20,9 +20,9 @@
 
 ## Configuration
 
-- [ ] Identity/extraction/change/incremental implementation
-- [ ] env/config/flag/secret-reference backend-to-backend and same-repository fixtures
-- [ ] Secret-value canaries, dynamic key, partial, adversarial, admission, and docs
+- [x] Identity/extraction/change/incremental implementation
+- [x] env/config/flag/secret-reference backend-to-backend and same-repository fixtures
+- [x] Secret-value canaries, dynamic key, partial, adversarial, admission, and docs
 
 ## Infrastructure
 

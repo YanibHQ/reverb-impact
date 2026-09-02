@@ -13,6 +13,7 @@ must not import storage internals or another host's implementation.
 | `@yanib/reverb-adapter-events`     | Kafka, SQS/SNS, and Pub/Sub destination/payload evidence              |
 | `@yanib/reverb-adapter-database`   | PostgreSQL migration, table/column/enum, SQL, and Prisma evidence     |
 | `@yanib/reverb-adapter-http`       | implicit framework route and HTTP client-call evidence                |
+| `@yanib/reverb-adapter-config`     | configuration, feature-flag, and hashed secret-reference evidence     |
 | `@yanib/reverb-adapter-typescript` | TypeScript/npm extraction and compatibility adapter                   |
 | `@yanib/reverb-adapter-openapi`    | OpenAPI operation extraction and compatibility adapter                |
 | `@yanib/reverb-adapter-protobuf`   | Protobuf/gRPC extraction and compatibility adapter                    |
@@ -105,6 +106,15 @@ segments normalize to a shared identity; dynamic hosts or methods, arbitrary URL
 mounted router prefixes, runtime registration, proxy rewrites, generated sources, and missing
 aliases produce partial coverage. The adapter performs no network access, and OpenAPI remains a
 separate higher-specificity evidence lane.
+
+`@yanib/reverb-adapter-config` emits `configuration.key` and
+`configuration.feature_flag` evidence from value-free environment templates, explicit
+declarations, and bounded literal reads. The host supplies a stable configuration namespace and a
+secret-identity salt. Recognized secret identifiers are converted to provider-qualified HMACs
+before persistence or output; secret values and value-bearing environment files are excluded.
+Computed keys, missing salt/namespace, generated sources, and unsupported provider resolution
+produce partial coverage. Feature-flag activation is runtime-specific while ordinary configuration
+and secret-reference activation occurs on deployment.
 
 ## Derived pull-request generations
 
