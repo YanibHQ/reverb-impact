@@ -1,8 +1,8 @@
 # Next-generation impact analysis
 
-**Target release:** `0.5.0-rc.1`  
+**Target release:** `0.5.0`
 **Compatibility baseline:** `v0.4.0` at `8e80ff02604dcbbd97cee5bf2768005e33d4d73c`  
-**Status:** Phases 000–004 complete; Phase 005 next
+**Status:** Phases 000–005 complete; verified release candidate awaiting separate publication approval
 
 This feature expands Reverb from source/API contract analysis into a provider-neutral dependency
 impact engine for events, shared databases, implicit HTTP calls, configuration, and infrastructure.
@@ -39,6 +39,7 @@ Yanib, production deployment, npm publication, or production migrations as part 
 - [Task ledger](tasks.md)
 - [0.4.0 baseline record](baseline-v0.4.0.md)
 - [Phase documents](phases/)
+- [Release verification](../../docs/verification/phase-005-next-generation-release.md)
 
 ## Delivery phases
 

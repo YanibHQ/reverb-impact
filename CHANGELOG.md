@@ -7,6 +7,34 @@ explicit and package breaking changes may occur in minor releases.
 
 ## Unreleased
 
+## 0.5.0 - 2026-09-02
+
+- Added negotiated schema-major 2 analysis with immutable producer-plus-allowlist scope provenance,
+  exact membership/authorization/consent decisions, per-repository/per-family coverage, and hard
+  execution budgets while preserving schema-major 1 and the existing `AnalyzePullRequest` path.
+- Added independent events/queues, shared database, implicit HTTP, configuration/feature-flag, and
+  infrastructure/deployment adapters with versioned identities, bounded static extraction,
+  compatibility, incremental invalidation, exact same-repository/cross-repository evidence, and
+  truthful partial coverage.
+- Added additive SQLite migration 8 and PostgreSQL migration 4 for v2 scopes, analysis results, and
+  redacted reasoning runs. Existing 0.4.0 records remain readable; downgrade requires restoration of
+  a pre-upgrade backup.
+- Added `@yanib/reverb-reasoning`, an optional provider-neutral lane with scoped one-batch retrieval,
+  repository-level model consent, secret minimization, closed request/response schemas, two-sided
+  citation verification, independent budgets/timeouts/circuit breaking, and deterministic failure
+  isolation. No model provider is bundled or enabled.
+- Added reasoning lifecycle storage that retains exact citation/provenance hashes but not excerpts,
+  prompts, raw responses, credentials, or secret values. Purge removes reasoning citations and
+  hypotheses from both the run and analysis while retaining deterministic findings.
+- Preserved every documented 0.4.0 public export, schema-major 1 digest, existing adapter identity,
+  deterministic golden, and frozen host compile fixture.
+- Expanded release verification to all 19 public packages, both packed v0.4/v2 host fixtures, every
+  root import, CLI version smoke, fixed internal dependencies, SHA-256 checksums, a 45-component
+  CycloneDX SBOM, and machine-readable release provenance.
+- Kept all new evidence strata `UNMEASURED` and preview-only. npm publication, GitHub release,
+  deployment, production migrations, provider enablement, and Yanib integration remain separate
+  approval-gated actions.
+
 ## 0.4.0 - 2026-09-02
 
 - Added repository-scoped TypeScript module definitions and static references for same-repository

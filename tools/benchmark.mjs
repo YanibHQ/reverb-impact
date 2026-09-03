@@ -34,10 +34,22 @@ const profileIndex = process.argv.indexOf('--profile');
 const profile = profileIndex < 0 ? undefined : process.argv[profileIndex + 1];
 if (profile === 'release') {
   const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
+  const adapterAdmissionPaths = [
+    'docs/verification/adapters/configuration.json',
+    'docs/verification/adapters/database.json',
+    'docs/verification/adapters/events.json',
+    'docs/verification/adapters/http.json',
+    'docs/verification/adapters/infrastructure.json',
+    'docs/verification/adapters/openapi.json',
+    'docs/verification/adapters/protobuf.json',
+    'docs/verification/adapters/typescript.json',
+  ];
   const publicArtifacts = [
     'features/cross-repo-impact/research/artifacts/phase-003/reduced-baselines.json',
     'docs/verification/phase-004-evaluation.json',
     'docs/verification/phase-005-hosted-benchmark.json',
+    'docs/verification/phase-004-reasoning.md',
+    ...adapterAdmissionPaths,
     'docs/compatibility/release-metadata.json',
     'docs/compatibility/host-capabilities.json',
     'pnpm-lock.yaml',
@@ -67,6 +79,29 @@ if (profile === 'release') {
   const hosted = JSON.parse(
     await readFile(resolve(root, 'docs/verification/phase-005-hosted-benchmark.json'), 'utf8'),
   );
+  const adapterAdmissions = await Promise.all(
+    adapterAdmissionPaths.map(async (path) => {
+      const admission = JSON.parse(await readFile(resolve(root, path), 'utf8'));
+      return {
+        adapter: admission.adapterId,
+        adapter_version: admission.adapterVersion,
+        identity_version: admission.identityVersion,
+        promotion_state: admission.promotionState,
+        delivery_ready: admission.deliveryReady,
+        output_hash: admission.outputHash,
+      };
+    }),
+  );
+  if (
+    adapterAdmissions.length !== 8 ||
+    new Set(adapterAdmissions.map((admission) => admission.adapter)).size !== 8 ||
+    adapterAdmissions.some(
+      (admission) =>
+        admission.promotion_state !== 'UNMEASURED' || admission.delivery_ready !== false,
+    )
+  ) {
+    throw new Error('Release benchmark requires eight unique preview-only adapter admissions.');
+  }
   const report = {
     schema: 'reverb.release-benchmark',
     schema_version: '1.0',
@@ -76,6 +111,14 @@ if (profile === 'release') {
       comparative_results: comparative.results,
       evaluation_decision: evaluation.decision,
       evaluation_strata: evaluation.strata,
+      adapter_admissions: adapterAdmissions,
+      reasoning: {
+        evidence_basis: 'ai_inferred',
+        fallback: 'needs_investigation',
+        deterministic_isolation: true,
+        provider_bundled: false,
+        delivery_ready: false,
+      },
       hosted_disclosure_projection: {
         iterations: hosted.iterations,
         disclosure_defects: hosted.disclosure_defects,
@@ -92,7 +135,7 @@ if (profile === 'release') {
     reproducibility: {
       generator: 'node tools/benchmark.mjs --profile release --write',
       verification: [
-        'pnpm benchmark --profile release',
+        'node tools/benchmark.mjs --profile release',
         'pnpm test:all-hosts',
         'pnpm release:verify',
       ],
@@ -100,7 +143,8 @@ if (profile === 'release') {
     limitations: [
       'This manifest assembles public synthetic mechanics artifacts; it is not an independently labelled real-world corpus.',
       'Stored latency values are local reference observations and are not a production SLO.',
-      'All evaluation strata remain UNMEASURED, so this report makes no precision, recall, or promotion claim.',
+      'All eight deterministic adapter admissions remain UNMEASURED, so this report makes no precision, recall, or promotion claim.',
+      'Optional reasoning remains hypothesis-only and is not delivery-ready.',
       'No customer source, repository identity, review, or provider payload is included.',
     ],
   };
@@ -108,7 +152,10 @@ if (profile === 'release') {
     printWidth: 80,
   });
   if (process.argv.includes('--write')) {
-    const output = resolve(root, 'docs/verification/phase-006-release-benchmark.json');
+    const output = resolve(
+      root,
+      'docs/verification/phase-005-next-generation-release-benchmark.json',
+    );
     await mkdir(resolve(output, '..'), { recursive: true });
     await writeFile(output, serialized);
     process.stdout.write(`Wrote ${output}\n`);

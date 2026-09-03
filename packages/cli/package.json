@@ -1,6 +1,6 @@
 {
   "name": "reverb-impact",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Local CLI for evidence-first cross-repository impact analysis",
   "type": "module",
   "license": "Apache-2.0",
@@ -34,15 +34,15 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@yanib/reverb-adapter-openapi": "workspace:*",
-    "@yanib/reverb-adapter-protobuf": "workspace:*",
-    "@yanib/reverb-adapter-sdk": "workspace:*",
-    "@yanib/reverb-adapter-typescript": "workspace:*",
-    "@yanib/reverb-application": "workspace:*",
-    "@yanib/reverb-domain": "workspace:*",
-    "@yanib/reverb-host-local": "workspace:*",
-    "@yanib/reverb-schema": "workspace:*",
-    "@yanib/reverb-storage-sqlite": "workspace:*",
+    "@yanib/reverb-adapter-openapi": "workspace:0.5.0",
+    "@yanib/reverb-adapter-protobuf": "workspace:0.5.0",
+    "@yanib/reverb-adapter-sdk": "workspace:0.5.0",
+    "@yanib/reverb-adapter-typescript": "workspace:0.5.0",
+    "@yanib/reverb-application": "workspace:0.5.0",
+    "@yanib/reverb-domain": "workspace:0.5.0",
+    "@yanib/reverb-host-local": "workspace:0.5.0",
+    "@yanib/reverb-schema": "workspace:0.5.0",
+    "@yanib/reverb-storage-sqlite": "workspace:0.5.0",
     "commander": "14.0.0",
     "picocolors": "1.1.1"
   },

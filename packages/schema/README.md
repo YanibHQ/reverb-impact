@@ -9,7 +9,7 @@ and diff envelopes; schema-major 1 remains unchanged.
 ## Installation
 
 ```bash
-pnpm add --save-exact @yanib/reverb-schema@0.4.0
+pnpm add --save-exact @yanib/reverb-schema@0.5.0
 ```
 
 Import only the documented package root. See the

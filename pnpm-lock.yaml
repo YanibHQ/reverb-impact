@@ -36,34 +36,34 @@ importers:
   examples/minimal-host:
     dependencies:
       '@yanib/reverb-domain':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../../packages/domain
 
   packages/adapter-config:
     dependencies:
       '@yanib/reverb-adapter-sdk':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../adapter-sdk
       '@yanib/reverb-domain':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../domain
 
   packages/adapter-database:
     dependencies:
       '@yanib/reverb-adapter-sdk':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../adapter-sdk
       '@yanib/reverb-domain':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../domain
 
   packages/adapter-events:
     dependencies:
       '@yanib/reverb-adapter-sdk':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../adapter-sdk
       '@yanib/reverb-domain':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../domain
       yaml:
         specifier: 2.8.3
@@ -72,19 +72,19 @@ importers:
   packages/adapter-http:
     dependencies:
       '@yanib/reverb-adapter-sdk':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../adapter-sdk
       '@yanib/reverb-domain':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../domain
 
   packages/adapter-infrastructure:
     dependencies:
       '@yanib/reverb-adapter-sdk':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../adapter-sdk
       '@yanib/reverb-domain':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../domain
       yaml:
         specifier: 2.8.3
@@ -93,10 +93,10 @@ importers:
   packages/adapter-openapi:
     dependencies:
       '@yanib/reverb-adapter-sdk':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../adapter-sdk
       '@yanib/reverb-domain':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../domain
       yaml:
         specifier: 2.8.3
@@ -105,25 +105,25 @@ importers:
   packages/adapter-protobuf:
     dependencies:
       '@yanib/reverb-adapter-sdk':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../adapter-sdk
       '@yanib/reverb-domain':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../domain
 
   packages/adapter-sdk:
     dependencies:
       '@yanib/reverb-domain':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../domain
 
   packages/adapter-typescript:
     dependencies:
       '@yanib/reverb-adapter-sdk':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../adapter-sdk
       '@yanib/reverb-domain':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../domain
       typescript:
         specifier: 5.9.2
@@ -132,37 +132,37 @@ importers:
   packages/application:
     dependencies:
       '@yanib/reverb-domain':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../domain
 
   packages/cli:
     dependencies:
       '@yanib/reverb-adapter-openapi':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../adapter-openapi
       '@yanib/reverb-adapter-protobuf':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../adapter-protobuf
       '@yanib/reverb-adapter-sdk':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../adapter-sdk
       '@yanib/reverb-adapter-typescript':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../adapter-typescript
       '@yanib/reverb-application':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../application
       '@yanib/reverb-domain':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../domain
       '@yanib/reverb-host-local':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../host-local
       '@yanib/reverb-schema':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../schema
       '@yanib/reverb-storage-sqlite':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../storage-sqlite
       commander:
         specifier: 14.0.0
@@ -176,35 +176,35 @@ importers:
   packages/host-github:
     dependencies:
       '@yanib/reverb-application':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../application
       '@yanib/reverb-domain':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../domain
 
   packages/host-local:
     dependencies:
       '@yanib/reverb-application':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../application
       '@yanib/reverb-domain':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../domain
       yaml:
         specifier: 2.8.3
         version: 2.8.3
     devDependencies:
       '@yanib/reverb-testkit':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../testkit
 
   packages/reasoning:
     dependencies:
       '@yanib/reverb-application':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../application
       '@yanib/reverb-domain':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../domain
 
   packages/schema:
@@ -219,39 +219,39 @@ importers:
         specifier: 8.23.1
         version: 8.23.1
       '@yanib/reverb-application':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../application
       '@yanib/reverb-domain':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../domain
       pg:
         specifier: 8.23.0
         version: 8.23.0
     devDependencies:
       '@yanib/reverb-testkit':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../testkit
 
   packages/storage-sqlite:
     dependencies:
       '@yanib/reverb-application':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../application
       '@yanib/reverb-domain':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../domain
     devDependencies:
       '@yanib/reverb-testkit':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../testkit
 
   packages/testkit:
     dependencies:
       '@yanib/reverb-application':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../application
       '@yanib/reverb-domain':
-        specifier: workspace:*
+        specifier: workspace:0.5.0
         version: link:../domain
     devDependencies:
       '@types/pg':

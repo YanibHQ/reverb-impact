@@ -8,16 +8,17 @@ untrusted data. The normative threat model is in
 
 Please use GitHub's private vulnerability reporting for `YanibHQ/reverb-impact`. Do not open a
 public issue for suspected vulnerabilities, source disclosure, credential exposure, or tenant
-isolation failures. Until the canonical repository is published, contact a YanibHQ organization
-owner privately.
+isolation failures. If private reporting is unavailable, contact a YanibHQ organization owner
+privately.
 
 Include the affected version or commit, impact, reproduction steps, and any suggested mitigation.
 Do not include third-party private source or credentials.
 
 ## Supported versions
 
-No public version has been released. Security fixes currently target the default branch. A formal
-support window will be published before 1.0.
+Security fixes target the latest published `0.x` minor and the default branch. Older pre-1.0 minors
+receive fixes only when maintainers explicitly backport them. The `0.5.0` candidate is supported
+only from source until it is published.
 
 ## Scope
 

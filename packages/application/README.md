@@ -5,7 +5,7 @@ Host-neutral Reverb use cases and application ports.
 ## Installation
 
 ```bash
-pnpm add --save-exact @yanib/reverb-application@0.4.0
+pnpm add --save-exact @yanib/reverb-application@0.5.0
 ```
 
 Import only the documented package root. See the

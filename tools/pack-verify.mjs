@@ -86,6 +86,10 @@ await copyFile(
   resolve(root, 'type-tests/v0.4-host-compatibility.ts'),
   resolve(consumerDestination, 'v0.4-host-compatibility.ts'),
 );
+await copyFile(
+  resolve(root, 'type-tests/v2-analysis-host.ts'),
+  resolve(consumerDestination, 'v2-analysis-host.ts'),
+);
 await writeFile(
   resolve(consumerDestination, 'package.json'),
   `${JSON.stringify(
@@ -129,7 +133,7 @@ await writeFile(
         noEmit: true,
         skipLibCheck: false,
       },
-      include: ['v0.4-host-compatibility.ts'],
+      include: ['v0.4-host-compatibility.ts', 'v2-analysis-host.ts'],
     },
     null,
     2,
@@ -144,7 +148,24 @@ execFileSync('pnpm', ['exec', 'tsc', '--pretty', 'false'], {
   cwd: consumerDestination,
   stdio: 'inherit',
 });
+await writeFile(
+  resolve(consumerDestination, 'import-roots.mjs'),
+  `${packedPackages.map(({ name }) => `await import(${JSON.stringify(name)});`).join('\n')}\n`,
+);
+execFileSync('node', ['import-roots.mjs'], {
+  cwd: consumerDestination,
+  stdio: 'inherit',
+});
+const cliVersion = execFileSync('pnpm', ['exec', 'reverb', '--version'], {
+  cwd: consumerDestination,
+  encoding: 'utf8',
+}).trim();
+if (cliVersion !== workspaceManifest.version) {
+  throw new Error(
+    `Packed CLI reported ${cliVersion || '<empty>'}; expected ${workspaceManifest.version}.`,
+  );
+}
 
 process.stdout.write(
-  `Packed and checksummed ${archives.length} release packages; the v0.4 host fixture compiled from tarballs.\n`,
+  `Packed and checksummed ${archives.length} release packages; v0.4/v2 hosts compiled, every root imported, and the CLI reported ${cliVersion}.\n`,
 );

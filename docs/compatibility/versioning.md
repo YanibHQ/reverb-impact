@@ -6,10 +6,10 @@ Reverb versions three independent surfaces:
 2. canonical JSON/storage schema major/minor;
 3. adapter extraction and identity versions.
 
-The current release candidate is pre-v1 package version `0.4.0`, schema `1.0`, SQLite migration 7, and
-PostgreSQL migration 3. There is no previous public schema major: schema v0 is explicitly
-unsupported rather than silently treated as a historical format. The schema-major envelope accepts
-supported major 1; each concrete schema validator still requires its declared minor contract.
+The current release candidate is pre-v1 package version `0.5.0`, negotiated schema `2.0`, SQLite
+migration 8, and PostgreSQL migration 4. Schema major 1 remains readable and byte-compatible for
+existing hosts; v2 entry points require explicit negotiation and accept supported majors 1 and 2.
+Each concrete schema validator still requires its declared minor contract.
 
 ## Change rules
 
@@ -45,6 +45,16 @@ Version `0.4.0` adds repository-scoped TypeScript module definitions and referen
 `tsconfig`/`jsconfig` path resolution, hash-only implementation evidence, and partitioning version 2. TypeScript adapter 0.3.0 requires a TypeScript-only re-index. Its npm-public canonical identities
 remain unchanged, so identity version 1 is retained. The new internal evidence strata and all prior
 TypeScript strata remain `UNMEASURED` until independently evaluated and promoted.
+
+Version `0.5.0` adds an explicit producer-plus-consumer allowlist, canonical v2 scope/coverage/
+budget provenance, five independent deterministic adapter families, and an optional provider-neutral
+reasoning lane. SQLite migration 8 and PostgreSQL migration 4 add isolated v2 scope, result, and
+reasoning-run tables without rewriting v1 records. Existing TypeScript, OpenAPI, and Protobuf
+identities remain unchanged and do not require a 0.4-to-0.5 rebuild. Each newly enabled events,
+database, implicit-HTTP, configuration, or infrastructure family requires its first bounded index.
+All new strata are `UNMEASURED` and preview-only. See the
+[0.5.0 release notes](../releases/0.5.0.md) for exact migration, re-index, limitation, and rollback
+guidance.
 
 ## Upgrade procedure
 
