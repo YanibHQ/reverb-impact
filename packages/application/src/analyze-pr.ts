@@ -132,6 +132,37 @@ function selectionAbstention(
       };
 }
 
+function observationMatches(
+  observation: ContractGenerationObservation,
+  expected: {
+    readonly workspaceId: WorkspaceId;
+    readonly repositoryId: RepositoryStableId;
+    readonly generationId: ContractGenerationObservation['generationId'];
+    readonly commitSha: ContractGenerationObservation['commitSha'];
+  },
+): boolean {
+  return (
+    observation.workspaceId === expected.workspaceId &&
+    observation.repositoryId === expected.repositoryId &&
+    observation.generationId === expected.generationId &&
+    observation.commitSha === expected.commitSha &&
+    observation.definitions.every(
+      (value) =>
+        value.workspaceId === expected.workspaceId &&
+        value.repositoryId === expected.repositoryId &&
+        value.generationId === expected.generationId &&
+        value.commitSha === expected.commitSha,
+    ) &&
+    observation.references.every(
+      (value) =>
+        value.workspaceId === expected.workspaceId &&
+        value.repositoryId === expected.repositoryId &&
+        value.generationId === expected.generationId &&
+        value.commitSha === expected.commitSha,
+    )
+  );
+}
+
 export class AnalyzePullRequest {
   public constructor(private readonly dependencies: AnalyzePullRequestDependencies) {}
 
@@ -176,6 +207,16 @@ export class AnalyzePullRequest {
       );
     } else {
       const generation = selected.value.generation;
+      if (
+        generation.workspaceId !== input.workspaceId ||
+        generation.repositoryId !== repository.repositoryId ||
+        (generation.state !== 'complete' && generation.state !== 'partial')
+      ) {
+        return invalid(
+          'consumer_generation_scope_mismatch',
+          'Selected consumer generation does not match the requested repository scope.',
+        );
+      }
       const observation = await this.dependencies.evidence.getContractObservation(generation.id);
       if (!observation.ok) return propagated(observation.failure);
       if (observation.value === null) {
@@ -183,6 +224,18 @@ export class AnalyzePullRequest {
           repository.repositoryId,
           'not_indexed',
           'contracts_not_indexed',
+        );
+      } else if (
+        !observationMatches(observation.value, {
+          workspaceId: input.workspaceId,
+          repositoryId: repository.repositoryId,
+          generationId: generation.id,
+          commitSha: generation.commitSha,
+        })
+      ) {
+        return invalid(
+          'consumer_observation_scope_mismatch',
+          'Consumer contract evidence does not match its selected exact generation.',
         );
       } else if (observation.value.coverageState === 'failed') {
         initial = unavailableSelection(
@@ -229,7 +282,15 @@ export class AnalyzePullRequest {
         repositoryId: repository.repositoryId,
         maximumDurationMs: remaining,
       });
-      if (refreshed?.ok && refreshed.value !== null) return portSuccess(refreshed.value);
+      if (refreshed?.ok && refreshed.value !== null) {
+        if (refreshed.value.repositoryId !== repository.repositoryId) {
+          return invalid(
+            'consumer_refresh_scope_mismatch',
+            'Refreshed consumer selection does not match the requested repository.',
+          );
+        }
+        return portSuccess(refreshed.value);
+      }
     }
     return portSuccess(initial);
   }
@@ -312,23 +373,12 @@ export class AnalyzePullRequest {
     }
     const producerHead = input.producerHeadObservation;
     if (
-      producerHead.workspaceId !== input.workspaceId ||
-      producerHead.repositoryId !== input.producerRepositoryId ||
-      producerHead.commitSha !== input.pullRequest.headSha ||
-      producerHead.definitions.some(
-        (value) =>
-          value.workspaceId !== producerHead.workspaceId ||
-          value.repositoryId !== producerHead.repositoryId ||
-          value.generationId !== producerHead.generationId ||
-          value.commitSha !== producerHead.commitSha,
-      ) ||
-      producerHead.references.some(
-        (value) =>
-          value.workspaceId !== producerHead.workspaceId ||
-          value.repositoryId !== producerHead.repositoryId ||
-          value.generationId !== producerHead.generationId ||
-          value.commitSha !== producerHead.commitSha,
-      )
+      !observationMatches(producerHead, {
+        workspaceId: input.workspaceId,
+        repositoryId: input.producerRepositoryId,
+        generationId: producerHead.generationId,
+        commitSha: input.pullRequest.headSha,
+      })
     ) {
       return invalid(
         'producer_head_observation_mismatch',
@@ -368,6 +418,9 @@ export class AnalyzePullRequest {
         (change) =>
           change.workspaceId !== input.workspaceId ||
           change.producerRepositoryId !== input.producerRepositoryId ||
+          change.baseGenerationId !== input.baseGenerationId ||
+          (change.headGenerationId !== undefined &&
+            change.headGenerationId !== producerHead.generationId) ||
           change.baseSha !== input.pullRequest.baseSha ||
           change.headSha !== input.pullRequest.headSha,
       )
@@ -405,6 +458,29 @@ export class AnalyzePullRequest {
       canonicalKeys: input.changes.map((change) => change.canonicalKey),
     });
     if (!references.ok) return propagated(references.failure);
+    const selectionByGeneration = new Map(
+      consumers.flatMap((consumer) =>
+        consumer.repositoryId === input.producerRepositoryId || consumer.generationId === undefined
+          ? []
+          : [[consumer.generationId, consumer] as const],
+      ),
+    );
+    if (
+      references.value.some((reference) => {
+        const selection = selectionByGeneration.get(reference.generationId);
+        return (
+          selection === undefined ||
+          reference.workspaceId !== input.workspaceId ||
+          reference.repositoryId !== selection.repositoryId ||
+          reference.commitSha !== selection.commitSha
+        );
+      })
+    ) {
+      return invalid(
+        'reference_scope_mismatch',
+        'Consumer references do not match the exact selected generations.',
+      );
+    }
     const producerSelected = consumers.some(
       (value) =>
         value.repositoryId === input.producerRepositoryId &&

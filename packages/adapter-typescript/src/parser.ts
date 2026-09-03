@@ -45,7 +45,8 @@ export interface ParsedTypeScriptModule {
   readonly reExports: readonly ReExport[];
   readonly imports: readonly ParsedImport[];
   readonly parseErrors: number;
-  readonly unresolvedExports: number;
+  /** Present on parser results produced by v0.5 and later. */
+  readonly unresolvedExports?: number;
 }
 
 export interface ParsedTypeScriptConfig {

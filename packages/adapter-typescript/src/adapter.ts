@@ -395,7 +395,7 @@ function resolvePublicSymbols(
     if (module === undefined) return { symbols: [], unresolved: 1 };
     const nextSeen = new Set(seen).add(path);
     const symbols = [...module.symbols];
-    let unresolved = module.unresolvedExports;
+    let unresolved = module.unresolvedExports ?? 0;
     for (const reExport of module.reExports) {
       const targetPath = resolveTypeScriptModule(path, reExport.source, available, configs);
       if (targetPath === undefined) {
@@ -913,7 +913,9 @@ function encodeState(state: TypeScriptSemanticState): TypeScriptPartitionPayload
         symbols: module.symbols,
         reExports: module.reExports,
         imports: module.imports,
-        ...(module.unresolvedExports === 0 ? {} : { unresolvedExports: module.unresolvedExports }),
+        ...(module.unresolvedExports === undefined || module.unresolvedExports === 0
+          ? {}
+          : { unresolvedExports: module.unresolvedExports }),
       }))
       .sort((left, right) => left.path.localeCompare(right.path)),
     packageJson: [...state.packageJson.entries()]

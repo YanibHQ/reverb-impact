@@ -87,7 +87,9 @@ export function syncGitHubRepositorySelection(input: {
       repositorySelection: input.repositorySelection,
       organizationWideOptIn: input.organizationWideOptIn,
       repositoryVisibility: Object.fromEntries(
-        input.repositories.map((repository) => [`github:${repository.id}`, repository.visibility]),
+        input.repositories
+          .filter((repository) => input.repositorySelection === 'all' || repository.selected)
+          .map((repository) => [`github:${repository.id}`, repository.visibility]),
       ),
     },
   });

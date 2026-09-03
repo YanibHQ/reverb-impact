@@ -406,6 +406,7 @@ describe('GitHub reference host integration', () => {
     expect(removed.repositories).toEqual([]);
     expect(removed.services).toEqual([]);
     expect(removed.aliases).toEqual([]);
+    expect(removed.extensions.repositoryVisibility).toEqual({});
     const reinstalled = syncGitHubRepositorySelection({
       workspaceId: workspace,
       previous: removed,

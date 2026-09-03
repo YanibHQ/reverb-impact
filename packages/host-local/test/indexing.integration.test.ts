@@ -382,6 +382,16 @@ describe('generation and overlay orchestration', () => {
       ok: false,
       failure: { code: 'base_generation_mismatch' },
     });
+    const incompatibleRegistry = await overlayBuilder.execute({
+      ...overlayRequest,
+      overlayId: overlayId(id('ovl', 7)),
+      leaseId: generationLeaseId(id('lea', 7)),
+      registryRevision: registryRevision(`reg_sha256:${'7'.repeat(64)}`),
+    });
+    expect(incompatibleRegistry).toMatchObject({
+      ok: false,
+      failure: { code: 'base_generation_mismatch' },
+    });
 
     await writeFile(resolve(root, 'changed.ts'), 'export const value = 2;\n');
     await git('add', '--all');

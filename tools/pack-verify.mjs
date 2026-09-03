@@ -37,7 +37,7 @@ for (const archive of archives) {
     cwd: destination,
     encoding: 'utf8',
   });
-  const entries = listing.split('\n');
+  const entries = listing.split(/\r?\n/);
   if (entries.some((entry) => entry.endsWith('.tsbuildinfo'))) {
     throw new Error(`${archive} contains private compiler build metadata.`);
   }

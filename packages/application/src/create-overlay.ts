@@ -86,6 +86,7 @@ export class CreatePullRequestOverlay {
       base.value.repositoryId !== request.repositoryId ||
       base.value.indexerBundleVersion !== request.indexerBundleVersion ||
       base.value.configRevision !== request.configRevision ||
+      base.value.registryRevision !== request.registryRevision ||
       (base.value.state !== 'complete' && base.value.state !== 'partial')
     ) {
       return portFailure({

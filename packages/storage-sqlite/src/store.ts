@@ -2037,7 +2037,7 @@ export class SqliteStore
 
   public async get(key: ArtifactCacheKey): Promise<PortResult<CachedArtifact | null>> {
     return this.#safe(() => {
-      const contextualSourceId = JSON.stringify([key.sourceBlobId, key.contextHash]);
+      const contextualSourceId = JSON.stringify([key.sourceBlobId, key.contextHash ?? null]);
       const row = this.#database
         .prepare(
           `SELECT artifact_json FROM artifact_cache
@@ -2058,7 +2058,10 @@ export class SqliteStore
 
   public async put(value: CachedArtifact): Promise<PortResult<void>> {
     return this.#safe(() => {
-      const contextualSourceId = JSON.stringify([value.key.sourceBlobId, value.key.contextHash]);
+      const contextualSourceId = JSON.stringify([
+        value.key.sourceBlobId,
+        value.key.contextHash ?? null,
+      ]);
       this.#database
         .prepare(
           `INSERT INTO artifact_cache(
