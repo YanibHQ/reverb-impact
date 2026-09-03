@@ -1,0 +1,253 @@
+{
+  "schema": "reverb.release-benchmark",
+  "schema_version": "1.0",
+  "profile": "release",
+  "artifact_manifest": [
+    {
+      "path": "features/cross-repo-impact/research/artifacts/phase-003/reduced-baselines.json",
+      "sha256": "sha256:559c7add964070c5d18081e3bc07e2ce65a3c26730c5609e793afb2ec45ffaf9",
+      "bytes": 2492
+    },
+    {
+      "path": "docs/verification/phase-004-evaluation.json",
+      "sha256": "sha256:658fee59095dc997033d9c721cc021a291f689aa0ef8cf3e3951b1ce3af0e113",
+      "bytes": 1222
+    },
+    {
+      "path": "docs/verification/phase-005-hosted-benchmark.json",
+      "sha256": "sha256:d173214c8275e3b12a6ff34522431118d806702e2454132b5db0342147f6dc4b",
+      "bytes": 601
+    },
+    {
+      "path": "docs/verification/phase-004-reasoning.md",
+      "sha256": "sha256:adf775cc493814547daee84b1eaef3561d68bb8dfa9b63f34b469338f674020e",
+      "bytes": 2829
+    },
+    {
+      "path": "docs/verification/adapters/configuration.json",
+      "sha256": "sha256:705b183599519c4c4c32cb36af3a45410c2a2cf13d0b7ac4dcddaab336b5ef98",
+      "bytes": 1775
+    },
+    {
+      "path": "docs/verification/adapters/database.json",
+      "sha256": "sha256:2ab9514739e3038c5d60a13969646bc87f11ec400b49cd122de3bf756bc4b2fd",
+      "bytes": 1850
+    },
+    {
+      "path": "docs/verification/adapters/events.json",
+      "sha256": "sha256:c24fe0cd311e8a27564e5c11f9f2f6126ccc762b416bfc8cc8ab90df8d2fdc37",
+      "bytes": 1836
+    },
+    {
+      "path": "docs/verification/adapters/http.json",
+      "sha256": "sha256:7f7dde6a4f1f5ed2fa285933b8dc3766c030b4621ef441e18da160a1e5755880",
+      "bytes": 1757
+    },
+    {
+      "path": "docs/verification/adapters/infrastructure.json",
+      "sha256": "sha256:3da1e5518e000b0df11a8b887a6366e95d8cb3dd4132c17c7d9bc7fa3e8106d5",
+      "bytes": 1797
+    },
+    {
+      "path": "docs/verification/adapters/openapi.json",
+      "sha256": "sha256:341ff6cafa47f96e0b9d7894852700550dc18d65db39619d90f38e7ca5f7a272",
+      "bytes": 1802
+    },
+    {
+      "path": "docs/verification/adapters/protobuf.json",
+      "sha256": "sha256:8803268d27c97997e249225f67ff961d955a2e6feca029611a3b0967edca18c1",
+      "bytes": 1770
+    },
+    {
+      "path": "docs/verification/adapters/typescript.json",
+      "sha256": "sha256:ecbfb20aef8df15139aebb3e825180ecf42314b3c3b421624d25c715899f77e5",
+      "bytes": 1934
+    },
+    {
+      "path": "docs/compatibility/release-metadata.json",
+      "sha256": "sha256:67b88a82f0f3b2e72c8f6942b95461421928be249c00528ad6d87bf38dd8f3a5",
+      "bytes": 2176
+    },
+    {
+      "path": "docs/compatibility/host-capabilities.json",
+      "sha256": "sha256:f17b582a2025e2d8a5bf436ff1841d3cf53f24c0a66a2e18cec727ea0c8d53d3",
+      "bytes": 1328
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "sha256": "sha256:90cdbd4ca946f5ff3246075f47460acc52444b8dbabceeb402a68f5ddf8ac243",
+      "bytes": 83748
+    }
+  ],
+  "mechanics": {
+    "comparative_results": [
+      {
+        "name": "reverb",
+        "predicted_consumers": ["consumer"],
+        "true_positives": 1,
+        "false_positives": 0,
+        "false_negatives": 0,
+        "exact_base_head": true,
+        "contract_identity": "canonical_symbol",
+        "consumer_evidence": "stable_reference_and_location",
+        "coverage_semantics": "claim_specific_with_abstention"
+      },
+      {
+        "name": "manifest",
+        "predicted_consumers": ["consumer", "unrelated-consumer"],
+        "true_positives": 1,
+        "false_positives": 1,
+        "false_negatives": 0,
+        "exact_base_head": false,
+        "contract_identity": "package_only",
+        "consumer_evidence": "manifest_dependency",
+        "coverage_semantics": "none"
+      },
+      {
+        "name": "lexical",
+        "predicted_consumers": ["consumer"],
+        "true_positives": 1,
+        "false_positives": 0,
+        "false_negatives": 0,
+        "exact_base_head": true,
+        "contract_identity": "changed_name",
+        "consumer_evidence": "text_match",
+        "coverage_semantics": "none"
+      },
+      {
+        "name": "schema_only",
+        "predicted_consumers": ["consumer"],
+        "true_positives": 1,
+        "false_positives": 0,
+        "false_negatives": 0,
+        "exact_base_head": true,
+        "contract_identity": "canonical_symbol",
+        "consumer_evidence": "canonical_reference",
+        "coverage_semantics": "none"
+      }
+    ],
+    "evaluation_decision": "all_strata_remain_preview_only",
+    "evaluation_strata": [
+      {
+        "adapter": "reverb.typescript",
+        "state": "UNMEASURED",
+        "decision": "remain_preview"
+      },
+      {
+        "adapter": "reverb.openapi",
+        "state": "UNMEASURED",
+        "decision": "remain_preview"
+      },
+      {
+        "adapter": "reverb.protobuf",
+        "state": "UNMEASURED",
+        "decision": "remain_preview"
+      }
+    ],
+    "adapter_admissions": [
+      {
+        "adapter": "reverb.configuration",
+        "adapter_version": "0.1.0",
+        "identity_version": 1,
+        "promotion_state": "UNMEASURED",
+        "delivery_ready": false,
+        "output_hash": "sha256:67941e86f2c9f2c915c977775102e9627aeaf758da639969a4bcf1e845f865a7"
+      },
+      {
+        "adapter": "reverb.database",
+        "adapter_version": "0.1.0",
+        "identity_version": 1,
+        "promotion_state": "UNMEASURED",
+        "delivery_ready": false,
+        "output_hash": "sha256:244c3011c65b17330ee936bcbc35f6c447b650c8c6335341d8d2aa7d2b5ae2d9"
+      },
+      {
+        "adapter": "reverb.events",
+        "adapter_version": "0.1.0",
+        "identity_version": 1,
+        "promotion_state": "UNMEASURED",
+        "delivery_ready": false,
+        "output_hash": "sha256:cbea10586a27468f7876e57edad0ccf1e7a28202faa079884ddcb5ddfa3b6ccd"
+      },
+      {
+        "adapter": "reverb.implicit-http",
+        "adapter_version": "0.1.0",
+        "identity_version": 1,
+        "promotion_state": "UNMEASURED",
+        "delivery_ready": false,
+        "output_hash": "sha256:4bd07c6e6637e5c5954bee37b00e23605f5fd6d7d4e6972d8de229393c46fc2d"
+      },
+      {
+        "adapter": "reverb.infrastructure",
+        "adapter_version": "0.1.0",
+        "identity_version": 1,
+        "promotion_state": "UNMEASURED",
+        "delivery_ready": false,
+        "output_hash": "sha256:2166e3e1a3cce5c63d6b978abb4bf6886041857ee5ecb5d4c4bb0a8bcb58bd74"
+      },
+      {
+        "adapter": "reverb.openapi",
+        "adapter_version": "0.2.0",
+        "identity_version": 1,
+        "promotion_state": "UNMEASURED",
+        "delivery_ready": false,
+        "output_hash": "sha256:dcb323aae73045fc0a206222b1aa4d872bd40ab4eea8703a15aad212e5f086af"
+      },
+      {
+        "adapter": "reverb.protobuf",
+        "adapter_version": "0.2.0",
+        "identity_version": 1,
+        "promotion_state": "UNMEASURED",
+        "delivery_ready": false,
+        "output_hash": "sha256:97a770c892d0562d763732e90adde5c6d5e2184cfc9477e1b77f3c94577089d9"
+      },
+      {
+        "adapter": "reverb.typescript",
+        "adapter_version": "0.3.0",
+        "identity_version": 1,
+        "promotion_state": "UNMEASURED",
+        "delivery_ready": false,
+        "output_hash": "sha256:5308d8d0388c0f0c139e7f74b39d8b8dc238173b9f66991b2e51f31235ec0584"
+      }
+    ],
+    "reasoning": {
+      "evidence_basis": "ai_inferred",
+      "fallback": "needs_investigation",
+      "deterministic_isolation": true,
+      "provider_bundled": false,
+      "delivery_ready": false
+    },
+    "hosted_disclosure_projection": {
+      "iterations": 2000,
+      "disclosure_defects": 0,
+      "projection_latency_ms": {
+        "p50": 0.0033,
+        "p95": 0.007,
+        "p99": 0.0131,
+        "maximum": 0.543
+      }
+    }
+  },
+  "environment": {
+    "node": "v25.2.1",
+    "platform": "darwin",
+    "arch": "arm64",
+    "package_manager": "pnpm@10.27.0",
+    "lockfile_sha256": "sha256:90cdbd4ca946f5ff3246075f47460acc52444b8dbabceeb402a68f5ddf8ac243"
+  },
+  "reproducibility": {
+    "generator": "node tools/benchmark.mjs --profile release --write",
+    "verification": [
+      "node tools/benchmark.mjs --profile release",
+      "pnpm test:all-hosts",
+      "pnpm release:verify"
+    ]
+  },
+  "limitations": [
+    "This manifest assembles public synthetic mechanics artifacts; it is not an independently labelled real-world corpus.",
+    "Stored latency values are local reference observations and are not a production SLO.",
+    "All eight deterministic adapter admissions remain UNMEASURED, so this report makes no precision, recall, or promotion claim.",
+    "Optional reasoning remains hypothesis-only and is not delivery-ready.",
+    "No customer source, repository identity, review, or provider payload is included."
+  ]
+}

@@ -17,4 +17,4 @@ or production latency claim.
 Before archival release, maintainers must add an approved public corpus/manifest or executable
 replica, secret/personal-data scan, exact environment/container digest, analysis commands, raw
 predictions/labels permitted for release, baseline licenses, limitations/data statement, and DOI.
-Until then, DOI/archive and public-v1 publication tasks remain unchecked.
+Until then, DOI/archive and representative real-world calibration tasks remain unchecked.

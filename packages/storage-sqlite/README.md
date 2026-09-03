@@ -5,7 +5,7 @@ Local SQLite storage for Reverb repository generations and evidence.
 ## Installation
 
 ```bash
-pnpm add --save-exact @yanib/reverb-storage-sqlite@0.4.0
+pnpm add --save-exact @yanib/reverb-storage-sqlite@0.5.0
 ```
 
 Import only the documented package root. See the
