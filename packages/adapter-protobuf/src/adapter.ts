@@ -110,13 +110,19 @@ function sourceFingerprint(
   config: ConfigRevision,
   context: Readonly<Record<string, unknown>>,
 ): ContentHash {
-  const referenceIdentity = generatedReferences(config, context).map((reference) => ({
-    contractKind: reference.contractKind,
-    canonicalKey: reference.canonicalKey ?? null,
-    unresolvedPattern: reference.unresolvedPattern ?? null,
-    path: reference.path,
-    contentHash: reference.contentHash,
-  }));
+  const referenceIdentity = generatedReferences(config, context)
+    .map((reference) => ({
+      contractKind: reference.contractKind,
+      canonicalKey: reference.canonicalKey ?? null,
+      unresolvedPattern: reference.unresolvedPattern ?? null,
+      path: reference.path,
+      contentHash: reference.contentHash,
+    }))
+    .sort((left, right) =>
+      `${left.contractKind}\0${left.canonicalKey ?? ''}\0${left.unresolvedPattern ?? ''}\0${left.path}\0${left.contentHash}`.localeCompare(
+        `${right.contractKind}\0${right.canonicalKey ?? ''}\0${right.unresolvedPattern ?? ''}\0${right.path}\0${right.contentHash}`,
+      ),
+    );
   return contentHash(
     hashCanonical({
       descriptors: documents
@@ -126,7 +132,11 @@ function sourceFingerprint(
           classification,
           state,
         }))
-        .sort((left, right) => left.path.localeCompare(right.path)),
+        .sort((left, right) =>
+          `${left.path}\0${left.contentHash}\0${left.classification}\0${left.state}`.localeCompare(
+            `${right.path}\0${right.contentHash}\0${right.classification}\0${right.state}`,
+          ),
+        ),
       generatedStubBindings: referenceIdentity,
     }),
   );
@@ -198,7 +208,11 @@ function generatedReferences(
       });
     }
   }
-  return references;
+  return references.sort((left, right) =>
+    `${left.contractKind}\0${left.canonicalKey ?? ''}\0${left.unresolvedPattern ?? ''}\0${left.path}\0${left.contentHash}`.localeCompare(
+      `${right.contractKind}\0${right.canonicalKey ?? ''}\0${right.unresolvedPattern ?? ''}\0${right.path}\0${right.contentHash}`,
+    ),
+  );
 }
 
 function coverage(

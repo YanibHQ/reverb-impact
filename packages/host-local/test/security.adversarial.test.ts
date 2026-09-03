@@ -233,6 +233,7 @@ describe('path, archive, and resource containment', () => {
     const key: ArtifactCacheKey = {
       workspaceId: workspace,
       sourceBlobId: '5'.repeat(40),
+      contextHash: contentHash(`sha256:${'8'.repeat(64)}`),
       indexerBundleVersion: 'foundation-1.0.0',
       parserId: adapterId('reverb.file-metadata'),
       parserVersion: '1.0.0',

@@ -1,6 +1,6 @@
-import { execFileSync } from 'node:child_process';
+import { pnpmExecFileSync } from './run-pnpm.mjs';
 
-const output = execFileSync('pnpm', ['licenses', 'list', '--json', '--prod'], {
+const output = pnpmExecFileSync(['licenses', 'list', '--json', '--prod'], {
   encoding: 'utf8',
 });
 const inventory = JSON.parse(output);

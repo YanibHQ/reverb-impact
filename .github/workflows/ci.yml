@@ -37,3 +37,29 @@ jobs:
       - run: pnpm run ci
       - run: pnpm pack:verify
       - run: pnpm audit:check
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.27.0
+          run_install: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm schema:check
+      - run: pnpm adapters:admission:check
+      - run: pnpm licenses:check
+      - run: >-
+          pnpm exec vitest run --config vitest.integration.config.ts
+          packages/cli/test/cli.integration.test.ts
+          packages/host-local/test/git-reader.integration.test.ts
+          packages/host-local/test/indexing.integration.test.ts
+      - run: pnpm pack:verify

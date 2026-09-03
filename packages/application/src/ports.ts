@@ -491,6 +491,12 @@ export interface ArtifactBlobStore {
 export interface ArtifactCacheKey {
   readonly workspaceId: WorkspaceId;
   readonly sourceBlobId: string;
+  /**
+   * Hash of path- and source-bound classification inputs outside the blob contents.
+   * Optional so hosts compiled against the v0.4 cache port remain assignable; new indexing
+   * requests always provide it and missing values occupy a separate legacy cache namespace.
+   */
+  readonly contextHash?: ContentHash;
   readonly indexerBundleVersion: string;
   readonly parserId: string;
   readonly parserVersion: string;

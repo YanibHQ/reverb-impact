@@ -244,9 +244,11 @@ function frozenPolicy(value: unknown): FrozenPolicy {
   }
   if (
     typeof projected.respectFrozenSuppressions !== 'boolean' ||
-    typeof projected.maximumAlertsPerThousand !== 'number'
+    typeof projected.maximumAlertsPerThousand !== 'number' ||
+    !Number.isFinite(projected.maximumAlertsPerThousand) ||
+    projected.maximumAlertsPerThousand < 0
   ) {
-    throw new Error('Frozen policy suppression and alert-budget fields are required.');
+    throw new Error('Frozen policy suppression and non-negative alert-budget fields are required.');
   }
   return {
     revision: policyRevision(String(projected.revision)),
@@ -265,7 +267,9 @@ function pageOptions(limitValue: string, cursorValue?: string): { limit: number;
   if (cursorValue === undefined) return { limit, offset: 0 };
   const match = /^offset:([0-9]+)$/.exec(cursorValue);
   if (match === null) throw new Error('Finding cursor is malformed.');
-  return { limit, offset: Number(match[1]) };
+  const offset = Number(match[1]);
+  if (!Number.isSafeInteger(offset)) throw new Error('Finding cursor is malformed.');
+  return { limit, offset };
 }
 
 export async function createCli(): Promise<Command> {
@@ -1185,7 +1189,7 @@ export async function createCli(): Promise<Command> {
       const nodeMajor = Number(process.versions.node.split('.')[0]);
       checks.push({
         name: 'node',
-        state: nodeMajor >= 24 ? 'pass' : 'fail',
+        state: nodeMajor >= 24 && nodeMajor < 26 ? 'pass' : 'fail',
         detail: `Node ${process.versions.node}`,
       });
       try {

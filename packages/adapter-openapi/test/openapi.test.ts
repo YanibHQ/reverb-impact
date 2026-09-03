@@ -77,6 +77,59 @@ function sandbox(exitCode: number): AdapterSandboxRunner {
 }
 
 describe('OpenAPI adapter', () => {
+  it('canonicalizes tied generated-client bindings independently of context order', async () => {
+    const common = request(base);
+    const bindings = [
+      {
+        operationId: 'getPet',
+        path: 'generated/pet-client.ts',
+        contentHash: `sha256:${'1'.repeat(64)}`,
+      },
+      {
+        operationId: 'getPet',
+        path: 'generated/pet-client.ts',
+        contentHash: `sha256:${'2'.repeat(64)}`,
+      },
+    ] as const;
+    const first = await openApiAdapter.extract({
+      ...common,
+      context: { ...common.context, generatedClientBindings: bindings },
+    });
+    const reordered = await openApiAdapter.extract({
+      ...common,
+      context: { ...common.context, generatedClientBindings: [...bindings].reverse() },
+    });
+
+    expect(reordered.sourceFingerprint).toBe(first.sourceFingerprint);
+    expect(reordered.outputHash).toBe(first.outputHash);
+    expect(reordered.references.map((reference) => reference.contentHash)).toEqual(
+      first.references.map((reference) => reference.contentHash),
+    );
+  });
+
+  it('extracts operations from local path-item references', async () => {
+    const result = await openApiAdapter.extract(
+      request(`
+openapi: 3.1.0
+info: { title: Referenced paths, version: 1 }
+paths:
+  /pets:
+    $ref: '#/components/pathItems/Pets'
+components:
+  pathItems:
+    Pets:
+      get:
+        operationId: listPets
+        responses: { '200': { description: ok } }
+`),
+    );
+
+    expect(result.coverage.state).toBe('complete');
+    expect(result.definitions).toContainEqual(
+      expect.objectContaining({ canonicalKey: openApiOperationKey('svc.petstore', 'listPets') }),
+    );
+  });
+
   it('discovers by content, resolves local refs, and maps generated clients to exact identity', async () => {
     const result = await openApiAdapter.extract(request(base));
     expect(result.coverage).toMatchObject({ state: 'complete', eligibleArtifacts: 1 });

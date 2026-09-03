@@ -100,6 +100,45 @@ async function incremental(input: {
 }
 
 describe('OpenAPI incremental document partitions', () => {
+  it('preserves local path-item references through partition persistence', async () => {
+    const referenced = artifact(
+      'contracts/referenced.yaml',
+      `
+openapi: 3.1.0
+info: {title: Referenced paths, version: 1}
+paths:
+  /pets:
+    $ref: '#/components/pathItems/Pets'
+components:
+  pathItems:
+    Pets:
+      get:
+        operationId: listPets
+        responses: {'200': {description: ok}}
+`,
+    );
+    const built = await openApiAdapter.buildPartitions({
+      artifacts: [referenced],
+      configRevision: revision,
+      context,
+    });
+    const materialized = await openApiAdapter.materializePartitions({
+      partitions: built.partitions.map(view),
+      configRevision: revision,
+      context,
+    });
+    const clean = await openApiAdapter.extract({
+      artifacts: [referenced],
+      configRevision: revision,
+      context,
+    });
+
+    expect(canonicalJson(materialized)).toBe(canonicalJson(clean));
+    expect(materialized.definitions).toContainEqual(
+      expect.objectContaining({ displayName: 'listPets' }),
+    );
+  });
+
   it('replaces only the changed document and matches a clean extraction', async () => {
     const base = [
       artifact('contracts/pets.yaml', api('getPet')),

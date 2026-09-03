@@ -339,12 +339,13 @@ describe('exact multi-repository PR analysis', () => {
     const overlay = overlayId('ovl_01990f64-0000-7000-8000-000000000112');
     await completeOverlay(generations, overlay, firstHead, 113);
 
-    const result = await new AnalyzePullRequest({
+    const analyzer = new AnalyzePullRequest({
       generations,
       evidence,
       registry,
       clock: new FakeClock(now),
-    }).execute({
+    });
+    const request = {
       analysisId: analysisId('ana_01990f64-0000-7000-8000-000000000112'),
       workspaceId: workspace,
       registryRevision: registrySnapshot.revision.revision,
@@ -357,10 +358,27 @@ describe('exact multi-repository PR analysis', () => {
       changes: [change(firstHead)],
       producerDefinitions: [definition],
       producerHeadObservation: producerHeadObservation(secondHead),
-    });
+    } as const;
+    const result = await analyzer.execute(request);
     expect(result).toMatchObject({
       ok: false,
       failure: { code: 'producer_head_observation_mismatch' },
+    });
+
+    const mismatchedChange = await analyzer.execute({
+      ...request,
+      analysisId: analysisId('ana_01990f64-0000-7000-8000-000000000113'),
+      changes: [
+        {
+          ...change(firstHead),
+          baseGenerationId: generationId('gen_01990f64-0000-7000-8000-000000000999'),
+        },
+      ],
+      producerHeadObservation: producerHeadObservation(firstHead),
+    });
+    expect(mismatchedChange).toMatchObject({
+      ok: false,
+      failure: { code: 'change_scope_mismatch' },
     });
   });
 

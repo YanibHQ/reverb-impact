@@ -36,7 +36,7 @@ import {
 
 import { openApiFallbackKey, openApiOperationKey } from './identity.js';
 import { OPENAPI_ADAPTER_MANIFEST } from './manifest.js';
-import { isRecord, parseOpenApiDocument } from './parser.js';
+import { isRecord, parseOpenApiDocument, resolveLocalReference } from './parser.js';
 
 const METHODS = ['delete', 'get', 'head', 'options', 'patch', 'post', 'put', 'trace'] as const;
 const decoder = new TextDecoder('utf-8', { fatal: true });
@@ -175,7 +175,9 @@ function clientBindings(context: Readonly<Record<string, unknown>>): readonly Cl
     }
   }
   return bindings.sort((left, right) =>
-    `${left.operationId}\0${left.path}`.localeCompare(`${right.operationId}\0${right.path}`),
+    `${left.operationId}\0${left.path}\0${left.contentHash}`.localeCompare(
+      `${right.operationId}\0${right.path}\0${right.contentHash}`,
+    ),
   );
 }
 
@@ -217,7 +219,11 @@ function sourceFingerprint(
           classification,
           state,
         }))
-        .sort((left, right) => left.path.localeCompare(right.path)),
+        .sort((left, right) =>
+          `${left.path}\0${left.contentHash}\0${left.classification}\0${left.state}`.localeCompare(
+            `${right.path}\0${right.contentHash}\0${right.classification}\0${right.state}`,
+          ),
+        ),
       serviceId: contextString(context, 'serviceId') ?? null,
       clientBindings: clientBindings(context),
     }),
@@ -265,6 +271,20 @@ function uniqueDefinitions(values: readonly ContractDefinition[]): {
   return { definitions: [...unique.values()], ambiguousKeys };
 }
 
+function resolvePathItem(
+  document: Readonly<Record<string, unknown>>,
+  value: unknown,
+): Readonly<Record<string, unknown>> | undefined {
+  let current = value;
+  const seen = new Set<string>();
+  while (isRecord(current) && typeof current.$ref === 'string') {
+    if (seen.has(current.$ref)) return undefined;
+    seen.add(current.$ref);
+    current = resolveLocalReference(document, current.$ref);
+  }
+  return isRecord(current) ? current : undefined;
+}
+
 function parseDocumentFact(artifact: ArtifactInput): OpenApiDocumentFact | null {
   if (artifact.classification === 'vendored' || artifact.classification === 'test') return null;
   let text: string;
@@ -273,7 +293,7 @@ function parseDocumentFact(artifact: ArtifactInput): OpenApiDocumentFact | null 
   } catch {
     return null;
   }
-  const probable = /(?:^|\n)\s*["']?openapi["']?\s*:/.test(text);
+  const probable = /(?:^|[\n{,])\s*["']?openapi["']?\s*:/.test(text);
   if (artifact.bytes.byteLength > manifest.resourceBudget.maximumInputBytes) {
     return probable
       ? {
@@ -289,10 +309,14 @@ function parseDocumentFact(artifact: ArtifactInput): OpenApiDocumentFact | null 
     const parsed = parseOpenApiDocument(text, manifest.resourceBudget.maximumItems);
     if (parsed === null) return null;
     const operations: OpenApiOperationFact[] = [];
+    let unresolvedPathItem = false;
     const paths = parsed.document.paths as Readonly<Record<string, unknown>>;
     for (const path of Object.keys(paths).sort()) {
-      const pathItem = paths[path];
-      if (!isRecord(pathItem)) continue;
+      const pathItem = resolvePathItem(parsed.document, paths[path]);
+      if (pathItem === undefined) {
+        unresolvedPathItem = true;
+        continue;
+      }
       for (const method of METHODS) {
         const operation = pathItem[method];
         if (!isRecord(operation)) continue;
@@ -314,7 +338,8 @@ function parseDocumentFact(artifact: ArtifactInput): OpenApiDocumentFact | null 
       classification: artifact.classification,
       operations,
       hasRemoteReferences: parsed.remoteReferences.length > 0,
-      hasUnresolvedLocalReferences: parsed.unresolvedLocalReferences.length > 0,
+      hasUnresolvedLocalReferences:
+        unresolvedPathItem || parsed.unresolvedLocalReferences.length > 0,
     };
   } catch {
     return probable

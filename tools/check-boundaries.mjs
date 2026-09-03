@@ -1,5 +1,5 @@
 import { readFile, readdir } from 'node:fs/promises';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 
 const domainRoot = fileURLToPath(new URL('../packages/domain/src/', import.meta.url));
@@ -96,7 +96,7 @@ for (const file of await walk(reasoningRoot)) {
 }
 
 for (const file of await walk(githubHostRoot)) {
-  if (file.endsWith('/check-writer.ts')) continue;
+  if (basename(file) === 'check-writer.ts') continue;
   const source = await readFile(file, 'utf8');
   for (const marker of ['@octokit/', 'GitHubChecksClient', 'withWriteToken', 'upsertCheck']) {
     if (source.includes(marker)) {

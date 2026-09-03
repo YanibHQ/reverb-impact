@@ -157,6 +157,7 @@ export function reconcileGitHubState(
 ): readonly ReconciliationAction[] {
   const actions: ReconciliationAction[] = [];
   const persistedByRepository = new Map(persisted.map((value) => [value.repositoryId, value]));
+  const providerRepositories = new Set(provider.map((value) => value.repositoryId));
   for (const current of provider) {
     const previous = persistedByRepository.get(current.repositoryId);
     if (!current.selected && previous?.selected) {
@@ -183,6 +184,11 @@ export function reconcileGitHubState(
           headSha: pullRequest.headSha,
         });
       }
+    }
+  }
+  for (const previous of persisted) {
+    if (previous.selected && !providerRepositories.has(previous.repositoryId)) {
+      actions.push({ kind: 'purge_repository', repositoryId: previous.repositoryId });
     }
   }
   return actions.sort((left, right) =>

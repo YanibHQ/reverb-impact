@@ -13,3 +13,4 @@ Accepted ADRs are immutable. A new ADR supersedes an old decision and links it e
 - [0006 — Index-first pull-request overlays](0006-index-first-pr-overlays.md)
 - [0007 — Repository-scoped TypeScript module contracts](0007-repository-scoped-typescript-modules.md)
 - [0008 — Additive v2 for bounded next-generation impact](0008-next-generation-impact-v2.md)
+- [0009 — Fail-closed audit boundaries](0009-fail-closed-audit-boundaries.md)

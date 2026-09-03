@@ -4,6 +4,8 @@ import { copyFile, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promi
 import { basename, resolve } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 
+import { pnpmExecFileSync } from './run-pnpm.mjs';
+
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const destination = resolve(root, 'artifacts/packages');
 const consumerDestination = resolve(root, 'artifacts/v0.4-host-consumer');
@@ -15,8 +17,7 @@ await rm(destination, { recursive: true, force: true });
 await rm(consumerDestination, { recursive: true, force: true });
 await mkdir(destination, { recursive: true });
 
-execFileSync(
-  'pnpm',
+pnpmExecFileSync(
   ['--recursive', '--filter', './packages/**', 'pack', '--pack-destination', destination],
   { cwd: root, stdio: 'inherit' },
 );
@@ -32,11 +33,11 @@ if (archives.length !== packageDirectories.length) {
 const checksums = [];
 const packedPackages = [];
 for (const archive of archives) {
-  const listing = execFileSync('tar', ['-tzf', resolve(destination, archive)], {
-    cwd: root,
+  const listing = execFileSync('tar', ['-tzf', archive], {
+    cwd: destination,
     encoding: 'utf8',
   });
-  const entries = listing.split('\n');
+  const entries = listing.split(/\r?\n/);
   if (entries.some((entry) => entry.endsWith('.tsbuildinfo'))) {
     throw new Error(`${archive} contains private compiler build metadata.`);
   }
@@ -44,8 +45,8 @@ for (const archive of archives) {
     if (!entries.includes(required)) throw new Error(`${archive} is missing ${required}.`);
   }
   const packedManifest = JSON.parse(
-    execFileSync('tar', ['-xOf', resolve(destination, archive), 'package/package.json'], {
-      cwd: root,
+    execFileSync('tar', ['-xOf', archive, 'package/package.json'], {
+      cwd: destination,
       encoding: 'utf8',
     }),
   );
@@ -139,12 +140,11 @@ await writeFile(
     2,
   )}\n`,
 );
-execFileSync(
-  'pnpm',
+pnpmExecFileSync(
   ['install', '--prefer-offline', '--ignore-scripts', '--ignore-workspace', '--no-frozen-lockfile'],
   { cwd: consumerDestination, stdio: 'inherit' },
 );
-execFileSync('pnpm', ['exec', 'tsc', '--pretty', 'false'], {
+pnpmExecFileSync(['exec', 'tsc', '--pretty', 'false'], {
   cwd: consumerDestination,
   stdio: 'inherit',
 });
@@ -156,7 +156,7 @@ execFileSync('node', ['import-roots.mjs'], {
   cwd: consumerDestination,
   stdio: 'inherit',
 });
-const cliVersion = execFileSync('pnpm', ['exec', 'reverb', '--version'], {
+const cliVersion = pnpmExecFileSync(['exec', 'reverb', '--version'], {
   cwd: consumerDestination,
   encoding: 'utf8',
 }).trim();

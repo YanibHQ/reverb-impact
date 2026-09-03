@@ -5,8 +5,15 @@ import {
   type ContractAdapter,
   type ContractReference,
 } from '@yanib/reverb-adapter-sdk';
-import { ADAPTER_TYPESCRIPT_PACKAGE_ID } from '@yanib/reverb-adapter-typescript';
-import { APPLICATION_PACKAGE_ID, AnalyzePullRequest } from '@yanib/reverb-application';
+import {
+  ADAPTER_TYPESCRIPT_PACKAGE_ID,
+  type ParsedTypeScriptModule,
+} from '@yanib/reverb-adapter-typescript';
+import {
+  APPLICATION_PACKAGE_ID,
+  AnalyzePullRequest,
+  type ArtifactCacheKey,
+} from '@yanib/reverb-application';
 import {
   DOMAIN_PACKAGE_ID,
   canonicalJson,
@@ -29,6 +36,12 @@ declare const reference: ContractReference;
 declare const adapter: ContractAdapter;
 declare const githubStore: GitHubHostedRuntimeStore;
 declare const conformance: CanonicalAnalysisHost;
+declare const v04ArtifactCacheKey: Omit<ArtifactCacheKey, 'contextHash'>;
+declare const v04ParsedTypeScriptModule: Omit<ParsedTypeScriptModule, 'unresolvedExports'>;
+
+// Additive v0.5 context must not make existing v0.4 host values unassignable.
+const compatibleArtifactCacheKey: ArtifactCacheKey = v04ArtifactCacheKey;
+const compatibleParsedTypeScriptModule: ParsedTypeScriptModule = v04ParsedTypeScriptModule;
 
 const schemaMajor: 1 = SCHEMA_MAJOR_VERSION;
 const serialized: string = canonicalJson(analysis);
@@ -60,4 +73,6 @@ void [
   adapter,
   githubStore,
   conformance,
+  compatibleArtifactCacheKey,
+  compatibleParsedTypeScriptModule,
 ];

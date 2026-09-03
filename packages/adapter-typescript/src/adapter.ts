@@ -88,6 +88,7 @@ interface TypeScriptPartitionPayload extends Readonly<Record<string, unknown>> {
     readonly symbols: ParsedTypeScriptModule['symbols'];
     readonly reExports: ParsedTypeScriptModule['reExports'];
     readonly imports: ParsedTypeScriptModule['imports'];
+    readonly unresolvedExports?: number;
   }[];
   readonly packageJson: readonly {
     readonly path: RepoPath;
@@ -394,7 +395,7 @@ function resolvePublicSymbols(
     if (module === undefined) return { symbols: [], unresolved: 1 };
     const nextSeen = new Set(seen).add(path);
     const symbols = [...module.symbols];
-    let unresolved = 0;
+    let unresolved = module.unresolvedExports ?? 0;
     for (const reExport of module.reExports) {
       const targetPath = resolveTypeScriptModule(path, reExport.source, available, configs);
       if (targetPath === undefined) {
@@ -678,7 +679,11 @@ function sourceFingerprint(
           contentHash: hash,
           classification,
         }))
-        .sort((left, right) => left.path.localeCompare(right.path)),
+        .sort((left, right) =>
+          `${left.path}\0${left.contentHash}\0${left.classification}`.localeCompare(
+            `${right.path}\0${right.contentHash}\0${right.classification}`,
+          ),
+        ),
       failures: [...state.failures.values()].sort((left, right) =>
         left.path.localeCompare(right.path),
       ),
@@ -908,6 +913,9 @@ function encodeState(state: TypeScriptSemanticState): TypeScriptPartitionPayload
         symbols: module.symbols,
         reExports: module.reExports,
         imports: module.imports,
+        ...(module.unresolvedExports === undefined || module.unresolvedExports === 0
+          ? {}
+          : { unresolvedExports: module.unresolvedExports }),
       }))
       .sort((left, right) => left.path.localeCompare(right.path)),
     packageJson: [...state.packageJson.entries()]
@@ -969,7 +977,11 @@ function decodeState(payload: Readonly<Record<string, unknown>>): TypeScriptSema
       typeof value.path === 'string' &&
         Array.isArray(value.symbols) &&
         Array.isArray(value.reExports) &&
-        Array.isArray(value.imports),
+        Array.isArray(value.imports) &&
+        (value.unresolvedExports === undefined ||
+          (typeof value.unresolvedExports === 'number' &&
+            Number.isSafeInteger(value.unresolvedExports) &&
+            value.unresolvedExports >= 0)),
       'TypeScript partition module fields are invalid.',
     );
     const path = repoPath(value.path);
@@ -982,6 +994,8 @@ function decodeState(payload: Readonly<Record<string, unknown>>): TypeScriptSema
       reExports: value.reExports as unknown as ParsedTypeScriptModule['reExports'],
       imports: value.imports as unknown as ParsedTypeScriptModule['imports'],
       parseErrors: 0,
+      unresolvedExports:
+        value.unresolvedExports === undefined ? 0 : Number(value.unresolvedExports),
     });
   }
   for (const value of payload.packageJson) {

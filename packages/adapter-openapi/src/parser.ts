@@ -14,18 +14,18 @@ function decodePointerSegment(value: string): string {
   return value.replace(/~1/g, '/').replace(/~0/g, '~');
 }
 
-function resolvesLocalReference(
+export function resolveLocalReference(
   document: Readonly<Record<string, unknown>>,
   reference: string,
-): boolean {
-  if (reference === '#') return true;
-  if (!reference.startsWith('#/')) return false;
+): unknown | undefined {
+  if (reference === '#') return document;
+  if (!reference.startsWith('#/')) return undefined;
   let current: unknown = document;
   for (const segment of reference.slice(2).split('/').map(decodePointerSegment)) {
-    if (!record(current) || !Object.hasOwn(current, segment)) return false;
+    if (!record(current) || !Object.hasOwn(current, segment)) return undefined;
     current = current[segment];
   }
-  return true;
+  return current;
 }
 
 function inspectReferences(
@@ -50,7 +50,7 @@ function inspectReferences(
     const object = current as Readonly<Record<string, unknown>>;
     if (typeof object.$ref === 'string') {
       if (object.$ref.startsWith('#')) {
-        if (!resolvesLocalReference(document, object.$ref)) unresolved.add(object.$ref);
+        if (resolveLocalReference(document, object.$ref) === undefined) unresolved.add(object.$ref);
       } else {
         remote.add(object.$ref);
       }

@@ -116,6 +116,34 @@ function replace(
 }
 
 describe('TypeScript incremental package partitions', () => {
+  it('preserves unresolved local-export coverage through partition persistence', async () => {
+    const artifacts = [
+      artifact('package.json', JSON.stringify({ name: '@acme/pets', exports: './dist/index.js' })),
+      artifact('src/index.ts', 'export { missing };'),
+    ];
+    const built = await typeScriptAdapter.buildPartitions({
+      artifacts,
+      configRevision: revision,
+      context,
+    });
+    const materialized = await typeScriptAdapter.materializePartitions({
+      partitions: built.partitions.map(view),
+      configRevision: revision,
+      context,
+    });
+    const clean = await typeScriptAdapter.extract({
+      artifacts,
+      configRevision: revision,
+      context,
+    });
+
+    expect(canonicalJson(materialized)).toBe(canonicalJson(clean));
+    expect(materialized.coverage).toMatchObject({
+      state: 'partial',
+      limitations: expect.arrayContaining([{ code: 'unresolved_public_export' }]),
+    });
+  });
+
   it('matches a clean extraction after a public API edit', async () => {
     const base = fixture();
     const changed = artifact(
