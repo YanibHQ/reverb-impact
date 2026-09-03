@@ -15,6 +15,7 @@ must not import storage internals or another host's implementation.
 | `@yanib/reverb-adapter-http`           | implicit framework route and HTTP client-call evidence                |
 | `@yanib/reverb-adapter-config`         | configuration, feature-flag, and hashed secret-reference evidence     |
 | `@yanib/reverb-adapter-infrastructure` | static Kubernetes, Helm, and Terraform deployment-wiring evidence     |
+| `@yanib/reverb-reasoning`              | bounded retrieval, neutral provider protocol, and citation validation |
 | `@yanib/reverb-adapter-typescript`     | TypeScript/npm extraction and compatibility adapter                   |
 | `@yanib/reverb-adapter-openapi`        | OpenAPI operation extraction and compatibility adapter                |
 | `@yanib/reverb-adapter-protobuf`       | Protobuf/gRPC extraction and compatibility adapter                    |
@@ -85,6 +86,32 @@ The additive v2 adapter protocol uses `ContractKindV2`, `AdapterManifestV2`, and
 Its canonical wire envelopes are published independently as the v2 adapter manifest, extraction,
 and diff JSON Schemas, so a host can reject unknown fields and invalid protocol/version stamps
 before persisting adapter output.
+
+## Optional reasoning
+
+`@yanib/reverb-reasoning` implements `ReasoningAnalysisPortV2` without importing a model SDK,
+network client, credential, storage adapter, or host package. `ReasoningEngineV1` accepts host-owned
+consent, retrieval, provider, clock, and closed telemetry ports. `AnalyzePullRequestV2` invokes it
+only when the request explicitly enables reasoning and the host supplies the port; omission of
+either condition preserves the deterministic v2 result.
+
+The engine plans exact evidence handles from changed definitions and deterministic graph neighbors,
+checks separate reasoning consent for every repository, performs one bounded retrieval batch,
+removes comments and recognizable secret assignments, and sends only minimized excerpts. Provider
+responses use the closed reasoning-response 1.0 schema. Candidates cannot carry prose or tool
+requests and become `ai_inferred`/`needs_investigation` hypotheses only when exact producer and
+consumer citation IDs resolve to the supplied context. Severity and evidence confidence remain
+separate fields; low confidence receives the `weak_evidence` limitation.
+
+`ReasoningRunV2` retains provider/model/template/policy/retrieval versions, affirmative or denied
+consent decision hashes, input/output hashes, exact citation locations and content hashes, budgets,
+and closed limitations. It does not retain excerpts, prompts, responses, credentials, or secret
+values. A reasoning budget or hypothesis cannot be persisted without its canonical run. Purging a
+run removes its citations, hypotheses, and provider-output hash and atomically removes copied
+reasoning data from the analysis result while preserving deterministic findings.
+
+Hosts implementing `ReasoningPortV1`, `ReasoningRetrievalPortV1`, or `ReasoningConsentPortV1` must
+follow the [provider integration contract](../extensions/reasoning-provider.md).
 `@yanib/reverb-adapter-events` emits `event.destination` and `event.payload_schema` evidence for
 bounded manifests and supported literal Kafka, SQS/SNS, and Pub/Sub calls. Dynamic destinations are
 hashed and reported as partial unresolved evidence. V2 materialization and joining bind every edge

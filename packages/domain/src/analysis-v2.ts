@@ -6,16 +6,9 @@ import type { AnalysisResult } from './finding.js';
 import type { FindingOccurrence } from './finding.js';
 import type { DeterministicFindingV2 } from './evidence-v2.js';
 import { finalizeExecutionBudgetReportV2, type ExecutionBudgetReportV2 } from './execution-v2.js';
+import { finalizeReasoningHypothesisV2, type ReasoningHypothesisV2 } from './reasoning-v2.js';
 import { contentHash } from './values.js';
 import type { ContentHash } from './values.js';
-
-export interface ReasoningHypothesisV2 {
-  readonly evidenceBasis: 'ai_inferred';
-  readonly disposition: 'needs_investigation' | 'withheld';
-  readonly producerCitationIds: readonly string[];
-  readonly consumerCitationIds: readonly string[];
-  readonly limitations: readonly string[];
-}
 
 export interface AnalysisResultV2 {
   readonly schema: 'reverb.analysis-result';
@@ -117,7 +110,28 @@ export function finalizeAnalysisResultV2(
     executionBudgets: [...input.executionBudgets].sort((left, right) =>
       left.lane.localeCompare(right.lane),
     ),
-    reasoningHypotheses: [...input.reasoningHypotheses],
+    reasoningHypotheses: input.reasoningHypotheses
+      .map(finalizeReasoningHypothesisV2)
+      .sort((left, right) => hashCanonical(left).localeCompare(hashCanonical(right))),
   };
   return { ...canonical, outputHash: contentHash(hashCanonical(canonical)) };
+}
+
+export function removeReasoningFromAnalysisResultV2(result: AnalysisResultV2): AnalysisResultV2 {
+  const executionBudgets = result.executionBudgets.filter((budget) => budget.lane !== 'reasoning');
+  const incomplete =
+    (result.legacyResult.state !== 'complete' && result.legacyResult.state !== 'superseded') ||
+    result.coverage.state === 'partial' ||
+    result.scope.gaps.length > 0 ||
+    executionBudgets.some((budget) => budget.exhaustedDimensions.length > 0);
+  const state =
+    result.legacyResult.state === 'superseded' ? 'superseded' : incomplete ? 'partial' : 'complete';
+  const { outputHash: _outputHash, ...input } = result;
+  void _outputHash;
+  return finalizeAnalysisResultV2({
+    ...input,
+    state,
+    executionBudgets,
+    reasoningHypotheses: [],
+  });
 }

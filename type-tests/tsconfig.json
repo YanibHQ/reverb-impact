@@ -15,6 +15,7 @@
       "@yanib/reverb-domain": ["packages/domain/src/index.ts"],
       "@yanib/reverb-host-github": ["packages/host-github/src/index.ts"],
       "@yanib/reverb-host-local": ["packages/host-local/src/index.ts"],
+      "@yanib/reverb-reasoning": ["packages/reasoning/src/index.ts"],
       "@yanib/reverb-schema": ["packages/schema/src/index.ts"],
       "@yanib/reverb-storage-postgres": ["packages/storage-postgres/src/index.ts"],
       "@yanib/reverb-storage-sqlite": ["packages/storage-sqlite/src/index.ts"],

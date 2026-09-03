@@ -17,7 +17,9 @@ pnpm --filter reverb-impact exec reverb init /path/to/workspace
 
 Local SQLite is single-workspace by default. Back up `.reverb/reverb.sqlite`, the registry/config,
 and any explicitly enabled object cache as one consistent set. Stop writers or use the host's
-consistent backup mechanism first.
+consistent backup mechanism first. If optional reasoning is enabled, the SQLite file includes
+redacted run provenance and exact citation metadata but not source excerpts or raw model payloads;
+backup expiry must follow the host's declared reasoning-retention policy.
 
 ## Hosted profile
 

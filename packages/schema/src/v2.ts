@@ -31,6 +31,30 @@ const adapterFamiliesV2 = [
   'configuration',
   'infrastructure',
 ] as const;
+const reasoningHypothesisLimitationsV2 = [
+  'ambiguous_dependency',
+  'dynamic_resolution',
+  'insufficient_context',
+  'weak_evidence',
+] as const;
+const reasoningRunLimitationsV2 = [
+  'reasoning_budget_exhausted',
+  'reasoning_circuit_open',
+  'reasoning_citation_invalid',
+  'reasoning_consent_denied',
+  'reasoning_consent_failed',
+  'reasoning_consent_timeout',
+  'reasoning_data_deleted',
+  'reasoning_provider_failed',
+  'reasoning_provider_refused',
+  'reasoning_provider_timeout',
+  'reasoning_response_malformed',
+  'reasoning_retrieval_failed',
+  'reasoning_retrieval_invalid',
+  'reasoning_retrieval_timeout',
+  'reasoning_seed_evidence_missing',
+  'reasoning_two_sided_context_missing',
+] as const;
 
 const sourceRangeV2 = {
   type: 'object',
@@ -499,6 +523,8 @@ const reasoningHypothesis = {
   required: [
     'evidence_basis',
     'disposition',
+    'severity',
+    'confidence',
     'producer_citation_ids',
     'consumer_citation_ids',
     'limitations',
@@ -506,9 +532,143 @@ const reasoningHypothesis = {
   properties: {
     evidence_basis: { const: 'ai_inferred' },
     disposition: { enum: ['needs_investigation', 'withheld'] },
-    producer_citation_ids: { type: 'array', items: { type: 'string', minLength: 1 } },
-    consumer_citation_ids: { type: 'array', items: { type: 'string', minLength: 1 } },
-    limitations: { type: 'array', items: { type: 'string', minLength: 1 } },
+    severity: { enum: ['low', 'medium', 'high', 'critical'] },
+    confidence: { enum: ['low', 'medium', 'high'] },
+    producer_citation_ids: {
+      type: 'array',
+      uniqueItems: true,
+      items: { type: 'string', pattern: '^cit_sha256:[0-9a-f]{64}$' },
+    },
+    consumer_citation_ids: {
+      type: 'array',
+      uniqueItems: true,
+      items: { type: 'string', pattern: '^cit_sha256:[0-9a-f]{64}$' },
+    },
+    limitations: {
+      type: 'array',
+      uniqueItems: true,
+      items: { enum: reasoningHypothesisLimitationsV2 },
+    },
+  },
+} as const satisfies JsonSchema;
+
+const reasoningCitationV1 = {
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'citation_id',
+    'origin',
+    'side',
+    'workspace_id',
+    'repository_id',
+    'generation_id',
+    'commit_sha',
+    'path',
+    'range',
+    'content_hash',
+    'excerpt',
+    'excerpt_hash',
+  ],
+  properties: {
+    citation_id: { type: 'string', pattern: '^cit_sha256:[0-9a-f]{64}$' },
+    origin: { enum: ['changed_definition', 'deterministic_neighbor'] },
+    side: { enum: ['producer', 'consumer'] },
+    workspace_id: { type: 'string', pattern: `^wsp_${uuidV7Pattern}$` },
+    repository_id: { type: 'string', pattern: repoPattern },
+    generation_id: { type: 'string', pattern: `^gen_${uuidV7Pattern}$` },
+    commit_sha: { type: 'string', pattern: '^(?:[0-9a-f]{40}|[0-9a-f]{64})$' },
+    path: { type: 'string', minLength: 1, maxLength: 4096 },
+    range: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['start_line', 'start_column', 'end_line', 'end_column'],
+      properties: {
+        start_line: { type: 'integer', minimum: 1 },
+        start_column: { type: 'integer', minimum: 1 },
+        end_line: { type: 'integer', minimum: 1 },
+        end_column: { type: 'integer', minimum: 1 },
+      },
+    },
+    content_hash: { type: 'string', pattern: hashPattern },
+    excerpt: { type: 'string', maxLength: 65536 },
+    excerpt_hash: { type: 'string', pattern: hashPattern },
+  },
+} as const satisfies JsonSchema;
+
+export const reasoningRequestV1Schema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  $id: 'https://schemas.yanibhq.dev/reverb/reasoning-request/v1.json',
+  title: 'Reverb provider-neutral structured reasoning request',
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'schema',
+    'schema_version',
+    'template_version',
+    'reasoning_policy_version',
+    'retrieval_version',
+    'evidence',
+    'maximum_candidates',
+    'maximum_output_tokens',
+    'input_hash',
+  ],
+  properties: {
+    schema: { const: 'reverb.reasoning-request' },
+    schema_version: { const: '1.0' },
+    template_version: { type: 'string', minLength: 1, maxLength: 256 },
+    reasoning_policy_version: { type: 'string', minLength: 1, maxLength: 256 },
+    retrieval_version: { type: 'string', minLength: 1, maxLength: 256 },
+    evidence: { type: 'array', maxItems: 1000, items: reasoningCitationV1 },
+    maximum_candidates: { type: 'integer', minimum: 0, maximum: 1000 },
+    maximum_output_tokens: { type: 'integer', minimum: 0 },
+    input_hash: { type: 'string', pattern: hashPattern },
+  },
+} as const satisfies JsonSchema;
+
+const reasoningCandidateV1 = {
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'severity',
+    'confidence',
+    'producer_citation_ids',
+    'consumer_citation_ids',
+    'limitations',
+  ],
+  properties: {
+    severity: { enum: ['low', 'medium', 'high', 'critical'] },
+    confidence: { enum: ['low', 'medium', 'high'] },
+    producer_citation_ids: {
+      type: 'array',
+      uniqueItems: true,
+      items: { type: 'string', pattern: '^cit_sha256:[0-9a-f]{64}$' },
+    },
+    consumer_citation_ids: {
+      type: 'array',
+      uniqueItems: true,
+      items: { type: 'string', pattern: '^cit_sha256:[0-9a-f]{64}$' },
+    },
+    limitations: {
+      type: 'array',
+      uniqueItems: true,
+      items: { enum: reasoningHypothesisLimitationsV2 },
+    },
+  },
+} as const satisfies JsonSchema;
+
+export const reasoningResponseV1Schema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  $id: 'https://schemas.yanibhq.dev/reverb/reasoning-response/v1.json',
+  title: 'Reverb provider-neutral structured reasoning response',
+  type: 'object',
+  additionalProperties: false,
+  required: ['schema', 'schema_version', 'state', 'candidates', 'model_tokens'],
+  properties: {
+    schema: { const: 'reverb.reasoning-response' },
+    schema_version: { const: '1.0' },
+    state: { enum: ['complete', 'refused'] },
+    candidates: { type: 'array', maxItems: 1000, items: reasoningCandidateV1 },
+    model_tokens: { type: 'integer', minimum: 0 },
   },
 } as const satisfies JsonSchema;
 
@@ -707,6 +867,134 @@ export const executionBudgetV2Schema = {
   },
 } as const satisfies JsonSchema;
 
+const reasoningStoredCitationV2 = {
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'citation_id',
+    'origin',
+    'side',
+    'workspace_id',
+    'repository_id',
+    'generation_id',
+    'commit_sha',
+    'path',
+    'range',
+    'content_hash',
+    'excerpt_hash',
+  ],
+  properties: {
+    citation_id: { type: 'string', pattern: '^cit_sha256:[0-9a-f]{64}$' },
+    origin: { enum: ['changed_definition', 'deterministic_neighbor'] },
+    side: { enum: ['producer', 'consumer'] },
+    workspace_id: { type: 'string', pattern: `^wsp_${uuidV7Pattern}$` },
+    repository_id: { type: 'string', pattern: repoPattern },
+    generation_id: { type: 'string', pattern: `^gen_${uuidV7Pattern}$` },
+    commit_sha: { type: 'string', pattern: '^(?:[0-9a-f]{40}|[0-9a-f]{64})$' },
+    path: { type: 'string', minLength: 1, maxLength: 4096 },
+    range: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['start_line', 'start_column', 'end_line', 'end_column'],
+      properties: {
+        start_line: { type: 'integer', minimum: 1 },
+        start_column: { type: 'integer', minimum: 1 },
+        end_line: { type: 'integer', minimum: 1 },
+        end_column: { type: 'integer', minimum: 1 },
+      },
+    },
+    content_hash: { type: 'string', pattern: hashPattern },
+    excerpt_hash: { type: 'string', pattern: hashPattern },
+  },
+} as const satisfies JsonSchema;
+
+const reasoningConsentDecisionV2 = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['repository_id', 'allowed', 'revision', 'decision_hash'],
+  properties: {
+    repository_id: { type: 'string', pattern: repoPattern },
+    allowed: { type: 'boolean' },
+    revision: { type: 'string', minLength: 1, maxLength: 256 },
+    decision_hash: { type: 'string', pattern: hashPattern },
+  },
+} as const satisfies JsonSchema;
+
+export const reasoningRunV2Schema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  $id: 'https://schemas.yanibhq.dev/reverb/reasoning-run/v2.json',
+  title: 'Reverb redacted reasoning run provenance',
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'schema',
+    'schema_version',
+    'id',
+    'workspace_id',
+    'analysis_id',
+    'scope_hash',
+    'state',
+    'provider',
+    'template_version',
+    'reasoning_policy_version',
+    'retrieval_version',
+    'input_hash',
+    'execution_budget',
+    'consent_decisions',
+    'citations',
+    'hypotheses',
+    'limitations',
+    'created_at',
+    'output_hash',
+  ],
+  properties: {
+    schema: { const: 'reverb.reasoning-run' },
+    schema_version: { const: '2.0' },
+    id: { type: 'string', pattern: '^rrn_sha256:[0-9a-f]{64}$' },
+    workspace_id: { type: 'string', pattern: `^wsp_${uuidV7Pattern}$` },
+    analysis_id: { type: 'string', pattern: `^ana_${uuidV7Pattern}$` },
+    scope_hash: { type: 'string', pattern: hashPattern },
+    state: { enum: ['complete', 'partial', 'failed', 'deleted'] },
+    provider: {
+      type: 'object',
+      additionalProperties: false,
+      required: [
+        'provider_id',
+        'provider_version',
+        'model_id',
+        'model_version',
+        'data_region',
+        'retention_mode',
+      ],
+      properties: {
+        provider_id: { type: 'string', minLength: 1, maxLength: 256 },
+        provider_version: { type: 'string', minLength: 1, maxLength: 256 },
+        model_id: { type: 'string', minLength: 1, maxLength: 256 },
+        model_version: { type: 'string', minLength: 1, maxLength: 256 },
+        data_region: { type: 'string', minLength: 1, maxLength: 256 },
+        retention_mode: { enum: ['none', 'provider_managed', 'host_managed'] },
+      },
+    },
+    template_version: { type: 'string', minLength: 1, maxLength: 256 },
+    reasoning_policy_version: { type: 'string', minLength: 1, maxLength: 256 },
+    retrieval_version: { type: 'string', minLength: 1, maxLength: 256 },
+    input_hash: { type: 'string', pattern: hashPattern },
+    provider_output_hash: { type: 'string', pattern: hashPattern },
+    execution_budget: executionBudgetV2Schema,
+    consent_decisions: {
+      type: 'array',
+      maxItems: 1000,
+      items: reasoningConsentDecisionV2,
+    },
+    citations: { type: 'array', maxItems: 1000, items: reasoningStoredCitationV2 },
+    hypotheses: { type: 'array', maxItems: 1000, items: reasoningHypothesis },
+    limitations: { type: 'array', uniqueItems: true, items: { enum: reasoningRunLimitationsV2 } },
+    created_at: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}T.*Z$' },
+    deleted_at: { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}T.*Z$' },
+    output_hash: { type: 'string', pattern: hashPattern },
+  },
+} as const satisfies JsonSchema;
+
 export const analysisResultV2Schema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   $id: 'https://schemas.yanibhq.dev/reverb/analysis-result/v2.json',
@@ -746,5 +1034,8 @@ export const V2_SCHEMAS = Object.freeze([
   { file: 'reverb-analysis-scope-v2.schema.json', schema: analysisScopeV2Schema },
   { file: 'reverb-analysis-coverage-v2.schema.json', schema: analysisCoverageV2Schema },
   { file: 'reverb-execution-budget-v2.schema.json', schema: executionBudgetV2Schema },
+  { file: 'reverb-reasoning-request-v1.schema.json', schema: reasoningRequestV1Schema },
+  { file: 'reverb-reasoning-response-v1.schema.json', schema: reasoningResponseV1Schema },
+  { file: 'reverb-reasoning-run-v2.schema.json', schema: reasoningRunV2Schema },
   { file: 'reverb-analysis-result-v2.schema.json', schema: analysisResultV2Schema },
 ]);

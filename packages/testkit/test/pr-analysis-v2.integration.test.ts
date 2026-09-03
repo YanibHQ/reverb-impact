@@ -20,6 +20,7 @@ import {
   workspaceId,
 } from '@yanib/reverb-domain';
 import { AnalyzePullRequest, AnalyzePullRequestV2, portSuccess } from '@yanib/reverb-application';
+import type { ReasoningAnalysisOutcomeV2 } from '@yanib/reverb-application';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -229,6 +230,147 @@ describe('AnalyzePullRequestV2 bounded scope', () => {
       expect(canonicalJson(v2.value.legacyResult)).toBe(canonicalJson(legacy.value));
       expect(v2.value.deterministicFindings).toEqual(legacy.value.findings);
     }
+  });
+
+  it('keeps deterministic output identical when optional reasoning throws', async () => {
+    const baselineDependencies = await fixture();
+    const failureDependencies = await fixture();
+    allow(baselineDependencies.authorization, [producer]);
+    allow(failureDependencies.authorization, [producer]);
+    const request = {
+      ...input('ana_01990f64-0000-7000-8000-000000000510'),
+      consumerScope: { mode: 'allowlist' as const, repositoryIds: [] },
+    };
+    const baseline = await new AnalyzePullRequestV2({
+      ...baselineDependencies,
+      clock: new FakeClock(now),
+    }).execute(request);
+    const reason = vi.fn(async () => {
+      throw new Error('provider failure canary');
+    });
+    const failed = await new AnalyzePullRequestV2({
+      ...failureDependencies,
+      reasoning: { analyze: reason },
+      clock: new FakeClock(now),
+    }).execute({
+      ...request,
+      reasoning: {
+        enabled: true,
+        executionBudget: {
+          providerRequests: 1,
+          sourceBytes: 1024,
+          storageQueries: 3,
+          artifacts: 2,
+          modelTokens: 100,
+          latencyMs: 100,
+        },
+      },
+    });
+    expect(reason).toHaveBeenCalledOnce();
+    expect(baseline.ok).toBe(true);
+    expect(failed.ok).toBe(true);
+    if (baseline.ok && failed.ok) {
+      expect(canonicalJson(failed.value.legacyResult)).toBe(
+        canonicalJson(baseline.value.legacyResult),
+      );
+      expect(canonicalJson(failed.value.deterministicFindings)).toBe(
+        canonicalJson(baseline.value.deterministicFindings),
+      );
+      expect(failed.value.reasoningHypotheses).toEqual([]);
+      expect(failed.value.executionBudgets).toHaveLength(1);
+    }
+  });
+
+  it('keeps deterministic output identical when reasoning is requested without a provider', async () => {
+    const baselineDependencies = await fixture();
+    const noProviderDependencies = await fixture();
+    allow(baselineDependencies.authorization, [producer]);
+    allow(noProviderDependencies.authorization, [producer]);
+    const request = {
+      ...input('ana_01990f64-0000-7000-8000-000000000511'),
+      consumerScope: { mode: 'allowlist' as const, repositoryIds: [] },
+    };
+    const baseline = await new AnalyzePullRequestV2({
+      ...baselineDependencies,
+      clock: new FakeClock(now),
+    }).execute(request);
+    const withoutProvider = await new AnalyzePullRequestV2({
+      ...noProviderDependencies,
+      clock: new FakeClock(now),
+    }).execute({
+      ...request,
+      reasoning: {
+        enabled: true,
+        executionBudget: {
+          providerRequests: 1,
+          sourceBytes: 1024,
+          storageQueries: 3,
+          artifacts: 2,
+          modelTokens: 100,
+          latencyMs: 100,
+        },
+      },
+    });
+    expect(baseline.ok).toBe(true);
+    expect(withoutProvider.ok).toBe(true);
+    if (baseline.ok && withoutProvider.ok) {
+      expect(canonicalJson(withoutProvider.value)).toBe(canonicalJson(baseline.value));
+    }
+  });
+
+  it('ignores non-canonical reasoning adapter output instead of failing deterministic analysis', async () => {
+    const baselineDependencies = await fixture();
+    const malformedDependencies = await fixture();
+    allow(baselineDependencies.authorization, [producer]);
+    allow(malformedDependencies.authorization, [producer]);
+    const request = {
+      ...input('ana_01990f64-0000-7000-8000-000000000512'),
+      consumerScope: { mode: 'allowlist' as const, repositoryIds: [] },
+    };
+    const baseline = await new AnalyzePullRequestV2({
+      ...baselineDependencies,
+      clock: new FakeClock(now),
+    }).execute(request);
+    const malformed = await new AnalyzePullRequestV2({
+      ...malformedDependencies,
+      reasoning: {
+        analyze: async (reasoningInput) => {
+          const forgedBudget = { lane: 'reasoning' };
+          return portSuccess({
+            run: {
+              workspaceId: reasoningInput.scope.workspaceId,
+              analysisId: reasoningInput.analysisId,
+              scopeHash: reasoningInput.scope.scopeHash,
+              state: 'partial',
+              consentDecisions: [],
+              citations: [],
+              hypotheses: [],
+              executionBudget: forgedBudget,
+            },
+            hypotheses: [],
+            executionBudget: forgedBudget,
+          } as unknown as ReasoningAnalysisOutcomeV2);
+        },
+      },
+      clock: new FakeClock(now),
+    }).execute({
+      ...request,
+      reasoning: {
+        enabled: true,
+        executionBudget: {
+          providerRequests: 1,
+          sourceBytes: 1024,
+          storageQueries: 3,
+          artifacts: 2,
+          modelTokens: 100,
+          latencyMs: 100,
+        },
+      },
+    });
+    expect(baseline.ok).toBe(true);
+    expect(malformed.ok).toBe(true);
+    if (baseline.ok && malformed.ok)
+      expect(canonicalJson(malformed.value)).toBe(canonicalJson(baseline.value));
   });
 
   it('treats an empty allowlist as exact-head producer-only analysis', async () => {

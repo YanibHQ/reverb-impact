@@ -26,6 +26,7 @@ export type EvidenceEdgeId = Brand<string, 'EvidenceEdgeId'>;
 export type FindingFingerprint = Brand<string, 'FindingFingerprint'>;
 export type FindingOccurrenceId = Brand<string, 'FindingOccurrenceId'>;
 export type StableReferenceId = Brand<string, 'StableReferenceId'>;
+export type ReasoningRunId = Brand<string, 'ReasoningRunId'>;
 export type RepoPath = Brand<string, 'RepoPath'>;
 export type Instant = Brand<string, 'Instant'>;
 
@@ -47,7 +48,7 @@ const HASH = /^sha256:[0-9a-f]{64}$/;
 const GIT_SHA = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
 const REPOSITORY_ID = /^(?:github:[1-9][0-9]*|local:sha256:[0-9a-f]{64})$/;
 const ADAPTER_ID = /^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)+$/;
-const PREFIXED_HASH = /^(?:pol|edg|fnd|occ|ref|sup|cas|pro)_sha256:[0-9a-f]{64}$/;
+const PREFIXED_HASH = /^(?:pol|edg|fnd|occ|ref|sup|cas|pro|rrn)_sha256:[0-9a-f]{64}$/;
 
 function prefixedUuid<Name extends string>(
   value: string,
@@ -127,6 +128,10 @@ export function findingOccurrenceId(value: string): FindingOccurrenceId {
 
 export function stableReferenceId(value: string): StableReferenceId {
   return prefixedHash(value, 'ref', 'StableReferenceId');
+}
+
+export function reasoningRunId(value: string): ReasoningRunId {
+  return prefixedHash(value, 'rrn', 'ReasoningRunId');
 }
 
 export function suppressionRuleId(value: string): SuppressionRuleId {

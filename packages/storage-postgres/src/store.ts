@@ -1,13 +1,25 @@
-import { hashCanonical } from '@yanib/reverb-domain';
+import {
+  assertReasoningRunScope,
+  canonicalJson,
+  finalizeReasoningRunV2,
+  hashCanonical,
+  removeReasoningFromAnalysisResultV2,
+} from '@yanib/reverb-domain';
 import type {
   AnalysisId,
   AnalysisResultV2,
   ContentHash,
   Instant,
+  ReasoningRunId,
+  ReasoningRunV2,
   WorkspaceId,
 } from '@yanib/reverb-domain';
 import { portFailure, portSuccess } from '@yanib/reverb-application';
-import type { AnalysisResultStoreV2, PortResult } from '@yanib/reverb-application';
+import type {
+  AnalysisResultStoreV2,
+  PortResult,
+  ReasoningRunStoreV2,
+} from '@yanib/reverb-application';
 import { Pool } from 'pg';
 import type { PoolClient, PoolConfig, QueryResultRow } from 'pg';
 
@@ -120,7 +132,7 @@ function jsonRecord(value: unknown): Readonly<Record<string, unknown>> {
   throw new Error('Postgres returned a non-object JSON value.');
 }
 
-export class PostgresHostedStore implements AnalysisResultStoreV2 {
+export class PostgresHostedStore implements AnalysisResultStoreV2, ReasoningRunStoreV2 {
   readonly #pool: Pool;
   readonly #ownsPool: boolean;
 
@@ -246,8 +258,22 @@ export class PostgresHostedStore implements AnalysisResultStoreV2 {
     });
   }
 
-  public async persistAnalysisV2(result: AnalysisResultV2): Promise<PortResult<void>> {
+  public async persistAnalysisV2(
+    result: AnalysisResultV2,
+    reasoningRun?: ReasoningRunV2,
+  ): Promise<PortResult<void>> {
     const workspace = result.legacyResult.workspaceId;
+    const hasReasoningData =
+      result.reasoningHypotheses.length > 0 ||
+      result.executionBudgets.some((budget) => budget.lane === 'reasoning');
+    if (hasReasoningData !== (reasoningRun !== undefined) || reasoningRun?.state === 'deleted') {
+      return portFailure({
+        kind: 'domain',
+        code: 'reasoning_run_provenance_mismatch',
+        safeMessage: 'Reasoning analysis data requires its active provenance run.',
+        retryable: false,
+      });
+    }
     if (
       result.scope.workspaceId !== workspace ||
       result.coverage.workspaceId !== workspace ||
@@ -260,6 +286,36 @@ export class PostgresHostedStore implements AnalysisResultStoreV2 {
         safeMessage: 'A v2 analysis result has inconsistent scope or coverage provenance.',
         retryable: false,
       });
+    }
+    if (reasoningRun !== undefined) {
+      try {
+        assertReasoningRunScope(reasoningRun, result.scope);
+        const { outputHash: _outputHash, ...reasoningInput } = reasoningRun;
+        void _outputHash;
+        if (
+          reasoningRun.workspaceId !== workspace ||
+          reasoningRun.analysisId !== result.legacyResult.analysisId ||
+          reasoningRun.scopeHash !== result.scope.scopeHash ||
+          canonicalJson(reasoningRun.hypotheses) !== canonicalJson(result.reasoningHypotheses) ||
+          !result.executionBudgets.some(
+            (budget) => canonicalJson(budget) === canonicalJson(reasoningRun.executionBudget),
+          ) ||
+          canonicalJson(finalizeReasoningRunV2(reasoningInput)) !== canonicalJson(reasoningRun)
+        )
+          return portFailure({
+            kind: 'domain',
+            code: 'reasoning_run_provenance_mismatch',
+            safeMessage: 'A reasoning run has inconsistent or non-canonical provenance.',
+            retryable: false,
+          });
+      } catch {
+        return portFailure({
+          kind: 'domain',
+          code: 'reasoning_run_provenance_mismatch',
+          safeMessage: 'A reasoning run has inconsistent or non-canonical provenance.',
+          retryable: false,
+        });
+      }
     }
     try {
       return await this.#workspace(workspace, async (client) => {
@@ -314,20 +370,60 @@ export class PostgresHostedStore implements AnalysisResultStoreV2 {
             result.legacyResult.completedAt,
           ],
         );
-        if (inserted.rowCount === 1) return portSuccess(undefined);
-        const existing = await client.query<{ output_hash: ContentHash }>(
-          `SELECT output_hash FROM reverb_analysis_results_v2
-           WHERE workspace_id = $1 AND analysis_id = $2`,
-          [workspace, result.legacyResult.analysisId],
-        );
-        return existing.rows[0]?.output_hash === result.outputHash
-          ? portSuccess(undefined)
-          : portFailure({
+        if (inserted.rowCount !== 1) {
+          const existing = await client.query<{ output_hash: ContentHash }>(
+            `SELECT output_hash FROM reverb_analysis_results_v2
+             WHERE workspace_id = $1 AND analysis_id = $2`,
+            [workspace, result.legacyResult.analysisId],
+          );
+          if (existing.rows[0]?.output_hash !== result.outputHash)
+            return portFailure({
               kind: 'conflict',
               code: 'immutable_analysis_v2_conflict',
               safeMessage: 'A v2 analysis result is immutable for its analysis ID.',
               retryable: false,
             });
+        }
+        if (reasoningRun !== undefined) {
+          const insertedRun = await client.query(
+            `INSERT INTO reverb_reasoning_runs_v2(
+               workspace_id, reasoning_run_id, analysis_id, scope_hash, state,
+               input_hash, output_hash, payload, created_at, deleted_at
+             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10)
+             ON CONFLICT (workspace_id, reasoning_run_id) DO NOTHING`,
+            [
+              workspace,
+              reasoningRun.id,
+              reasoningRun.analysisId,
+              reasoningRun.scopeHash,
+              reasoningRun.state,
+              reasoningRun.inputHash,
+              reasoningRun.providerOutputHash ?? null,
+              JSON.stringify(reasoningRun),
+              reasoningRun.createdAt,
+              reasoningRun.deletedAt ?? null,
+            ],
+          );
+          if (insertedRun.rowCount !== 1) {
+            const existingRun = await client.query<{ payload: unknown }>(
+              `SELECT payload FROM reverb_reasoning_runs_v2
+               WHERE workspace_id = $1 AND reasoning_run_id = $2`,
+              [workspace, reasoningRun.id],
+            );
+            const existingPayload = existingRun.rows[0]?.payload;
+            if (
+              existingPayload === undefined ||
+              jsonRecord(existingPayload).outputHash !== reasoningRun.outputHash
+            )
+              return portFailure({
+                kind: 'conflict',
+                code: 'immutable_reasoning_run_conflict',
+                safeMessage: 'A reasoning run is immutable for its reasoning run ID.',
+                retryable: false,
+              });
+          }
+        }
+        return portSuccess(undefined);
       });
     } catch {
       return portFailure({
@@ -360,6 +456,111 @@ export class PostgresHostedStore implements AnalysisResultStoreV2 {
         kind: 'infrastructure',
         code: 'postgres_analysis_v2_read_failed',
         safeMessage: 'PostgreSQL could not read the v2 analysis result.',
+        retryable: true,
+      });
+    }
+  }
+
+  public async getReasoningRunV2(
+    workspaceId: WorkspaceId,
+    id: ReasoningRunId,
+  ): Promise<PortResult<ReasoningRunV2 | null>> {
+    try {
+      return await this.#workspace(workspaceId, async (client) => {
+        const result = await client.query<{ payload: unknown }>(
+          `SELECT payload FROM reverb_reasoning_runs_v2
+           WHERE workspace_id = $1 AND reasoning_run_id = $2`,
+          [workspaceId, id],
+        );
+        const payload = result.rows[0]?.payload;
+        return portSuccess(
+          payload === undefined ? null : (jsonRecord(payload) as unknown as ReasoningRunV2),
+        );
+      });
+    } catch {
+      return portFailure({
+        kind: 'infrastructure',
+        code: 'postgres_reasoning_run_read_failed',
+        safeMessage: 'PostgreSQL could not read the reasoning run.',
+        retryable: true,
+      });
+    }
+  }
+
+  public async purgeReasoningRunV2(
+    workspaceId: WorkspaceId,
+    id: ReasoningRunId,
+    deletedAt: Instant,
+  ): Promise<PortResult<ReasoningRunV2 | null>> {
+    try {
+      return await this.#workspace(workspaceId, async (client) => {
+        const result = await client.query<{ payload: unknown }>(
+          `SELECT payload FROM reverb_reasoning_runs_v2
+           WHERE workspace_id = $1 AND reasoning_run_id = $2 FOR UPDATE`,
+          [workspaceId, id],
+        );
+        const payload = result.rows[0]?.payload;
+        if (payload === undefined) return portSuccess(null);
+        const current = jsonRecord(payload) as unknown as ReasoningRunV2;
+        if (current.state === 'deleted') return portSuccess(current);
+        const {
+          outputHash: _outputHash,
+          providerOutputHash: _providerOutputHash,
+          deletedAt: _deletedAt,
+          ...retained
+        } = current;
+        void _outputHash;
+        void _providerOutputHash;
+        void _deletedAt;
+        const deleted = finalizeReasoningRunV2({
+          ...retained,
+          state: 'deleted',
+          citations: [],
+          hypotheses: [],
+          limitations: ['reasoning_data_deleted'],
+          deletedAt,
+        });
+        const analysisResult = await client.query<{ payload: unknown }>(
+          `SELECT payload FROM reverb_analysis_results_v2
+           WHERE workspace_id = $1 AND analysis_id = $2 FOR UPDATE`,
+          [workspaceId, current.analysisId],
+        );
+        const analysisPayload = analysisResult.rows[0]?.payload;
+        if (analysisPayload === undefined)
+          return portFailure({
+            kind: 'conflict',
+            code: 'reasoning_analysis_missing',
+            safeMessage: 'The reasoning analysis result is missing.',
+            retryable: false,
+          });
+        const scrubbedAnalysis = removeReasoningFromAnalysisResultV2(
+          jsonRecord(analysisPayload) as unknown as AnalysisResultV2,
+        );
+        await client.query(
+          `UPDATE reverb_analysis_results_v2
+           SET state = $1, output_hash = $2, payload = $3::jsonb
+           WHERE workspace_id = $4 AND analysis_id = $5`,
+          [
+            scrubbedAnalysis.state,
+            scrubbedAnalysis.outputHash,
+            JSON.stringify(scrubbedAnalysis),
+            workspaceId,
+            current.analysisId,
+          ],
+        );
+        await client.query(
+          `UPDATE reverb_reasoning_runs_v2
+           SET state = 'deleted', output_hash = NULL, payload = $1::jsonb, deleted_at = $2
+           WHERE workspace_id = $3 AND reasoning_run_id = $4`,
+          [JSON.stringify(deleted), deletedAt, workspaceId, id],
+        );
+        return portSuccess(deleted);
+      });
+    } catch {
+      return portFailure({
+        kind: 'infrastructure',
+        code: 'postgres_reasoning_run_purge_failed',
+        safeMessage: 'PostgreSQL could not purge the reasoning run.',
         retryable: true,
       });
     }

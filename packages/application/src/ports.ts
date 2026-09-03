@@ -39,6 +39,8 @@ import type {
   RepositoryDescriptor,
   RepositoryGeneration,
   RepositoryStableId,
+  ReasoningRunId,
+  ReasoningRunV2,
   ReviewEvent,
   ReviewEventId,
   SuppressionRule,
@@ -262,11 +264,26 @@ export interface EvidenceGraphStore {
 }
 
 export interface AnalysisResultStoreV2 {
-  persistAnalysisV2(result: AnalysisResultV2): Promise<PortResult<void>>;
+  persistAnalysisV2(
+    result: AnalysisResultV2,
+    reasoningRun?: ReasoningRunV2,
+  ): Promise<PortResult<void>>;
   getAnalysisV2(
     workspaceId: WorkspaceId,
     analysisId: AnalysisId,
   ): Promise<PortResult<AnalysisResultV2 | null>>;
+}
+
+export interface ReasoningRunStoreV2 {
+  getReasoningRunV2(
+    workspaceId: WorkspaceId,
+    reasoningRunId: ReasoningRunId,
+  ): Promise<PortResult<ReasoningRunV2 | null>>;
+  purgeReasoningRunV2(
+    workspaceId: WorkspaceId,
+    reasoningRunId: ReasoningRunId,
+    deletedAt: Instant,
+  ): Promise<PortResult<ReasoningRunV2 | null>>;
 }
 
 export interface ReviewEvaluationStore {
