@@ -7,6 +7,10 @@ explicit and package breaking changes may occur in minor releases.
 
 ## Unreleased
 
+_No changes yet._
+
+## 0.5.0 - 2026-09-03
+
 - Fixed path-sensitive artifact-cache collisions and added exact workspace/repository/revision and
   Git-response scope checks for indexing, overlays, and pull-request analysis.
 - Fixed GitHub authorization and reconciliation after provider access changes, including dependent
@@ -15,8 +19,6 @@ explicit and package breaking changes may occur in minor releases.
   resolution, order-independent adapter fingerprints, and fail-closed malformed JSON detection.
 - Fixed Windows quality and release verification for path boundaries, line endings, pnpm child
   processes, CLI fixtures, and tar archive paths.
-
-## 0.5.0 - 2026-09-02
 
 - Added negotiated schema-major 2 analysis with immutable producer-plus-allowlist scope provenance,
   exact membership/authorization/consent decisions, per-repository/per-family coverage, and hard
@@ -40,9 +42,11 @@ explicit and package breaking changes may occur in minor releases.
 - Expanded release verification to all 19 public packages, both packed v0.4/v2 host fixtures, every
   root import, CLI version smoke, fixed internal dependencies, SHA-256 checksums, a 45-component
   CycloneDX SBOM, and machine-readable release provenance.
-- Kept all new evidence strata `UNMEASURED` and preview-only. npm publication, GitHub release,
-  deployment, production migrations, provider enablement, and Yanib integration remain separate
-  approval-gated actions.
+- Published all 19 packages to npm with integrity metadata and SLSA provenance, plus a GitHub
+  release containing verified tarballs, SHA-256 checksums, a CycloneDX SBOM, and machine-readable
+  release provenance.
+- Kept all new evidence strata `UNMEASURED` and preview-only. Deployment, production migrations,
+  provider enablement, and Yanib integration remain separate approval-gated actions.
 
 ## 0.4.0 - 2026-09-02
 
