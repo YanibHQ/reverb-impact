@@ -53,9 +53,29 @@ jobs:
 
       - name: Publish verified package tarballs
         shell: bash
+        env:
+          # Used only to bootstrap package names that cannot yet authorize an OIDC publisher.
+          # Existing packages continue to publish through the configured trusted publisher when
+          # this temporary secret is absent.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
           for tarball in artifacts/packages/*.tgz; do
-            echo "Publishing $(basename "$tarball")"
+            read -r package_name package_version < <(
+              tar -xOf "$tarball" package/package.json |
+                node -e "let value=''; process.stdin.setEncoding('utf8'); process.stdin.on('data', chunk => value += chunk); process.stdin.on('end', () => { const manifest = JSON.parse(value); console.log(manifest.name, manifest.version); });"
+            )
+            package_spec="${package_name}@${package_version}"
+            if published_integrity=$(npm view "$package_spec" dist.integrity --json 2>/dev/null); then
+              published_integrity=${published_integrity//\"/}
+              packed_integrity=$(node -e "const crypto = require('node:crypto'); const fs = require('node:fs'); const bytes = fs.readFileSync(process.argv[1]); console.log('sha512-' + crypto.createHash('sha512').update(bytes).digest('base64'));" "$tarball")
+              if [[ "$published_integrity" != "$packed_integrity" ]]; then
+                echo "Published $package_spec does not match the verified tarball integrity." >&2
+                exit 1
+              fi
+              echo "Already published and verified $package_spec"
+              continue
+            fi
+            echo "Publishing $package_spec"
             npm publish "$tarball" --access public
           done
