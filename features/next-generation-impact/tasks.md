@@ -40,19 +40,19 @@
 
 ## Phase 004 — optional reasoning
 
-- [ ] Provider-neutral port and strict versioned request/result schemas
-- [ ] Bounded authorized retrieval seeded only by deterministic evidence
-- [ ] Citation verifier and distinct `ai_inferred`/`needs_investigation` outcomes
-- [ ] Model/template/retrieval provenance and closed telemetry
-- [ ] Consent, retention, deletion, injection, timeout, malformed-output, and failure-isolation tests
-- [ ] Prove off/failure paths leave deterministic output unchanged
+- [x] Provider-neutral port and strict versioned request/result schemas
+- [x] Bounded authorized retrieval seeded only by deterministic evidence
+- [x] Citation verifier and distinct `ai_inferred`/`needs_investigation` outcomes
+- [x] Model/template/retrieval provenance and closed telemetry
+- [x] Consent, retention, deletion, injection, timeout, malformed-output, and failure-isolation tests
+- [x] Prove off/failure paths leave deterministic output unchanged
 
 ## Phase 005 — release candidate
 
-- [ ] Set all packages and release metadata to fixed `0.5.0`
-- [ ] Complete migration/re-index/compatibility/security/release notes
-- [ ] Pack all packages and install in clean v1/v2 fixtures
-- [ ] Run all old/new goldens, conformance, adversarial, migration, and performance suites
-- [ ] Run `pnpm run ci` and `pnpm release:verify` from a clean checkout
-- [ ] Generate checksums, SBOM, provenance, licenses, API inventory, and host checklist
-- [ ] Stop and request approval before npm publish, GitHub release, deployment, migrations, or Yanib
+- [x] Set all packages and release metadata to fixed `0.5.0`
+- [x] Complete migration/re-index/compatibility/security/release notes
+- [x] Pack all packages and install in clean v1/v2 fixtures
+- [x] Run all old/new goldens, conformance, adversarial, migration, and performance suites
+- [x] Run `pnpm run ci` and `pnpm release:verify` from a clean checkout
+- [x] Generate checksums, SBOM, provenance, licenses, API inventory, and host checklist
+- [x] Stop and request approval before npm publish, GitHub release, deployment, migrations, or Yanib

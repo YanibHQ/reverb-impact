@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.yanibhq.dev/reverb/reasoning-response/v1.json",
+  "title": "Reverb provider-neutral structured reasoning response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "schema_version", "state", "candidates", "model_tokens"],
+  "properties": {
+    "schema": { "const": "reverb.reasoning-response" },
+    "schema_version": { "const": "1.0" },
+    "state": { "enum": ["complete", "refused"] },
+    "candidates": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "severity",
+          "confidence",
+          "producer_citation_ids",
+          "consumer_citation_ids",
+          "limitations"
+        ],
+        "properties": {
+          "severity": { "enum": ["low", "medium", "high", "critical"] },
+          "confidence": { "enum": ["low", "medium", "high"] },
+          "producer_citation_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string", "pattern": "^cit_sha256:[0-9a-f]{64}$" }
+          },
+          "consumer_citation_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string", "pattern": "^cit_sha256:[0-9a-f]{64}$" }
+          },
+          "limitations": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "ambiguous_dependency",
+                "dynamic_resolution",
+                "insufficient_context",
+                "weak_evidence"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "model_tokens": { "type": "integer", "minimum": 0 }
+  }
+}

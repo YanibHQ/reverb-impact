@@ -13,6 +13,7 @@ export * from './id-factory.js';
 export * from './models.js';
 export * from './overlay.js';
 export * from './registry.js';
+export * from './reasoning-v2.js';
 export * from './review.js';
 export * from './suppression.js';
 export * from './corpus.js';

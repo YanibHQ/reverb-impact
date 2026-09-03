@@ -8,7 +8,13 @@ const adapterRoots = [
   'adapter-openapi',
   'adapter-protobuf',
   'adapter-typescript',
+  'adapter-events',
+  'adapter-database',
+  'adapter-http',
+  'adapter-config',
+  'adapter-infrastructure',
 ].map((name) => fileURLToPath(new URL(`../packages/${name}/src/`, import.meta.url)));
+const reasoningRoot = fileURLToPath(new URL('../packages/reasoning/src/', import.meta.url));
 const githubHostRoot = fileURLToPath(new URL('../packages/host-github/src/', import.meta.url));
 const forbidden = [
   '@yanib/reverb-application',
@@ -63,6 +69,28 @@ for (const root of adapterRoots) {
       if (source.includes(`'${specifier}`) || source.includes(`"${specifier}`)) {
         violations.push(`${file}: forbidden adapter dependency ${specifier}`);
       }
+    }
+  }
+}
+
+const forbiddenReasoningImports = [
+  '@yanib/reverb-storage-',
+  '@yanib/reverb-host-',
+  '@octokit/',
+  'openai',
+  '@openai/',
+  '@anthropic-ai/',
+  'node:child_process',
+  'node:fs',
+  'node:net',
+  'node:http',
+  'node:https',
+];
+for (const file of await walk(reasoningRoot)) {
+  const source = await readFile(file, 'utf8');
+  for (const specifier of forbiddenReasoningImports) {
+    if (source.includes(`'${specifier}`) || source.includes(`"${specifier}`)) {
+      violations.push(`${file}: forbidden reasoning dependency ${specifier}`);
     }
   }
 }

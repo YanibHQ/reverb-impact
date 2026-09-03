@@ -1,6 +1,6 @@
 # Publishing a release
 
-Reverb packages use a fixed version across the workspace. The current candidate is `0.4.0`.
+Reverb packages use a fixed version across the workspace. The current candidate is `0.5.0`.
 Before publishing, confirm that every public manifest, the CLI version, schema compatibility record,
 changelog, and [release metadata](../compatibility/release-metadata.json) name the same version.
 
@@ -13,9 +13,21 @@ pnpm install --frozen-lockfile
 pnpm release:verify
 ```
 
-The command builds and tests the workspace, recreates all 13 package tarballs, verifies their
-contents and exact internal dependency versions, writes SHA-256 checksums, and creates a CycloneDX
-SBOM. Publish the verified tarballs under `artifacts/packages/`, not a mutable working directory.
+The command builds and tests the workspace, runs the bounded comparative/release benchmarks,
+recreates all 19 package tarballs, verifies their contents and exact internal dependency versions,
+compiles packed v0.4 and v2 hosts, imports every public root, checks the CLI version, writes SHA-256
+checksums, creates a CycloneDX SBOM, and writes a machine-readable release-provenance manifest.
+Publish the verified tarballs under `artifacts/packages/`, not a mutable working directory.
+
+The isolated consumer installs Reverb only from those local tarballs. It may resolve exact external
+tooling and transitive dependencies from the configured npm registry when a clean runner has no
+pnpm metadata cache; package lifecycle scripts remain disabled.
+
+The checked-in
+[0.5.0 release benchmark](../verification/phase-005-next-generation-release-benchmark.json) is a
+checksum-addressed reproducibility manifest over public synthetic mechanics, all eight adapter
+admission reports, the optional reasoning boundary, host capabilities, release metadata, and the
+lockfile. It is not a production accuracy or latency claim.
 
 ## Publish order
 
@@ -23,8 +35,9 @@ Publish packages in dependency order so every registry dependency exists before 
 
 1. `@yanib/reverb-domain`, `@yanib/reverb-schema`;
 2. `@yanib/reverb-application`, `@yanib/reverb-adapter-sdk`;
-3. the three contract adapters, two storage adapters, two hosts, and `@yanib/reverb-testkit`;
-4. `reverb-impact`.
+3. `@yanib/reverb-reasoning` and all eight contract adapters;
+4. `@yanib/reverb-testkit`, both storage adapters, and both hosts;
+5. `reverb-impact`.
 
 All scoped packages must be public. Local publication uses the authenticated `yanib` npm account and
 disables provenance for that command because npm provenance is issued only by a supported trusted
@@ -48,6 +61,21 @@ After publication:
 The GitHub artifact workflow independently reruns release verification and creates build-provenance
 attestations for the package tarballs and SBOM. Container publication remains a separate release
 gate.
+
+## Version 0.5.0 candidate record
+
+The candidate contains 19 fixed-version packages. The five new deterministic adapters and neutral
+reasoning package are not present in the public registry until publication is explicitly approved.
+The [release notes](../releases/0.5.0.md) and
+[host upgrade checklist](upgrade-0.5.0.md) define migrations, initial indexing, preview-only
+operation, rollback, and integration boundaries. A tag or manual publish-workflow dispatch is a
+publication action and must not occur as part of candidate validation.
+
+## Version 0.4.0 publication record
+
+The original 13-package family is available from the public npm registry at `0.4.0`. npm reports
+SLSA provenance attestations and registry signatures for the CLI and scoped packages. The five v2
+adapter packages and reasoning package were not published in that release.
 
 ## Version 0.1.0 publication record
 

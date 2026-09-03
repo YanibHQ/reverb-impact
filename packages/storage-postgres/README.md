@@ -7,7 +7,7 @@ audit events, backup/restore, and consent-driven purge.
 ## Installation
 
 ```bash
-pnpm add --save-exact @yanib/reverb-storage-postgres@0.4.0
+pnpm add --save-exact @yanib/reverb-storage-postgres@0.5.0
 ```
 
 Import only the documented package root. See the

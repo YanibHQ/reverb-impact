@@ -1,0 +1,291 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.yanibhq.dev/reverb/reasoning-run/v2.json",
+  "title": "Reverb redacted reasoning run provenance",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "id",
+    "workspace_id",
+    "analysis_id",
+    "scope_hash",
+    "state",
+    "provider",
+    "template_version",
+    "reasoning_policy_version",
+    "retrieval_version",
+    "input_hash",
+    "execution_budget",
+    "consent_decisions",
+    "citations",
+    "hypotheses",
+    "limitations",
+    "created_at",
+    "output_hash"
+  ],
+  "properties": {
+    "schema": { "const": "reverb.reasoning-run" },
+    "schema_version": { "const": "2.0" },
+    "id": { "type": "string", "pattern": "^rrn_sha256:[0-9a-f]{64}$" },
+    "workspace_id": {
+      "type": "string",
+      "pattern": "^wsp_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "analysis_id": {
+      "type": "string",
+      "pattern": "^ana_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "scope_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "state": { "enum": ["complete", "partial", "failed", "deleted"] },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider_id",
+        "provider_version",
+        "model_id",
+        "model_version",
+        "data_region",
+        "retention_mode"
+      ],
+      "properties": {
+        "provider_id": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "provider_version": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "model_id": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "model_version": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "data_region": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "retention_mode": { "enum": ["none", "provider_managed", "host_managed"] }
+      }
+    },
+    "template_version": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "reasoning_policy_version": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "retrieval_version": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "input_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "provider_output_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "execution_budget": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "https://schemas.yanibhq.dev/reverb/execution-budget/v2.json",
+      "title": "Reverb bounded execution budget report",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "schema_version",
+        "lane",
+        "limits",
+        "usage",
+        "exhausted_dimensions",
+        "started_at",
+        "completed_at",
+        "output_hash"
+      ],
+      "properties": {
+        "schema": { "const": "reverb.execution-budget" },
+        "schema_version": { "const": "2.0" },
+        "lane": { "enum": ["bootstrap_index", "incremental_index", "pull_request", "reasoning"] },
+        "limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "provider_requests",
+            "source_bytes",
+            "storage_queries",
+            "artifacts",
+            "model_tokens",
+            "latency_ms"
+          ],
+          "properties": {
+            "provider_requests": { "type": "integer", "minimum": 0 },
+            "source_bytes": { "type": "integer", "minimum": 0 },
+            "storage_queries": { "type": "integer", "minimum": 0 },
+            "artifacts": { "type": "integer", "minimum": 0 },
+            "model_tokens": { "type": "integer", "minimum": 0 },
+            "latency_ms": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "usage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "provider_requests",
+            "source_bytes",
+            "storage_queries",
+            "artifacts",
+            "model_tokens",
+            "latency_ms"
+          ],
+          "properties": {
+            "provider_requests": { "type": "integer", "minimum": 0 },
+            "source_bytes": { "type": "integer", "minimum": 0 },
+            "storage_queries": { "type": "integer", "minimum": 0 },
+            "artifacts": { "type": "integer", "minimum": 0 },
+            "model_tokens": { "type": "integer", "minimum": 0 },
+            "latency_ms": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "exhausted_dimensions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "provider_requests",
+              "source_bytes",
+              "storage_queries",
+              "artifacts",
+              "model_tokens",
+              "latency_ms"
+            ]
+          }
+        },
+        "started_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T.*Z$" },
+        "completed_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T.*Z$" },
+        "output_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      }
+    },
+    "consent_decisions": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["repository_id", "allowed", "revision", "decision_hash"],
+        "properties": {
+          "repository_id": {
+            "type": "string",
+            "pattern": "^(?:github:[1-9][0-9]*|local:sha256:[0-9a-f]{64})$"
+          },
+          "allowed": { "type": "boolean" },
+          "revision": { "type": "string", "minLength": 1, "maxLength": 256 },
+          "decision_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+        }
+      }
+    },
+    "citations": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "citation_id",
+          "origin",
+          "side",
+          "workspace_id",
+          "repository_id",
+          "generation_id",
+          "commit_sha",
+          "path",
+          "range",
+          "content_hash",
+          "excerpt_hash"
+        ],
+        "properties": {
+          "citation_id": { "type": "string", "pattern": "^cit_sha256:[0-9a-f]{64}$" },
+          "origin": { "enum": ["changed_definition", "deterministic_neighbor"] },
+          "side": { "enum": ["producer", "consumer"] },
+          "workspace_id": {
+            "type": "string",
+            "pattern": "^wsp_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "repository_id": {
+            "type": "string",
+            "pattern": "^(?:github:[1-9][0-9]*|local:sha256:[0-9a-f]{64})$"
+          },
+          "generation_id": {
+            "type": "string",
+            "pattern": "^gen_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "commit_sha": { "type": "string", "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$" },
+          "path": { "type": "string", "minLength": 1, "maxLength": 4096 },
+          "range": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["start_line", "start_column", "end_line", "end_column"],
+            "properties": {
+              "start_line": { "type": "integer", "minimum": 1 },
+              "start_column": { "type": "integer", "minimum": 1 },
+              "end_line": { "type": "integer", "minimum": 1 },
+              "end_column": { "type": "integer", "minimum": 1 }
+            }
+          },
+          "content_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+          "excerpt_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+        }
+      }
+    },
+    "hypotheses": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "evidence_basis",
+          "disposition",
+          "severity",
+          "confidence",
+          "producer_citation_ids",
+          "consumer_citation_ids",
+          "limitations"
+        ],
+        "properties": {
+          "evidence_basis": { "const": "ai_inferred" },
+          "disposition": { "enum": ["needs_investigation", "withheld"] },
+          "severity": { "enum": ["low", "medium", "high", "critical"] },
+          "confidence": { "enum": ["low", "medium", "high"] },
+          "producer_citation_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string", "pattern": "^cit_sha256:[0-9a-f]{64}$" }
+          },
+          "consumer_citation_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string", "pattern": "^cit_sha256:[0-9a-f]{64}$" }
+          },
+          "limitations": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "ambiguous_dependency",
+                "dynamic_resolution",
+                "insufficient_context",
+                "weak_evidence"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "reasoning_budget_exhausted",
+          "reasoning_circuit_open",
+          "reasoning_citation_invalid",
+          "reasoning_consent_denied",
+          "reasoning_consent_failed",
+          "reasoning_consent_timeout",
+          "reasoning_data_deleted",
+          "reasoning_provider_failed",
+          "reasoning_provider_refused",
+          "reasoning_provider_timeout",
+          "reasoning_response_malformed",
+          "reasoning_retrieval_failed",
+          "reasoning_retrieval_invalid",
+          "reasoning_retrieval_timeout",
+          "reasoning_seed_evidence_missing",
+          "reasoning_two_sided_context_missing"
+        ]
+      }
+    },
+    "created_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T.*Z$" },
+    "deleted_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T.*Z$" },
+    "output_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

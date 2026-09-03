@@ -1,6 +1,6 @@
 {
   "name": "@yanib/reverb-adapter-sdk",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Contract adapter interfaces and validation for Reverb",
   "type": "module",
   "license": "Apache-2.0",
@@ -31,7 +31,7 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@yanib/reverb-domain": "workspace:*"
+    "@yanib/reverb-domain": "workspace:0.5.0"
   },
   "publishConfig": {
     "access": "public",

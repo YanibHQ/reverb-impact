@@ -1,23 +1,25 @@
-# Phase 004 Optional Model Experiment Review
+# Optional model-provider status
 
-**Decision:** Deferred; no model experiment is enabled.
+**Decision:** No live model provider or experiment is enabled.
 
-The structural baseline, review, corpus, evaluator, and policy simulator are implemented without a
-model. The standalone repository has no authorized human-labeled real-world corpus on which to show
-a meaningful selective-risk improvement, so a model call would add export, privacy, latency, cost,
-and reproducibility risk without evidence of benefit.
+Reverb exposes a provider-neutral reasoning protocol, bounded retrieval planner, citation verifier,
+and fake-provider conformance suite. Those components establish a safe extension boundary; they do
+not authorize source export, choose a vendor, configure credentials, or enable a model in the CLI or
+reference hosts. The standalone repository has no authorized human-labelled real-world corpus on
+which to demonstrate selective-risk improvement.
 
-If revisited, approval requires all of the following before implementation:
+Any live experiment requires separate approval and all of the following:
 
-- a bounded, viewer-authorized structural evidence envelope with repository/path/snippet disclosure
-  fields evaluated separately;
-- no tools, writes, source retrieval, label creation, severity increase, confidence promotion, or
-  disclosure decision;
-- output limited to `explain`, `recommend_downgrade`, or `abstain`;
+- explicit host model capability, repository-level reasoning consent, exact selected scope, and an
+  approved provider region/retention contract;
+- the public bounded request/response protocols, with no tools, writes, autonomous retrieval,
+  deterministic-finding mutation, disclosure decision, or severity promotion;
+- exact producer and consumer citations for every retained `ai_inferred` hypothesis;
 - pinned provider/model/settings, repeated-run variability, latency, cost, shift, and retention
   reporting;
 - a frozen comparison against the same structural baseline and a report of selection-coverage and
   recall cost;
-- canary/prompt-injection testing and an approved data-export/retention review.
+- cross-scope, secret, prompt-injection, deletion, backup-expiry, and provider-retention review.
 
-Failure to improve selective risk materially means removal, not quiet retention.
+See the [reasoning provider contract](../extensions/reasoning-provider.md). Failure to improve
+selective risk materially means keeping the provider disabled, not quietly retaining it.

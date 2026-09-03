@@ -1,6 +1,6 @@
 {
   "name": "@yanib/reverb-storage-sqlite",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "SQLite storage adapter for Reverb local hosts",
   "type": "module",
   "license": "Apache-2.0",
@@ -31,11 +31,11 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@yanib/reverb-application": "workspace:*",
-    "@yanib/reverb-domain": "workspace:*"
+    "@yanib/reverb-application": "workspace:0.5.0",
+    "@yanib/reverb-domain": "workspace:0.5.0"
   },
   "devDependencies": {
-    "@yanib/reverb-testkit": "workspace:*"
+    "@yanib/reverb-testkit": "workspace:0.5.0"
   },
   "publishConfig": {
     "access": "public",

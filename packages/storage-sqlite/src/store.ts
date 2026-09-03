@@ -4,11 +4,13 @@ import { DatabaseSync, type StatementSync } from 'node:sqlite';
 
 import {
   adapterId,
+  assertReasoningRunScope,
   assertCanonicalAdapterGenerationSnapshot,
   assertCanonicalAdapterSemanticPartition,
   applyCompleteReferenceObservation,
   currentEvidenceEdges,
   finalizeAnalysisResult,
+  finalizeReasoningRunV2,
   commitSha,
   configRevision,
   contentHash,
@@ -17,6 +19,7 @@ import {
   generationLeaseId,
   instant,
   materializeOverlayArtifacts,
+  removeReasoningFromAnalysisResultV2,
   overlayId,
   registryRevision,
   repoPath,
@@ -56,8 +59,11 @@ import {
   type SuppressionStateEvent,
   type CorpusManifest,
   type ImpactCase,
+  type Instant,
   type EvaluationReport,
   type PromotionRecord,
+  type ReasoningRunId,
+  type ReasoningRunV2,
 } from '@yanib/reverb-domain';
 import {
   portFailure,
@@ -82,6 +88,7 @@ import {
   type ReferenceQuery,
   type WorkspaceRegistry,
   type ReviewEvaluationStore,
+  type ReasoningRunStoreV2,
 } from '@yanib/reverb-application';
 
 export const SQLITE_SCHEMA_VERSION = 8;
@@ -771,6 +778,7 @@ export class SqliteStore
     ArtifactCachePort,
     EvidenceGraphStore,
     AnalysisResultStoreV2,
+    ReasoningRunStoreV2,
     ReviewEvaluationStore
 {
   readonly #database: DatabaseSync;
@@ -2476,7 +2484,35 @@ export class SqliteStore
     );
   }
 
-  public async persistAnalysisV2(result: AnalysisResultV2): Promise<PortResult<void>> {
+  public async persistAnalysisV2(
+    result: AnalysisResultV2,
+    reasoningRun?: ReasoningRunV2,
+  ): Promise<PortResult<void>> {
+    const hasReasoningData =
+      result.reasoningHypotheses.length > 0 ||
+      result.executionBudgets.some((budget) => budget.lane === 'reasoning');
+    if (hasReasoningData !== (reasoningRun !== undefined) || reasoningRun?.state === 'deleted')
+      return conflict('Reasoning analysis data requires its active provenance run.');
+    if (reasoningRun !== undefined) {
+      try {
+        assertReasoningRunScope(reasoningRun, result.scope);
+        const { outputHash: _reasoningOutputHash, ...reasoningInput } = reasoningRun;
+        void _reasoningOutputHash;
+        if (
+          reasoningRun.workspaceId !== result.legacyResult.workspaceId ||
+          reasoningRun.analysisId !== result.legacyResult.analysisId ||
+          reasoningRun.scopeHash !== result.scope.scopeHash ||
+          canonicalJson(reasoningRun.hypotheses) !== canonicalJson(result.reasoningHypotheses) ||
+          !result.executionBudgets.some(
+            (budget) => canonicalJson(budget) === canonicalJson(reasoningRun.executionBudget),
+          ) ||
+          canonicalJson(finalizeReasoningRunV2(reasoningInput)) !== canonicalJson(reasoningRun)
+        )
+          return conflict('A reasoning run has inconsistent or non-canonical provenance.');
+      } catch {
+        return conflict('A reasoning run has inconsistent or non-canonical provenance.');
+      }
+    }
     return this.#safe(() =>
       this.#transaction(() => {
         const workspace = result.legacyResult.workspaceId;
@@ -2534,27 +2570,60 @@ export class SqliteStore
           | undefined;
         const resultJson = JSON.stringify(result);
         if (existing !== undefined) {
-          return existing.output_hash === result.outputHash && existing.result_json === resultJson
-            ? portSuccess(undefined)
-            : conflict('A v2 analysis result is immutable for its analysis ID.');
+          if (existing.output_hash !== result.outputHash || existing.result_json !== resultJson)
+            return conflict('A v2 analysis result is immutable for its analysis ID.');
+        } else {
+          this.#database
+            .prepare(
+              `INSERT INTO analysis_results_v2(
+                workspace_id, analysis_id, producer_repository_id, scope_hash,
+                state, output_hash, result_json, created_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            )
+            .run(
+              workspace,
+              analysis,
+              result.legacyResult.producerRepositoryId,
+              result.scope.scopeHash,
+              result.state,
+              result.outputHash,
+              resultJson,
+              result.legacyResult.completedAt,
+            );
         }
-        this.#database
-          .prepare(
-            `INSERT INTO analysis_results_v2(
-              workspace_id, analysis_id, producer_repository_id, scope_hash,
-              state, output_hash, result_json, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          )
-          .run(
-            workspace,
-            analysis,
-            result.legacyResult.producerRepositoryId,
-            result.scope.scopeHash,
-            result.state,
-            result.outputHash,
-            resultJson,
-            result.legacyResult.completedAt,
-          );
+        if (reasoningRun !== undefined) {
+          const runJson = JSON.stringify(reasoningRun);
+          const existingRun = this.#database
+            .prepare(
+              `SELECT run_json FROM reasoning_runs_v2
+               WHERE workspace_id = ? AND reasoning_run_id = ?`,
+            )
+            .get(workspace, reasoningRun.id) as unknown as { run_json: string } | undefined;
+          if (existingRun !== undefined) {
+            if (existingRun.run_json !== runJson)
+              return conflict('A reasoning run is immutable for its reasoning run ID.');
+          } else {
+            this.#database
+              .prepare(
+                `INSERT INTO reasoning_runs_v2(
+                  workspace_id, reasoning_run_id, analysis_id, scope_hash, state,
+                  input_hash, output_hash, run_json, created_at, deleted_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              )
+              .run(
+                workspace,
+                reasoningRun.id,
+                analysis,
+                reasoningRun.scopeHash,
+                reasoningRun.state,
+                reasoningRun.inputHash,
+                reasoningRun.providerOutputHash ?? null,
+                runJson,
+                reasoningRun.createdAt,
+                reasoningRun.deletedAt ?? null,
+              );
+          }
+        }
         return portSuccess(undefined);
       }),
     );
@@ -2575,6 +2644,89 @@ export class SqliteStore
         row === undefined ? null : (JSON.parse(row.result_json) as AnalysisResultV2),
       );
     });
+  }
+
+  public async getReasoningRunV2(
+    workspace: WorkspaceId,
+    id: ReasoningRunId,
+  ): Promise<PortResult<ReasoningRunV2 | null>> {
+    return this.#safe(() => {
+      const row = this.#database
+        .prepare(
+          `SELECT run_json FROM reasoning_runs_v2
+           WHERE workspace_id = ? AND reasoning_run_id = ?`,
+        )
+        .get(workspace, id) as unknown as { run_json: string } | undefined;
+      return portSuccess(row === undefined ? null : (JSON.parse(row.run_json) as ReasoningRunV2));
+    });
+  }
+
+  public async purgeReasoningRunV2(
+    workspace: WorkspaceId,
+    id: ReasoningRunId,
+    deletedAt: Instant,
+  ): Promise<PortResult<ReasoningRunV2 | null>> {
+    return this.#safe(() =>
+      this.#transaction(() => {
+        const row = this.#database
+          .prepare(
+            `SELECT run_json FROM reasoning_runs_v2
+             WHERE workspace_id = ? AND reasoning_run_id = ?`,
+          )
+          .get(workspace, id) as unknown as { run_json: string } | undefined;
+        if (row === undefined) return portSuccess(null);
+        const current = JSON.parse(row.run_json) as ReasoningRunV2;
+        if (current.state === 'deleted') return portSuccess(current);
+        const {
+          outputHash: _outputHash,
+          providerOutputHash: _providerOutputHash,
+          deletedAt: _deletedAt,
+          ...retained
+        } = current;
+        void _outputHash;
+        void _providerOutputHash;
+        void _deletedAt;
+        const deleted = finalizeReasoningRunV2({
+          ...retained,
+          state: 'deleted',
+          citations: [],
+          hypotheses: [],
+          limitations: ['reasoning_data_deleted'],
+          deletedAt,
+        });
+        const analysisRow = this.#database
+          .prepare(
+            `SELECT result_json FROM analysis_results_v2
+             WHERE workspace_id = ? AND analysis_id = ?`,
+          )
+          .get(workspace, current.analysisId) as unknown as { result_json: string } | undefined;
+        if (analysisRow === undefined) return conflict('The reasoning analysis result is missing.');
+        const scrubbedAnalysis = removeReasoningFromAnalysisResultV2(
+          JSON.parse(analysisRow.result_json) as AnalysisResultV2,
+        );
+        this.#database
+          .prepare(
+            `UPDATE analysis_results_v2
+             SET state = ?, output_hash = ?, result_json = ?
+             WHERE workspace_id = ? AND analysis_id = ?`,
+          )
+          .run(
+            scrubbedAnalysis.state,
+            scrubbedAnalysis.outputHash,
+            JSON.stringify(scrubbedAnalysis),
+            workspace,
+            current.analysisId,
+          );
+        this.#database
+          .prepare(
+            `UPDATE reasoning_runs_v2
+             SET state = 'deleted', output_hash = NULL, run_json = ?, deleted_at = ?
+             WHERE workspace_id = ? AND reasoning_run_id = ?`,
+          )
+          .run(JSON.stringify(deleted), deletedAt, workspace, id);
+        return portSuccess(deleted);
+      }),
+    );
   }
 
   public async getAnalysis(id: AnalysisId): Promise<PortResult<AnalysisResult>> {

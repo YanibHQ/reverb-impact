@@ -5,13 +5,13 @@ Local CLI and embeddable CLI construction for evidence-backed cross-repository i
 ## Usage
 
 ```bash
-pnpm dlx reverb-impact@0.4.0 --help
+pnpm dlx reverb-impact@0.5.0 --help
 ```
 
 For persistent installation:
 
 ```bash
-pnpm add --global reverb-impact@0.4.0
+pnpm add --global reverb-impact@0.5.0
 reverb --help
 ```
 

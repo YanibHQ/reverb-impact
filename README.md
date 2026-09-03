@@ -35,6 +35,8 @@ a clean result.
   independently operated service.
 - **Deterministic output:** use canonical identities and versioned schemas for repeatable analysis
   and machine consumption.
+- **Optional cited reasoning:** add bounded, provider-neutral hypotheses over authorized structural
+  evidence without changing deterministic findings.
 
 ## Architecture
 
@@ -65,12 +67,17 @@ were generated locally from repository-backed references.
 Additional contract types can be implemented through the public adapter SDK and its validation,
 compatibility, sandboxing, and admission interfaces.
 
+Optional reasoning is available as a separate package in `0.5.0`. It is disabled unless a host
+provides an explicit model adapter, repository-level reasoning consent, retention policy, and an
+independent execution budget.
+
 ## Release status
 
-Reverb `0.4.0` is the current public pre-1.0 release. Public APIs and storage formats may change in a
-future minor release, so downstream users should pin an exact package version. Analysis output is
-advisory: evidence classes must be calibrated with representative, human-reviewed data before they
-are used for automated delivery or policy decisions.
+Reverb `0.5.0` is the current verified release candidate; `0.4.0` remains the public release until
+the candidate is explicitly published. Public APIs and storage formats may change in a future minor
+release, so downstream users should pin an exact package version. Analysis output is advisory:
+evidence classes must be calibrated with representative, human-reviewed data before they are used
+for automated delivery or policy decisions.
 
 The project is independently versioned and operated. It does not depend on Yanib source code or
 data; product integrations use Reverb's public package and host boundaries.
@@ -84,10 +91,13 @@ data; product integrations use Reverb's public package and host boundaries.
 
 ## Install from npm
 
+The commands below target the `0.5.0` package set and become available after publication. Until
+then, use the public `0.4.0` packages or build the candidate from source.
+
 Run the local CLI without adding it to a project:
 
 ```bash
-pnpm dlx reverb-impact@0.4.0 --help
+pnpm dlx reverb-impact@0.5.0 --help
 ```
 
 Hosted integrations such as Yanib should install the host-neutral core, selected contract adapters,
@@ -95,15 +105,20 @@ GitHub host, and PostgreSQL storage explicitly:
 
 ```bash
 pnpm add --save-exact \
-  @yanib/reverb-domain@0.4.0 \
-  @yanib/reverb-schema@0.4.0 \
-  @yanib/reverb-application@0.4.0 \
-  @yanib/reverb-adapter-sdk@0.4.0 \
-  @yanib/reverb-adapter-typescript@0.4.0 \
-  @yanib/reverb-adapter-openapi@0.4.0 \
-  @yanib/reverb-adapter-protobuf@0.4.0 \
-  @yanib/reverb-host-github@0.4.0 \
-  @yanib/reverb-storage-postgres@0.4.0
+  @yanib/reverb-domain@0.5.0 \
+  @yanib/reverb-schema@0.5.0 \
+  @yanib/reverb-application@0.5.0 \
+  @yanib/reverb-adapter-sdk@0.5.0 \
+  @yanib/reverb-adapter-typescript@0.5.0 \
+  @yanib/reverb-adapter-openapi@0.5.0 \
+  @yanib/reverb-adapter-protobuf@0.5.0 \
+  @yanib/reverb-adapter-events@0.5.0 \
+  @yanib/reverb-adapter-database@0.5.0 \
+  @yanib/reverb-adapter-http@0.5.0 \
+  @yanib/reverb-adapter-config@0.5.0 \
+  @yanib/reverb-adapter-infrastructure@0.5.0 \
+  @yanib/reverb-host-github@0.5.0 \
+  @yanib/reverb-storage-postgres@0.5.0
 ```
 
 Install only the packages the host uses. SQLite, the local Git host, the CLI, and the testkit are
@@ -180,6 +195,7 @@ promotion decisions, status, and diagnostics.
 | `@yanib/reverb-adapter-http` | Implicit framework route and HTTP client impact analysis (available in 0.5.0) |
 | `@yanib/reverb-adapter-config` | Configuration, feature-flag, and secret-reference impact analysis (available in 0.5.0) |
 | `@yanib/reverb-adapter-infrastructure` | Static Kubernetes, Helm, and Terraform deployment-wiring impact analysis (available in 0.5.0) |
+| `@yanib/reverb-reasoning` | Optional bounded retrieval, provider-neutral reasoning, and citation validation (available in 0.5.0) |
 | `@yanib/reverb-adapter-typescript` | TypeScript and npm contract analysis |
 | `@yanib/reverb-adapter-openapi` | OpenAPI and HTTP contract analysis |
 | `@yanib/reverb-adapter-protobuf` | Protobuf and gRPC contract analysis |
@@ -218,7 +234,10 @@ private repositories or operating a hosted deployment.
 | [Public packages](docs/api/public-packages.md) | Supported entry points and host responsibilities |
 | [Self-hosting](docs/operations/self-host.md) | Local and hosted operating guidance |
 | [Compatibility](docs/compatibility/versioning.md) | Package, schema, storage, and adapter versioning |
+| [0.5.0 release notes](docs/releases/0.5.0.md) | New capabilities, compatibility, limitations, and rollback |
+| [0.5.0 host upgrade](docs/operations/upgrade-0.5.0.md) | Staged host and Yanib integration checklist |
 | [Adapter development](docs/extensions/adapter-contribution.md) | Adding and validating contract adapters |
+| [Reasoning providers](docs/extensions/reasoning-provider.md) | Safely integrating an optional model provider |
 | [Security](features/cross-repo-impact/security.md) | Threat model, consent, isolation, retention, and disclosure |
 
 Detailed design decisions, evaluation records, and reproducibility evidence remain available in

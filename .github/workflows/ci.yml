@@ -35,6 +35,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run ci
+      - run: pnpm pack:verify
       - run: pnpm audit:check
 
   windows:
