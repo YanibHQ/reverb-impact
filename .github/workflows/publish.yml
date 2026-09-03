@@ -66,14 +66,17 @@ jobs:
                 node -e "let value=''; process.stdin.setEncoding('utf8'); process.stdin.on('data', chunk => value += chunk); process.stdin.on('end', () => { const manifest = JSON.parse(value); console.log(manifest.name, manifest.version); });"
             )
             package_spec="${package_name}@${package_version}"
-            if published_integrity=$(npm view "$package_spec" dist.integrity --json 2>/dev/null); then
-              published_integrity=${published_integrity//\"/}
-              packed_integrity=$(node -e "const crypto = require('node:crypto'); const fs = require('node:fs'); const bytes = fs.readFileSync(process.argv[1]); console.log('sha512-' + crypto.createHash('sha512').update(bytes).digest('base64'));" "$tarball")
-              if [[ "$published_integrity" != "$packed_integrity" ]]; then
-                echo "Published $package_spec does not match the verified tarball integrity." >&2
+            if npm view "$package_spec" version --json >/dev/null 2>&1; then
+              comparison_root=$(mktemp -d)
+              mkdir "$comparison_root/packed" "$comparison_root/published"
+              published_archive=$(npm pack "$package_spec" --pack-destination "$comparison_root" --silent)
+              tar -xzf "$tarball" -C "$comparison_root/packed"
+              tar -xzf "$comparison_root/$published_archive" -C "$comparison_root/published"
+              if ! diff -qr "$comparison_root/packed/package" "$comparison_root/published/package"; then
+                echo "Published $package_spec does not match the verified package contents." >&2
                 exit 1
               fi
-              echo "Already published and verified $package_spec"
+              echo "Already published with matching contents: $package_spec"
               continue
             fi
             echo "Publishing $package_spec"
