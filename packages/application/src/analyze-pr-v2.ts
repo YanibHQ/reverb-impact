@@ -1,6 +1,9 @@
 import {
-  finalizeAnalysisResultV2,
+  assertReasoningRunScope,
+  canonicalJson,
   createDeterministicFindingsV2,
+  finalizeAnalysisResultV2,
+  finalizeReasoningRunV2,
   joinChangedContractsV2,
   type AdapterFamilyV2,
   type AnalysisResultV2,
@@ -32,6 +35,7 @@ import type {
   Subject,
   WorkspaceRegistry,
 } from './ports.js';
+import type { ReasoningAnalysisPortV2, ReasoningRequestV2 } from './reasoning-v2.js';
 
 export interface AnalyzePullRequestV2Input extends AnalyzePullRequestInput {
   readonly schemaMajor: 2;
@@ -39,6 +43,7 @@ export interface AnalyzePullRequestV2Input extends AnalyzePullRequestInput {
   readonly consumerScope?: ConsumerScopeV2;
   readonly enabledAdapterFamilies: readonly AdapterFamilyV2[];
   readonly executionBudget: ExecutionBudgetLimitsV2;
+  readonly reasoning?: ReasoningRequestV2;
   readonly deterministicEvidence?: {
     readonly definitions: readonly IndexedContractDefinitionV2[];
     readonly references: readonly IndexedContractReferenceV2[];
@@ -50,6 +55,7 @@ export interface AnalyzePullRequestV2Dependencies extends AnalyzePullRequestDepe
   readonly authorization: AuthorizationPort;
   readonly coverage?: RepositoryCoverageSourceV2;
   readonly v2Results: AnalysisResultStoreV2;
+  readonly reasoning?: ReasoningAnalysisPortV2;
 }
 
 function scopedRegistry(
@@ -229,18 +235,63 @@ export class AnalyzePullRequestV2 {
             budgetReport.exhaustedDimensions.length > 0
           ? 'partial'
           : 'complete';
+    let reasoningOutcome;
+    if (input.reasoning?.enabled === true && this.dependencies.reasoning !== undefined) {
+      try {
+        const reasoned = await this.dependencies.reasoning.analyze({
+          analysisId: legacy.value.analysisId,
+          subject: input.subject,
+          scope: resolved.value.provenance,
+          capability: resolved.value.capability,
+          definitions: input.deterministicEvidence?.definitions ?? [],
+          references: input.deterministicEvidence?.references ?? [],
+          changes: input.deterministicEvidence?.changes ?? [],
+          executionBudget: input.reasoning.executionBudget,
+        });
+        if (reasoned.ok) {
+          assertReasoningRunScope(reasoned.value.run, resolved.value.provenance);
+          const { outputHash: _runOutputHash, ...runInput } = reasoned.value.run;
+          void _runOutputHash;
+          if (
+            reasoned.value.run.state !== 'deleted' &&
+            reasoned.value.run.analysisId === legacy.value.analysisId &&
+            reasoned.value.executionBudget.lane === 'reasoning' &&
+            canonicalJson(finalizeReasoningRunV2(runInput)) === canonicalJson(reasoned.value.run) &&
+            canonicalJson(reasoned.value.run.executionBudget) ===
+              canonicalJson(reasoned.value.executionBudget) &&
+            canonicalJson(reasoned.value.run.hypotheses) ===
+              canonicalJson(reasoned.value.hypotheses)
+          )
+            reasoningOutcome = reasoned.value;
+        }
+      } catch {
+        // Optional reasoning is failure-isolated from deterministic analysis.
+      }
+    }
+    const resultState =
+      state === 'superseded'
+        ? state
+        : reasoningOutcome !== undefined && reasoningOutcome.run.state !== 'complete'
+          ? 'partial'
+          : state;
     const result = finalizeAnalysisResultV2({
       schema: 'reverb.analysis-result',
       schemaVersion: '2.0',
       legacyResult: legacy.value,
       scope: resolved.value.provenance,
       coverage,
-      state,
-      executionBudgets: [budgetReport],
+      state: resultState,
+      executionBudgets:
+        reasoningOutcome === undefined
+          ? [budgetReport]
+          : [budgetReport, reasoningOutcome.executionBudget],
       deterministicFindings: [...legacy.value.findings, ...newFamilyFindings],
-      reasoningHypotheses: [],
+      reasoningHypotheses: reasoningOutcome?.hypotheses ?? [],
     });
-    const persisted = await this.dependencies.v2Results.persistAnalysisV2(result);
+    const persisted = await this.dependencies.v2Results.persistAnalysisV2(
+      result,
+      reasoningOutcome?.run,
+    );
     return persisted.ok ? portSuccess(result) : persisted;
   }
 }

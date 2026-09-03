@@ -10,6 +10,7 @@
     { "path": "packages/adapter-http" },
     { "path": "packages/adapter-config" },
     { "path": "packages/adapter-infrastructure" },
+    { "path": "packages/reasoning" },
     { "path": "packages/adapter-typescript" },
     { "path": "packages/adapter-openapi" },
     { "path": "packages/adapter-protobuf" },

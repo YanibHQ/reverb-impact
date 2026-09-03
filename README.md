@@ -35,6 +35,8 @@ a clean result.
   independently operated service.
 - **Deterministic output:** use canonical identities and versioned schemas for repeatable analysis
   and machine consumption.
+- **Optional cited reasoning:** add bounded, provider-neutral hypotheses over authorized structural
+  evidence without changing deterministic findings.
 
 ## Architecture
 
@@ -64,6 +66,10 @@ were generated locally from repository-backed references.
 
 Additional contract types can be implemented through the public adapter SDK and its validation,
 compatibility, sandboxing, and admission interfaces.
+
+Optional reasoning is available as a separate package in `0.5.0`. It is disabled unless a host
+provides an explicit model adapter, repository-level reasoning consent, retention policy, and an
+independent execution budget.
 
 ## Release status
 
@@ -180,6 +186,7 @@ promotion decisions, status, and diagnostics.
 | `@yanib/reverb-adapter-http` | Implicit framework route and HTTP client impact analysis (available in 0.5.0) |
 | `@yanib/reverb-adapter-config` | Configuration, feature-flag, and secret-reference impact analysis (available in 0.5.0) |
 | `@yanib/reverb-adapter-infrastructure` | Static Kubernetes, Helm, and Terraform deployment-wiring impact analysis (available in 0.5.0) |
+| `@yanib/reverb-reasoning` | Optional bounded retrieval, provider-neutral reasoning, and citation validation (available in 0.5.0) |
 | `@yanib/reverb-adapter-typescript` | TypeScript and npm contract analysis |
 | `@yanib/reverb-adapter-openapi` | OpenAPI and HTTP contract analysis |
 | `@yanib/reverb-adapter-protobuf` | Protobuf and gRPC contract analysis |
@@ -219,6 +226,7 @@ private repositories or operating a hosted deployment.
 | [Self-hosting](docs/operations/self-host.md) | Local and hosted operating guidance |
 | [Compatibility](docs/compatibility/versioning.md) | Package, schema, storage, and adapter versioning |
 | [Adapter development](docs/extensions/adapter-contribution.md) | Adding and validating contract adapters |
+| [Reasoning providers](docs/extensions/reasoning-provider.md) | Safely integrating an optional model provider |
 | [Security](features/cross-repo-impact/security.md) | Threat model, consent, isolation, retention, and disclosure |
 
 Detailed design decisions, evaluation records, and reproducibility evidence remain available in

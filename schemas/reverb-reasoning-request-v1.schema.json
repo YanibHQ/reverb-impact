@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.yanibhq.dev/reverb/reasoning-request/v1.json",
+  "title": "Reverb provider-neutral structured reasoning request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schema_version",
+    "template_version",
+    "reasoning_policy_version",
+    "retrieval_version",
+    "evidence",
+    "maximum_candidates",
+    "maximum_output_tokens",
+    "input_hash"
+  ],
+  "properties": {
+    "schema": { "const": "reverb.reasoning-request" },
+    "schema_version": { "const": "1.0" },
+    "template_version": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "reasoning_policy_version": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "retrieval_version": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "evidence": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "citation_id",
+          "origin",
+          "side",
+          "workspace_id",
+          "repository_id",
+          "generation_id",
+          "commit_sha",
+          "path",
+          "range",
+          "content_hash",
+          "excerpt",
+          "excerpt_hash"
+        ],
+        "properties": {
+          "citation_id": { "type": "string", "pattern": "^cit_sha256:[0-9a-f]{64}$" },
+          "origin": { "enum": ["changed_definition", "deterministic_neighbor"] },
+          "side": { "enum": ["producer", "consumer"] },
+          "workspace_id": {
+            "type": "string",
+            "pattern": "^wsp_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "repository_id": {
+            "type": "string",
+            "pattern": "^(?:github:[1-9][0-9]*|local:sha256:[0-9a-f]{64})$"
+          },
+          "generation_id": {
+            "type": "string",
+            "pattern": "^gen_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "commit_sha": { "type": "string", "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$" },
+          "path": { "type": "string", "minLength": 1, "maxLength": 4096 },
+          "range": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["start_line", "start_column", "end_line", "end_column"],
+            "properties": {
+              "start_line": { "type": "integer", "minimum": 1 },
+              "start_column": { "type": "integer", "minimum": 1 },
+              "end_line": { "type": "integer", "minimum": 1 },
+              "end_column": { "type": "integer", "minimum": 1 }
+            }
+          },
+          "content_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+          "excerpt": { "type": "string", "maxLength": 65536 },
+          "excerpt_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+        }
+      }
+    },
+    "maximum_candidates": { "type": "integer", "minimum": 0, "maximum": 1000 },
+    "maximum_output_tokens": { "type": "integer", "minimum": 0 },
+    "input_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

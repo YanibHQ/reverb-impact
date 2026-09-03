@@ -44,7 +44,8 @@ repository consent, and the requested analysis. Prompt injection is treated as u
 - Prompts omit tokens, secret values, unrelated paths, comments, and raw provider payloads.
 - Responses are data, validated against a closed schema; they cannot invoke tools or widen retrieval.
 - Citations must resolve to supplied authorized evidence and are rechecked before persistence.
-- Provider/model/template/retrieval versions and a redacted input hash are recorded.
+- Provider/model/template/retrieval versions, reasoning-consent decision revisions/hashes, and
+  redacted input/output hashes are recorded.
 - Failure, timeout, refusal, malformed output, or revoked consent changes no deterministic finding.
 - Deletion removes retained prompts/responses, cached retrieval material, embeddings if enabled, and
   derived hypotheses, subject to the accurately documented backup/provider retention policy.

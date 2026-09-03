@@ -1,7 +1,11 @@
 import {
   applyCompleteReferenceObservation,
+  assertReasoningRunScope,
+  canonicalJson,
   currentEvidenceEdges,
   finalizeAnalysisResult,
+  finalizeReasoningRunV2,
+  removeReasoningFromAnalysisResultV2,
   type AnalysisId,
   type AnalysisResult,
   type AnalysisResultV2,
@@ -21,6 +25,9 @@ import {
   type ImpactCase,
   type EvaluationReport,
   type PromotionRecord,
+  type Instant,
+  type ReasoningRunId,
+  type ReasoningRunV2,
 } from '@yanib/reverb-domain';
 import {
   portFailure,
@@ -32,6 +39,7 @@ import {
   type PortResult,
   type ReferenceQuery,
   type ReviewEvaluationStore,
+  type ReasoningRunStoreV2,
 } from '@yanib/reverb-application';
 
 function conflict(message: string) {
@@ -431,18 +439,53 @@ export class InMemoryEvidenceGraphStore implements EvidenceGraphStore, ReviewEva
   }
 }
 
-export class InMemoryAnalysisResultStoreV2 implements AnalysisResultStoreV2 {
+export class InMemoryAnalysisResultStoreV2 implements AnalysisResultStoreV2, ReasoningRunStoreV2 {
   readonly #analyses = new Map<string, AnalysisResultV2>();
+  readonly #reasoningRuns = new Map<string, ReasoningRunV2>();
 
-  public async persistAnalysisV2(result: AnalysisResultV2): Promise<PortResult<void>> {
+  public async persistAnalysisV2(
+    result: AnalysisResultV2,
+    reasoningRun?: ReasoningRunV2,
+  ): Promise<PortResult<void>> {
+    const hasReasoningData =
+      result.reasoningHypotheses.length > 0 ||
+      result.executionBudgets.some((budget) => budget.lane === 'reasoning');
+    if (hasReasoningData !== (reasoningRun !== undefined) || reasoningRun?.state === 'deleted')
+      return conflict('Reasoning analysis data requires its active provenance run.');
     const key = `${result.legacyResult.workspaceId}\0${result.legacyResult.analysisId}`;
     const existing = this.#analyses.get(key);
-    if (existing !== undefined) {
-      return existing.outputHash === result.outputHash
-        ? portSuccess(undefined)
-        : conflict('A v2 analysis result is immutable.');
+    if (existing !== undefined && existing.outputHash !== result.outputHash)
+      return conflict('A v2 analysis result is immutable.');
+    let runKey: string | undefined;
+    if (reasoningRun !== undefined) {
+      const { outputHash: _runOutputHash, ...runInput } = reasoningRun;
+      void _runOutputHash;
+      let canonical = false;
+      try {
+        assertReasoningRunScope(reasoningRun, result.scope);
+        canonical = canonicalJson(finalizeReasoningRunV2(runInput)) === canonicalJson(reasoningRun);
+      } catch {
+        canonical = false;
+      }
+      if (
+        !canonical ||
+        reasoningRun.workspaceId !== result.legacyResult.workspaceId ||
+        reasoningRun.analysisId !== result.legacyResult.analysisId ||
+        reasoningRun.scopeHash !== result.scope.scopeHash ||
+        canonicalJson(reasoningRun.hypotheses) !== canonicalJson(result.reasoningHypotheses) ||
+        !result.executionBudgets.some(
+          (budget) => canonicalJson(budget) === canonicalJson(reasoningRun.executionBudget),
+        )
+      )
+        return conflict('A reasoning run has inconsistent provenance.');
+      runKey = `${reasoningRun.workspaceId}\0${reasoningRun.id}`;
+      const existingRun = this.#reasoningRuns.get(runKey);
+      if (existingRun !== undefined && existingRun.outputHash !== reasoningRun.outputHash)
+        return conflict('A reasoning run is immutable.');
     }
     this.#analyses.set(key, result);
+    if (reasoningRun !== undefined && runKey !== undefined)
+      this.#reasoningRuns.set(runKey, reasoningRun);
     return portSuccess(undefined);
   }
 
@@ -451,5 +494,46 @@ export class InMemoryAnalysisResultStoreV2 implements AnalysisResultStoreV2 {
     analysisId: AnalysisId,
   ): Promise<PortResult<AnalysisResultV2 | null>> {
     return portSuccess(this.#analyses.get(`${workspaceId}\0${analysisId}`) ?? null);
+  }
+
+  public async getReasoningRunV2(
+    workspaceId: WorkspaceId,
+    reasoningRunId: ReasoningRunId,
+  ): Promise<PortResult<ReasoningRunV2 | null>> {
+    return portSuccess(this.#reasoningRuns.get(`${workspaceId}\0${reasoningRunId}`) ?? null);
+  }
+
+  public async purgeReasoningRunV2(
+    workspaceId: WorkspaceId,
+    reasoningRunId: ReasoningRunId,
+    deletedAt: Instant,
+  ): Promise<PortResult<ReasoningRunV2 | null>> {
+    const key = `${workspaceId}\0${reasoningRunId}`;
+    const current = this.#reasoningRuns.get(key);
+    if (current === undefined) return portSuccess(null);
+    if (current.state === 'deleted') return portSuccess(current);
+    const {
+      outputHash: _outputHash,
+      providerOutputHash: _providerOutputHash,
+      deletedAt: _deletedAt,
+      ...retained
+    } = current;
+    void _outputHash;
+    void _providerOutputHash;
+    void _deletedAt;
+    const deleted = finalizeReasoningRunV2({
+      ...retained,
+      state: 'deleted',
+      citations: [],
+      hypotheses: [],
+      limitations: ['reasoning_data_deleted'],
+      deletedAt,
+    });
+    const analysisKey = `${workspaceId}\0${current.analysisId}`;
+    const analysis = this.#analyses.get(analysisKey);
+    if (analysis === undefined) return conflict('The reasoning analysis result is missing.');
+    this.#analyses.set(analysisKey, removeReasoningFromAnalysisResultV2(analysis));
+    this.#reasoningRuns.set(key, deleted);
+    return portSuccess(deleted);
   }
 }

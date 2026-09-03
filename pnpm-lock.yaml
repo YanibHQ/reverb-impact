@@ -198,6 +198,15 @@ importers:
         specifier: workspace:*
         version: link:../testkit
 
+  packages/reasoning:
+    dependencies:
+      '@yanib/reverb-application':
+        specifier: workspace:*
+        version: link:../application
+      '@yanib/reverb-domain':
+        specifier: workspace:*
+        version: link:../domain
+
   packages/schema:
     dependencies:
       ajv:

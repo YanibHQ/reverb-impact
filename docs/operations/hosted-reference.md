@@ -56,7 +56,12 @@ expiry for any worker that cannot drain.
 
 Database backups must include PostgreSQL WAL/base backup and the same tenant retention policy as
 canonical records. `backupWorkspace()` provides a hash-verified, workspace-scoped canonical export
-for drills; `restoreWorkspace()` rejects hash mismatch and cross-workspace records.
+for drills; `restoreWorkspace()` rejects hash mismatch and cross-workspace records. That logical
+export contains only `reverb_canonical_records` and `reverb_canonical_pointers`; it deliberately does
+not export v2 analysis scopes/results or reasoning runs. Operators enabling reasoning must therefore
+use a transactionally consistent PostgreSQL physical backup for those tables or explicitly document
+that reasoning history is non-restorable. Physical backups inherit the reasoning retention and
+deletion schedule and must age out purged source-derived data within the declared recovery window.
 
 On repository removal or authorization loss:
 

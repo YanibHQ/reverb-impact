@@ -402,6 +402,8 @@
         "required": [
           "evidence_basis",
           "disposition",
+          "severity",
+          "confidence",
           "producer_citation_ids",
           "consumer_citation_ids",
           "limitations"
@@ -409,15 +411,30 @@
         "properties": {
           "evidence_basis": { "const": "ai_inferred" },
           "disposition": { "enum": ["needs_investigation", "withheld"] },
+          "severity": { "enum": ["low", "medium", "high", "critical"] },
+          "confidence": { "enum": ["low", "medium", "high"] },
           "producer_citation_ids": {
             "type": "array",
-            "items": { "type": "string", "minLength": 1 }
+            "uniqueItems": true,
+            "items": { "type": "string", "pattern": "^cit_sha256:[0-9a-f]{64}$" }
           },
           "consumer_citation_ids": {
             "type": "array",
-            "items": { "type": "string", "minLength": 1 }
+            "uniqueItems": true,
+            "items": { "type": "string", "pattern": "^cit_sha256:[0-9a-f]{64}$" }
           },
-          "limitations": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+          "limitations": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "ambiguous_dependency",
+                "dynamic_resolution",
+                "insufficient_context",
+                "weak_evidence"
+              ]
+            }
+          }
         }
       }
     },

@@ -8,6 +8,9 @@ import {
   analysisResultV2Schema,
   analysisScopeV2Schema,
   executionBudgetV2Schema,
+  reasoningRequestV1Schema,
+  reasoningResponseV1Schema,
+  reasoningRunV2Schema,
   assertReadableSchemaVersion,
   assertReadableSchemaVersionV2,
   validateWithSchema,
@@ -49,6 +52,44 @@ describe('schema-major 2 negotiation', () => {
     expect(analysisCoverageV2Schema.$id).toMatch(/\/analysis-coverage\/v2\.json$/);
     expect(analysisResultV2Schema.$id).toMatch(/\/analysis-result\/v2\.json$/);
     expect(executionBudgetV2Schema.$id).toMatch(/\/execution-budget\/v2\.json$/);
+    expect(reasoningRequestV1Schema.$id).toMatch(/\/reasoning-request\/v1\.json$/);
+    expect(reasoningResponseV1Schema.$id).toMatch(/\/reasoning-response\/v1\.json$/);
+    expect(reasoningRunV2Schema.$id).toMatch(/\/reasoning-run\/v2\.json$/);
+  });
+
+  it('accepts only closed provider-neutral reasoning responses', () => {
+    const response = {
+      schema: 'reverb.reasoning-response',
+      schema_version: '1.0',
+      state: 'complete',
+      candidates: [
+        {
+          severity: 'high',
+          confidence: 'low',
+          producer_citation_ids: [`cit_sha256:${'1'.repeat(64)}`],
+          consumer_citation_ids: [`cit_sha256:${'2'.repeat(64)}`],
+          limitations: ['weak_evidence'],
+        },
+      ],
+      model_tokens: 20,
+    };
+    expect(() => validateWithSchema(reasoningResponseV1Schema.$id, response)).not.toThrow();
+    expect(() =>
+      validateWithSchema(reasoningResponseV1Schema.$id, {
+        ...response,
+        tool_call: { name: 'read_repository' },
+      }),
+    ).toThrowError(
+      expect.objectContaining<Partial<SchemaValidationError>>({ code: 'invalid_schema' }),
+    );
+    expect(() =>
+      validateWithSchema(reasoningResponseV1Schema.$id, {
+        ...response,
+        candidates: [{ ...response.candidates[0], limitations: ['free-form provider text'] }],
+      }),
+    ).toThrowError(
+      expect.objectContaining<Partial<SchemaValidationError>>({ code: 'invalid_schema' }),
+    );
   });
 
   it('validates the closed v2 adapter manifest, extraction, and diff wire protocols', () => {

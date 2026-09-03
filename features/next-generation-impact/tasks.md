@@ -40,12 +40,12 @@
 
 ## Phase 004 — optional reasoning
 
-- [ ] Provider-neutral port and strict versioned request/result schemas
-- [ ] Bounded authorized retrieval seeded only by deterministic evidence
-- [ ] Citation verifier and distinct `ai_inferred`/`needs_investigation` outcomes
-- [ ] Model/template/retrieval provenance and closed telemetry
-- [ ] Consent, retention, deletion, injection, timeout, malformed-output, and failure-isolation tests
-- [ ] Prove off/failure paths leave deterministic output unchanged
+- [x] Provider-neutral port and strict versioned request/result schemas
+- [x] Bounded authorized retrieval seeded only by deterministic evidence
+- [x] Citation verifier and distinct `ai_inferred`/`needs_investigation` outcomes
+- [x] Model/template/retrieval provenance and closed telemetry
+- [x] Consent, retention, deletion, injection, timeout, malformed-output, and failure-isolation tests
+- [x] Prove off/failure paths leave deterministic output unchanged
 
 ## Phase 005 — release candidate
 
