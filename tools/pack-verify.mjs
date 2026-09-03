@@ -141,7 +141,7 @@ await writeFile(
 );
 execFileSync(
   'pnpm',
-  ['install', '--offline', '--ignore-scripts', '--ignore-workspace', '--no-frozen-lockfile'],
+  ['install', '--prefer-offline', '--ignore-scripts', '--ignore-workspace', '--no-frozen-lockfile'],
   { cwd: consumerDestination, stdio: 'inherit' },
 );
 execFileSync('pnpm', ['exec', 'tsc', '--pretty', 'false'], {

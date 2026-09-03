@@ -49,7 +49,7 @@ permission changes, or Yanib integration.
 - formatting, lint/boundaries, type/public API contracts, v1/v2 compatibility, schema generation,
   host capabilities, adapter admission, documentation, and license policy;
 - bounded comparative/release benchmark execution;
-- 19 package tarballs installed into a fresh offline consumer, with packed v0.4/v2 host compile,
+- 19 package tarballs installed into a fresh isolated consumer, with packed v0.4/v2 host compile,
   every public root import, root-only export validation, SHA-256 checksums, and CLI `0.5.0` smoke;
 - a CycloneDX SBOM with 45 components and release provenance covering 19 packages and 31 schemas.
 

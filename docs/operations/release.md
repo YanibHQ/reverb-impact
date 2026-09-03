@@ -19,6 +19,10 @@ compiles packed v0.4 and v2 hosts, imports every public root, checks the CLI ver
 checksums, creates a CycloneDX SBOM, and writes a machine-readable release-provenance manifest.
 Publish the verified tarballs under `artifacts/packages/`, not a mutable working directory.
 
+The isolated consumer installs Reverb only from those local tarballs. It may resolve exact external
+tooling and transitive dependencies from the configured npm registry when a clean runner has no
+pnpm metadata cache; package lifecycle scripts remain disabled.
+
 The checked-in
 [0.5.0 release benchmark](../verification/phase-005-next-generation-release-benchmark.json) is a
 checksum-addressed reproducibility manifest over public synthetic mechanics, all eight adapter
