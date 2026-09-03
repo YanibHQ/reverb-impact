@@ -73,9 +73,11 @@ independent execution budget.
 
 ## Release status
 
-Reverb `0.5.0` is the current verified release candidate; `0.4.0` remains the public release until
-the candidate is explicitly published. Public APIs and storage formats may change in a future minor
-release, so downstream users should pin an exact package version. Analysis output is advisory:
+Reverb `0.5.0` is the current public release. All 19 packages are available from npm with integrity
+metadata and SLSA provenance, and the corresponding [GitHub release](https://github.com/YanibHQ/reverb-impact/releases/tag/v0.5.0)
+includes verified tarballs, SHA-256 checksums, a CycloneDX SBOM, and machine-readable release
+provenance. Public APIs and storage formats may change in a future minor release, so downstream
+users should pin an exact package version. Analysis output is advisory:
 evidence classes must be calibrated with representative, human-reviewed data before they are used
 for automated delivery or policy decisions.
 
@@ -91,8 +93,8 @@ data; product integrations use Reverb's public package and host boundaries.
 
 ## Install from npm
 
-The commands below target the `0.5.0` package set and become available after publication. Until
-then, use the public `0.4.0` packages or build the candidate from source.
+The commands below install the published `0.5.0` package set. Keep every Reverb dependency on the
+same exact version; mixing package versions is unsupported.
 
 Run the local CLI without adding it to a project:
 
